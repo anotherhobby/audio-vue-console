@@ -9,7 +9,7 @@ When you begin project work in this repository:
 1. Read this file first.
 2. Read `.claude/kb/README.md` before making project changes.
 3. Read only the KB files relevant to the current task. Prefer the index, then the smallest useful file.
-4. Update agent-maintained KB files when you learn durable project facts, decisions, recurring commands, pitfalls, or open questions.
+4. Update agent-maintained KB files when you learn durable project facts, decisions, recurring commands, or pitfalls. Ask open questions in the moment; add one to `.claude/kb/agent/open-questions.md` only after asking it and proposing the entry.
 5. Never mutate human-authored KB files unless the user explicitly asks you to edit them.
 
 If the user is only asking a general question that does not require project context, do not read or edit the KB.
@@ -21,7 +21,7 @@ Human-authored files live under `.claude/kb/author/`.
 - These files are source material from project maintainers.
 - Agents may read and summarize them.
 - Agents must not edit, rewrite, reorganize, or delete them unless explicitly instructed by the user.
-- If an agent notices a likely correction or improvement, record a suggestion in `.claude/kb/agent/open-questions.md` or mention it to the user.
+- If an agent notices a likely correction or improvement, mention it to the user in the moment.
 
 Agent-maintained files live under `.claude/kb/agent/`.
 
@@ -61,10 +61,10 @@ Good KB updates include:
 - Verified commands and their caveats.
 - Stable repository structure or ownership boundaries.
 - User preferences that apply to this project.
-- User corrections that reveal durable project rules, team workflow, review standards, or recurring agent failure modes.
+- User corrections that reveal durable project rules, workflow, review standards, or recurring agent failure modes.
 - Architectural decisions and rationale.
 - Repeated failure modes or environment quirks.
-- Open questions that block confident future work.
+- Open questions the user has been asked and has agreed to record.
 
 Avoid KB updates for:
 
@@ -73,11 +73,11 @@ Avoid KB updates for:
 - Large pasted logs.
 - Duplicates of information already indexed clearly.
 - Details that belong in source code, tests, or public documentation instead.
-- Personal interaction preferences unless the user explicitly says they are project or team policy.
+- Personal interaction preferences unless the user explicitly says they are project policy.
 
 When preserving a correction, translate it into an action-oriented project rule with rationale or evidence. Prefer "Do not use X for Y because Z" over "The user dislikes X."
 
-If an agent-maintained note appears to describe team policy, record it as a proposal in `.claude/kb/agent/open-questions.md`. Do not move it into `.claude/kb/author/` unless a human maintainer explicitly writes or approves it.
+If an agent-maintained note appears to describe project policy, propose it to the user in the moment. Do not move it into `.claude/kb/author/` unless a human maintainer explicitly writes or approves it.
 
 When information changes, update the existing note instead of adding a contradictory new note. If uncertainty matters, preserve it explicitly.
 
