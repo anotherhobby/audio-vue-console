@@ -24,8 +24,12 @@ exists.
 
 ## Repository structure
 
-No app code yet (2026-11-02).
+Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and the real bundle ID
+(2026-11-02, `decisions-log.md`). No Swift package or test target yet.
 
+- `AudioVueConsole.xcodeproj`: the Xcode project. Xcode 27 stores it as a readable
+  `project.xcproj`, not `project.pbxproj`. Its one folder entry is `AudioVueConsole`, relative.
+- `AudioVueConsole/`: the app target's sources (`MyApp.swift`, `ContentView.swift`, assets).
 - `.claude/`: the KB, plus the twelve `openspec-*` skills under `skills/`.
 - `openspec/`: OpenSpec planning (`config.yaml`, `specs/`, `changes/`). Stock `spec-driven`
   schema, no project rules yet.

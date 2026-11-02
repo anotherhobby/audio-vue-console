@@ -14,3 +14,10 @@ Format:
   `desktop-app.md` as a pointer. The app is this repository's whole purpose, while the host side
   is still built against in audio-vue, including by its open `settings-schema` and
   `settings-documents` changes.
+
+- 2026-11-02: Template settings fixed (maintainer asked; bundle ID chosen by the maintainer):
+  macOS only, Swift 6 with warnings as errors (`product.md`, "The quality gate"), App Sandbox kept
+  on with outgoing network added, bundle ID `com.hobbysprawl.AudioVueConsole`, minimum macOS 27.2.
+  Default actor isolation MainActor kept for the app target. Hardened runtime left off: it matters
+  for notarization, and the app is ad-hoc signed (`product.md`, "Packaging"). Built and checked via
+  Xcode MCP.

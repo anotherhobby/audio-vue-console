@@ -28,7 +28,29 @@ spec. `../audio-vue/.claude/kb/agent/pitfalls.md`, "A scene's `name` is a label"
 audio-vue is unreleased, and a host store on another version is deleted and made again, so its clients
 must pair again. Treat a 401 on a stored token as "pair again", not as a fault.
 
+## Start Claude from the repository root (2026-11-02)
+
+Started in a subfolder, Claude Code still finds `.claude/CLAUDE.md` by walking up, but loads no
+project skills, so the `openspec-*` skills are missing (Measured, from the old `AudioVueConsole/`
+subfolder). This is why `AudioVueConsole.xcodeproj` sits at the root: an agent started in the
+project's folder, Xcode's included, lands where `.claude/` is.
+
+## Xcode's agent does not run the quality gate (2026-11-02)
+
+Xcode 27 runs its own bundled `claude` with `CLAUDE_CONFIG_DIR` set to
+`~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig` (Measured, `xcrun mcpbridge run-agent
+--dry-run claude`). Nothing in `~/.claude` loads there, including the user-scope `quality-gate`
+plugin, so Swift that Xcode's agent writes goes unchecked. Project files in `.claude/` are not tied to
+the config dir. Xcode's tools reach Claude Code instead through `xcrun mcpbridge`, its MCP server.
+
 ## The gate's type check builds SwiftPM packages only (2026-11-02)
 
 The quality gate's Stop-hook type check does not build an Xcode project, so code in the app shell goes
 unchecked there. Keep logic in packages and the shell thin.
+
+## Xcode MCP quirks (2026-11-02)
+
+- `UpdateTargetBuildSetting` cannot delete a conditional setting such as `KEY[sdk=iphoneos*]`
+  ("Unknown build setting"). Edit `project.xcproj` directly for those; Xcode reloads it.
+- After an on-disk edit to `project.xcproj`, the workspace ID returned by `XcodeOpenWorkspace`
+  goes stale ("No active scheme"). Call `XcodeListWorkspaces` and use the window's `windowtab-*` ID.
