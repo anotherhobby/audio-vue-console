@@ -6,20 +6,21 @@ Record repository structure, main behavior locations, and concise architecture n
 
 audio-vue-console is the SwiftUI macOS desktop app that is the console and control plane for
 audio-vue (`../audio-vue`). The host is an appliance and this app is its companion: all truth is
-on the host, and the app knows only the API. Read
-`../audio-vue/.claude/kb/agent/desktop-app.md` for the full product statement and its rulings;
-it is the authority, and this file only points at it. (Read 2026-11-02.)
+on the host, and the app knows only the API. The product statement is `product.md`; what the app
+relies on from the host is `host-contract.md`.
 
-Key facts from that statement, as of 2026-11-02:
+## Intended structure
 
-- Reaches a panel by address and the API alone: HTTP/WebSocket under `/v1` on the host agent,
-  port 19200 by default, contract at `/v1/openapi.json`, state pushed on `/v1/events`.
-- Pairing is a six-digit code shown on the panel (`POST /v1/pairing`, then
-  `POST /v1/pairing/confirm`); one token per client, stored per panel.
-- Cards are rendered by the host; the app draws only the grid, handles and drag.
-- Recommended structure: a `Core` package that cannot import SwiftUI, a client generated from
-  the OpenAPI document, a UI layer that cannot touch the network, all testable with `swift test`
-  in a thin Xcode shell.
+Recommended in `product.md`, not built (2026-11-02). Replace this section with the real map once code
+exists.
+
+- **`Core`**, a Swift package that cannot import SwiftUI.
+- **A client generated from the host's `/v1/openapi.json`.**
+- **A UI layer that cannot touch the network.** It talks to `Core` only.
+- **A thin Xcode app shell.** Everything else builds and tests with `swift test`, which is also all
+  the quality gate's type check builds (`pitfalls.md`).
+- **`cal-play`**, bundled as a helper binary, built from `../audio-vue/cal-play/`.
+- The boundaries are held by tests, not by convention.
 
 ## Repository structure
 
