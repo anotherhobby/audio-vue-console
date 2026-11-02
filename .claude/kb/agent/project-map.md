@@ -23,4 +23,8 @@ Key facts from that statement, as of 2026-11-02:
 
 ## Repository structure
 
-Nothing is built yet. Only the KB exists (2026-11-02).
+No app code yet (2026-11-02).
+
+- `.claude/`: the KB, plus the twelve `openspec-*` skills under `skills/`.
+- `openspec/`: OpenSpec planning (`config.yaml`, `specs/`, `changes/`). Stock `spec-driven`
+  schema, no project rules yet.

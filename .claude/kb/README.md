@@ -17,6 +17,12 @@ Update this section as new human-authored reference files appear.
 - `agent/pitfalls.md`: Known traps, broken assumptions, and recurring failure modes.
 - `agent/open-questions.md`: Questions for humans or unresolved project ambiguities.
 
+## Planning
+
+- `openspec/` at the repo root: OpenSpec planning. `specs/` holds the standing requirements,
+  `changes/` one folder per change. Driven by the `openspec-*` skills in `.claude/skills/`;
+  there are no slash commands. Project rules for its documents go in `openspec/config.yaml`.
+
 ## Related Projects
 
 - `../audio-vue` is the host this app controls (Python, runs on the panel's host). The app's
