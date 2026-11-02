@@ -88,3 +88,15 @@ When touching `working-notes.md`, remove stale task notes that no longer help fu
 Use the KB to reduce repeated discovery, not to avoid reading the actual code. Treat source files, tests, and user instructions as higher authority than agent notes. If the KB conflicts with the repository or the user's latest instruction, follow up with the user on how to reconcile the difference and update the agent-maintained KB if appropriate.
 
 Keep the system boring in the best way: small files, clear ownership, short notes, and enough structure that the next agent can land without rummaging through old chat history.
+
+## Quality Gate
+
+The quality gate exists to make the code better and tighter. A change that satisfies the gate but leaves the code worse defeats its purpose.
+
+Most findings are right, so fix them. Do something else only when you can defend it: the code is honestly better as written, and satisfying the gate would split up something that belongs together or force a workaround that reads worse. Splitting a function into helpers that share all its state, packing parameters into a struct or dictionary only to get under a count, or naming a constant nobody will ever reuse are all workarounds of that kind.
+
+When that happens, stop and raise it with the user in the moment. Show the finding, the code, the change the gate would push you toward, and why that change is worse. Then the user decides whether to bypass the finding or adjust the rule.
+
+- For a size finding, the gate's own `propose` command records the case, and the user approves it. Explain the case to the user as well. Do not just file it.
+- For any other finding, nothing can keep it, so ask. Do not work around it, and do not leave it unfixed.
+- Never restructure code only to hide it from the gate.
