@@ -49,15 +49,9 @@ struct SketchScene: Decodable, Identifiable, Hashable {
     var id: String { spec }
     var aspect: Double { Double(cols) / Double(rows) }
     var shapeName: String { SketchShape.name(width: cols, height: rows) }
-
-    /// Each declared group's bounding cells, which the host requires its members to tile.
-    var groupBounds: [String: SketchCells] {
-        Dictionary(grouping: cards.filter { $0.group != nil }) { $0.group ?? "" }
-            .mapValues { SketchCells(enclosing: $0.map(\.cells)) }
-    }
 }
 
-struct SketchCard: Decodable, Identifiable, Hashable {
+struct SketchCard: Decodable, Hashable {
     let card: String
     let col: Int
     let row: Int
@@ -65,9 +59,7 @@ struct SketchCard: Decodable, Identifiable, Hashable {
     let rowspan: Int
     let group: String?
 
-    var id: String { "\(card)@\(col),\(row)" }
     var title: String { card.replacingOccurrences(of: "_", with: " ") }
-    var cells: SketchCells { SketchCells(col: col, row: row, cols: colspan, rows: rowspan) }
 }
 
 /// One kind of card for the library, at the size it first has in the scenes. The host will give
@@ -88,29 +80,6 @@ struct SketchCardKind: Identifiable, Hashable {
                 card: card.card, cols: card.colspan, rows: card.rowspan)
         }
         return kinds.values.sorted { $0.card < $1.card }
-    }
-}
-
-/// A block of grid cells, row 0 at the top as in the host's scenes.
-struct SketchCells: Hashable {
-    let col: Int
-    let row: Int
-    let cols: Int
-    let rows: Int
-
-    init(col: Int, row: Int, cols: Int, rows: Int) {
-        self.col = col
-        self.row = row
-        self.cols = cols
-        self.rows = rows
-    }
-
-    init(enclosing blocks: [SketchCells]) {
-        let left = blocks.map(\.col).min() ?? 0
-        let top = blocks.map(\.row).min() ?? 0
-        let right = blocks.map { $0.col + $0.cols }.max() ?? left
-        let bottom = blocks.map { $0.row + $0.rows }.max() ?? top
-        self.init(col: left, row: top, cols: right - left, rows: bottom - top)
     }
 }
 

@@ -26,3 +26,14 @@ Format:
   host is named by a fully qualified name that `NSAllowsLocalNetworking` does not cover, the host API
   is HTTP-only until it serves TLS, and a domain exception would write one network into the app.
   Revisit when the host gains TLS. `openspec/changes/walking-skeleton/design.md`.
+
+- 2026-11-04: The quality gate's `no_magic_numbers` allows 2 as well as 0 and 1 (maintainer, raised
+  when `size.cols / 2` centred a dropped card): halving and doubling are arithmetic, and naming 2
+  would be a constant nobody reuses. Edited in `claude-qualty-gate/baseline/swiftlint.yml`, left
+  uncommitted there for the maintainer.
+
+- 2026-11-04: The scene canvas is plain SwiftUI, with no AppKit fallback: a `DragGesture` per card's
+  hit target, `highPriorityGesture` handles above it, a marquee surface beneath, and
+  `onDrop(of:delegate:)` for the library. Confirmed by the maintainer's manual run (`canvas-spike`
+  5.1, 2026-11-04): every `scene-canvas` scenario held. UI quirks were seen but held for a later
+  change, since none contradicts a scenario. `openspec/changes/canvas-spike/design.md`.

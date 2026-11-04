@@ -70,3 +70,22 @@ with no Local Network prompt (Measured, `walking-skeleton` task 6.1). Likely cau
 macOS credits the access to the responsible process, Xcode, which already has it. A user launching
 the built app from Finder should see the prompt once. Test the prompt, or a denial, with a
 standalone launch (`open` the built `.app`), not from Xcode. A denial reports unreachable.
+
+## CoreGraphics types need `import CoreGraphics` in the package (2026-11-04)
+
+In `ConsoleCore`, `import Foundation` alone makes `CGSize` and `CGRect` visible without their
+conformances or members: `CGRect.maxX` and `Equatable` on `CGSize` do not resolve (Measured, Swift
+6.4.2). Import `CoreGraphics`, which is not a UI framework, so the boundary test allows it. With the
+app's `MemberImportVisibility`, `.plainText` likewise needs `import UniformTypeIdentifiers`.
+
+## SwiftUI's undo manager is not there in `init` (2026-11-04)
+
+`@Environment(\.undoManager)` is only readable once the view is in a window, so the scene editor
+builds its `SceneEditor` in `onAppear` and calls `detach()` in `onDisappear`, which removes its undo
+actions from the window's manager. The `onAppear` path renders in `RenderPreview`.
+
+## Dragged text cannot be read while it hovers (2026-11-04)
+
+A drop delegate gets the dragged item only at `performDrop`, but the canvas previews a card's size
+while it hovers. The library's tile uses `onDrag` to set `SceneStore.draggedKind` as the drag
+starts, in place of `.draggable`, and the drop delegate reads the kind from there.

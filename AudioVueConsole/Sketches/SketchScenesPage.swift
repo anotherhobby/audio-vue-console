@@ -66,19 +66,20 @@ struct SketchSceneGallery: View {
     }
 }
 
-/// A scene's thumbnail and name, with a lock for a built-in scene and a play mark for the one the
-/// panel is showing.
+/// A scene's thumbnail, drawn from its edited layout, and its name, with a lock for a built-in
+/// scene and a play mark for the one the panel is showing.
 struct SketchSceneRow: View {
     let scene: SketchScene
     let fits: Bool
     let isShowing: Bool
     let height: CGFloat
+    @Environment(SceneStore.self) private var store
 
     var body: some View {
         VStack(alignment: .leading) {
-            SketchPlates(scene: scene, cardID: .constant(nil), isThumbnail: true)
+            thumbnail
                 .aspectRatio(scene.aspect, contentMode: .fit)
-                .background(SketchMetrics.backdrop)
+                .background(CanvasMetrics.backdrop)
                 .frame(maxHeight: height, alignment: .leading)
             HStack {
                 Text(scene.name)
@@ -89,6 +90,14 @@ struct SketchSceneRow: View {
         }
         .opacity(fits ? 1.0 : SketchMetrics.mismatchOpacity)
     }
+
+    @ViewBuilder private var thumbnail: some View {
+        if let layout = store.layout(for: scene) {
+            LayoutPlates(layout: layout, isThumbnail: true)
+        } else {
+            Color.clear
+        }
+    }
 }
 
 #Preview("Scenes gallery") {
@@ -96,6 +105,7 @@ struct SketchSceneRow: View {
         SketchScenesPage(
             panel: panel, scenes: SketchData.shared.scenes, isEditing: .constant(false)
         )
+        .environment(SceneStore())
         .frame(
             width: SketchMetrics.windowDefaultWidth,
             height: SketchMetrics.windowDefaultHeight)

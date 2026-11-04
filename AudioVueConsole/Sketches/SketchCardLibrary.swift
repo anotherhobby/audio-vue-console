@@ -28,17 +28,18 @@ struct SketchCardLibrary: View {
 
 struct SketchCardTile: View {
     let kind: SketchCardKind
+    @Environment(SceneStore.self) private var store
 
     var body: some View {
         VStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: SketchMetrics.plateCornerRadius)
-                .fill(SketchMetrics.color(for: kind.card).opacity(SketchMetrics.plateFillOpacity))
+            RoundedRectangle(cornerRadius: CanvasMetrics.plateCornerRadius)
+                .fill(CanvasMetrics.color(for: kind.card).opacity(CanvasMetrics.plateFillOpacity))
                 .aspectRatio(kind.aspect, contentMode: .fit)
                 .padding(SketchMetrics.tilePadding)
                 .frame(maxWidth: .infinity)
                 .frame(height: SketchMetrics.cardPreviewHeight)
                 .background(
-                    SketchMetrics.backdrop,
+                    CanvasMetrics.backdrop,
                     in: RoundedRectangle(cornerRadius: SketchMetrics.tileCornerRadius))
             HStack {
                 Text(kind.title)
@@ -48,11 +49,16 @@ struct SketchCardTile: View {
             .font(.callout)
         }
         .contentShape(Rectangle())
-        .draggable(kind.card)
+        // The canvas previews the card's size while it hovers, before the drop delivers the text.
+        .onDrag {
+            store.draggedKind = kind.card
+            return NSItemProvider(object: kind.card as NSString)
+        }
     }
 }
 
 #Preview("Card library") {
     SketchCardLibrary(kinds: SketchCardKind.roster(from: SketchData.shared.scenes))
         .frame(width: SketchMetrics.libraryIdealWidth, height: SketchMetrics.windowDefaultHeight)
+        .environment(SceneStore())
 }

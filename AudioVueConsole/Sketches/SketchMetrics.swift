@@ -34,25 +34,5 @@ enum SketchMetrics {
     static let unitRange: ClosedRange<Double> = 0...1
 
     static let canvasPadding: CGFloat = 24
-    static let bezelWidth: CGFloat = 10
-    static let bezelCornerRadius: CGFloat = 14
-    static let plateCornerRadius: CGFloat = 6
-    static let thumbnailCornerRadius: CGFloat = 2
-    static let plateInset: CGFloat = 1.5
-    static let thumbnailInset: CGFloat = 0.5
-    static let selectionLineWidth: CGFloat = 2
-    static let labelPadding: CGFloat = 4
-    static let plateFillOpacity: Double = 0.55
-    static let groupStrokeOpacity: Double = 0.5
     static let mismatchOpacity: Double = 0.45
-
-    static let palette: [Color] = [.blue, .purple, .pink, .orange, .teal, .indigo, .mint, .cyan]
-    static let backdrop = LinearGradient(
-        colors: [.indigo, .black, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-
-    /// A steady colour per card type, so the same card looks the same in every scene.
-    static func color(for card: String) -> Color {
-        let sum = card.unicodeScalars.reduce(0) { $0 + Int($1.value) }
-        return palette[sum % palette.count]
-    }
 }

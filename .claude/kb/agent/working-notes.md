@@ -36,6 +36,9 @@ on a real host waits on audio-vue's settings documents and card tiles.
 
 ## Canvas rulings, pending `product.md` (maintainer, 2026-11-02)
 
+Built as `scene-layout` and `scene-canvas` in `openspec/changes/canvas-spike` (2026-11-04), still
+pending in `product.md`, which only the maintainer edits.
+
 - The grid's shape comes from the connected panel: `/v1/host`'s `width_px`/`height_px` and the scene's
   `grid` in `/v1/state`. When it cannot be told, 16:9 (64x36) is the default. 96x36 at 8:3 is only the
   maintainer's display; most users are expected to be 16:9.

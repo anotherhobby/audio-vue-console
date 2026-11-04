@@ -37,10 +37,19 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
 - `AudioVueConsole/`: the app target's sources. `AudioVueConsoleApp.swift` (the `App`: the connect
   window, and in Debug builds a second "UI Sketch" window from the Window menu), `ConnectView.swift`
   (binds `HostConnection`; `ConnectForm` takes a state so previews show each), assets, and
-  `Sketches/`, the throwaway clickable UI sketch the canvas spike replaces.
+  `Sketches/`, the throwaway clickable UI sketch, whose scene editor now hosts the kept canvas.
+- `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
+  `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
+  marquee and keys into editor calls; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands`
+  (the Debug-only Arrange menu) are its parts. `SceneStore`, owned by the App, keeps each scene's
+  layout until quit; `LayoutPlates` draws any layout, thumbnails included; `CanvasMetrics` holds the
+  palette. It holds no layout rules.
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
   Swift Testing suite (`Tests/ConsoleCoreTests`). Tools 6.2, Swift 6 mode, macOS 27.2, warnings as
   errors. It must not import SwiftUI or AppKit.
+  Its scene layout (`SceneLayout`, `SceneLayoutEdits`, `LayoutRefusal`, `GridGeometry`,
+  `SceneEditor`) holds every canvas rule: a layout value is always one the panel would load, each
+  edit returns a new one or a refusal, and the editor owns selection and undo.
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:
   no SwiftUI or AppKit import under `ConsoleCore/Sources`, and no `import Network` or `URLSession`
   under `AudioVueConsole/`. It finds the repository from `#filePath`, so moving the test file

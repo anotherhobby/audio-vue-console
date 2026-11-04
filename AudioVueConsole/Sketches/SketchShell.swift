@@ -116,6 +116,7 @@ struct SketchPanelLabel: View {
 
 #Preview("Window") {
     SketchShell()
+        .environment(SceneStore())
         .frame(
             width: SketchMetrics.windowDefaultWidth, height: SketchMetrics.windowDefaultHeight)
 }

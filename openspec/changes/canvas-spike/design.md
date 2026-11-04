@@ -36,7 +36,7 @@ The scene editor exists only in the UI sketch (`AudioVueConsole/Sketches/`):
 ### The layout is a value; edits return a new one or a refusal
 
 `ConsoleCore` gains these types:
-- `GridSize` (cols, rows);
+- `CellSize` (cols, rows), for the grid and for a card's span;
 - `CellRect` (col, row, cols, rows), with intersection, containment and union;
 - `LayoutCard` (an id, the card's kind name, its `CellRect`, and an optional group name);
 - `SceneLayout` (the grid and its cards).
@@ -118,7 +118,7 @@ undo stack of snapshots inside the editor, with menu items in the app.
 - the rectangle of a `CellRect`;
 - the whole-cell offset for a drag translation, rounded to the nearest cell.
 
-It uses `CGPoint` and `CGSize` from Foundation, so it is tested in the core and the canvas does no
+It uses CoreGraphics' `CGPoint`, `CGSize` and `CGRect`, not a UI framework, so it is tested in the core and the canvas does no
 cell maths itself.
 
 ### The canvas is SwiftUI, with AppKit only where a gesture fights back
