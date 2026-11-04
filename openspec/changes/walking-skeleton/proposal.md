@@ -44,7 +44,9 @@ None. There are no specs yet.
 - New: `ConsoleCore/` (Swift package and tests) at the repository root, added to the Xcode project
   as a local package dependency.
 - Changed: `AudioVueConsole/` sources and the app target's Info.plist settings.
-- The host is unchanged. The app relies on `GET /v1/version` and the no-`Origin` rule from audio-vue's
-  `control-api` spec.
+- The host is unchanged. The app relies on these audio-vue specs:
+  - `audio-vue:control-api`: `GET /v1/version` and its fields, and the refusal of any `Origin`
+    header.
+  - `audio-vue:control-service`: the version is read without a token.
 - The quality gate type-checks `ConsoleCore`, since it's a SwiftPM package. App-target code is
   checked file by file only (`pitfalls.md`), so the shell stays thin.

@@ -21,10 +21,13 @@ a ruling with no change yet). As of 2026-11-02.
   host's id, name, display size and capture devices.
 - The API states its own version. The app checks it on connect, since it can fall behind its host.
 - The proving host runs Pi OS (since 2026-11-02; audio-vue ships an SD image by default, with manual
-  install as an option). Avahi runs and announces it as `audio-image`, so `audio-image.local`
-  resolves; the LAN's DNS also names it `audio-vue.cabin.hobbysprawl.com`, or `audio-vue` by the
-  search domain (Measured, 2026-11-02). The agent advertises no Bonjour service yet. `GET /v1/version` answers
-  `{"api": "1.0.0", "schema": 1}`, and any `Origin` header gets a 403 (Measured, same day).
+  install as an option). It answers as `audio-vue.local`, and the LAN's DNS names it
+  `audio-vue.cabin.hobbysprawl.com`, or `audio-vue` by the search domain (Measured, 2026-11-03;
+  the host was `audio-image` before). `GET /v1/version` answers `{"api": "1.0.0", "schema": 1}`, and
+  any `Origin` header gets a 403 (Measured, 2026-11-02). The contract requires only `api`, so treat a
+  missing `schema` as null.
+- The agent's default port, 19200, is `DEFAULT_PORT` in `../audio-vue/src/host_store.py`; no spec
+  names it (2026-11-03).
 
 ## Discovery (Built, `control-service`)
 

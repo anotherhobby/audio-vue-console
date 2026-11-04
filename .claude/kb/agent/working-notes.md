@@ -20,12 +20,10 @@ and the API version, or a version mismatch. A `Core` local Swift package that ca
 SwiftUI, from the start; views stay in the app target for now. The OpenAPI client generator and
 `/v1/events` are change 2's first decision.
 
-Done: the template settings (`decisions-log.md`). Proposed as `openspec/changes/walking-skeleton`
-(2026-11-02), not yet reviewed or applied.
-
-For the change to settle, from memory and unverified on macOS 27: connecting to a LAN host may need
-`NSLocalNetworkUsageDescription` (local network privacy), and plain HTTP to a `.local` name needs
-ATS's `NSAllowsLocalNetworking`. Also a test target or `swift test` on `Core` only.
+Done: the template settings (`decisions-log.md`). `openspec/changes/walking-skeleton` is fully
+planned and aligned (2026-11-03), ready to apply. Task 1.2 pauses for the maintainer to add the
+package in Xcode. The maintainer is to ask audio-vue to name the default port in `host-store`
+(`alignment.md` F4).
 
 ## Change order after the walking skeleton (maintainer, 2026-11-02)
 

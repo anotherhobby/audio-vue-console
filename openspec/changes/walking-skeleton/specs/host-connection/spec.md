@@ -13,7 +13,8 @@ The app SHALL take a host address, as a hostname or an IPv4 address with an opti
 by reading the host agent's version at `/v1/version` over HTTP. Without a port, it SHALL use 19200, the
 host agent's default.
 
-Source: Decision (maintainer, 2026-11-02): the walking skeleton connects to one host by address.
+Source: Decision (maintainer, 2026-11-02): one host by address. The port is audio-vue's
+`DEFAULT_PORT`, not yet in a spec (maintainer, 2026-11-03; `alignment.md` F4).
 
 #### Scenario: An address without a port
 

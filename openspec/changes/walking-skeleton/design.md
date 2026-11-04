@@ -5,7 +5,8 @@
 The app target is Xcode 27's App template, already set to macOS 27.2 only, Swift 6 with warnings as
 errors, and the App Sandbox with outgoing network connections (`decisions-log.md`). There is no
 package, no test target, and no specs. The host side is built: `GET /v1/version` returns
-`{"api": "1.0.0", "schema": <int or null>}`, is open to unpaired clients, and like every route refuses
+`{"api": "1.0.0", "schema": <int or null>}`, where the contract requires only `api` and allows more
+fields, is open to unpaired clients, and like every route refuses
 any request carrying an `Origin` header with 403 (audio-vue `control-api`; `host-contract.md`).
 
 The quality gate type-checks SwiftPM packages at Stop but not the Xcode project, and it bans
@@ -46,11 +47,18 @@ because that name is generic enough to collide with other modules.
 The core holds `HostAddress` (parse and validate), `APIVersion` (semantic version and the compatibility
 verdict), a `HostClient` that reads the version, and a `@MainActor @Observable` connection model that
 the view binds to. Observation is not a UI framework, so the model can live in the core and be tested
-there. The app target holds only the `App` and one view, which keeps the code the gate cannot compile
-small.
+there. The app target's real code is only the `App` and one view, which keeps the code the gate
+cannot compile small. The throwaway UI sketch (`AudioVueConsole/Sketches/`) stays beside it as a
+second window, opened from the Window menu in Debug builds only (maintainer, 2026-11-03), until the
+canvas spike replaces it.
 
 - *Alternative:* a view model in the app target. Its logic would be untested by `swift test` and
   unchecked by the gate.
+- The app target defaults to main-actor isolation; the package keeps Swift's default, nonisolated.
+  The model is marked `@MainActor` explicitly, and the address, version and client types are
+  `Sendable` values, so nothing in the core depends on the app's setting.
+- The client decodes `schema` as optional: a missing field reads as null, which the view shows as the
+  panel not answering. Unknown fields are ignored, since the contract leaves the object open.
 
 ### A transport protocol as the test seam
 
@@ -75,7 +83,9 @@ states a rule, this decision and the `host-connection` requirement change togeth
 ### Address handling
 
 The input is `host[:port]`. The host is an IPv4 address or an RFC 1123 hostname, and the port is
-1-65535, defaulting to 19200. The URL is built from validated parts, never by pasting the user's text
+1-65535, defaulting to 19200. Surrounding whitespace is trimmed. Text with a scheme, such as
+`http://audio-vue`, or a path is not an address and is refused as invalid. The URL is built from
+validated parts, never by pasting the user's text
 into a URL string. The last address is saved when the host answers with a version, compatible or not.
 It goes in `UserDefaults` behind a small protocol, so tests use an in-memory store.
 
@@ -108,7 +118,9 @@ Network` or `URLSession`. It names any offending file.
 ## Risks / Trade-offs
 
 - [The local network privacy prompt, or a denial, blocks the first connection] → The manual run
-  covers it. If the user denies access, the app reports unreachable, as stated above.
+  covers it. If the user denies access, the app reports unreachable, as stated above. The first
+  connect may also time out at 5 s while the prompt waits for an answer; connecting again after
+  answering it is expected to work, and task 6.1 records what happened.
 - [Allowing all HTTP lets a mistyped or hostile address load over plain HTTP] → The app reads only
   `/v1/version` from the address and decodes nothing but that answer, and pairing tokens (a later
   change) travel only to a host the user paired with. TLS on the host is the real fix.
@@ -117,8 +129,9 @@ Network` or `URLSession`. It names any offending file.
 - [The text-scan boundary test misses an indirect route, such as a helper type that wraps
   `URLSession`] → Accepted for now. The move to a UI package is the stronger fix, and it stays
   available.
-- [The gate cannot compile the app target] → The app target holds two small files, and Xcode's build
-  through MCP covers them.
+- [The gate cannot compile the app target] → The app target's real code is two small files, and the
+  sketch is throwaway. Xcode's build through MCP covers both, and SwiftLint and swift-format check
+  every file.
 
 ## Migration Plan
 

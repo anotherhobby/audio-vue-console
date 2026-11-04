@@ -2,13 +2,14 @@
 
 ## 1. The core package
 
-- [ ] 1.1 Create `ConsoleCore/` with `Package.swift` (Swift 6 language mode, macOS 27, warnings as
-  errors, library `ConsoleCore`, Swift Testing target `ConsoleCoreTests`) and one placeholder test;
-  verify `swift test` passes from `ConsoleCore/`
-- [ ] 1.2 Add `ConsoleCore` to the Xcode project as a local package and link it to the app target,
-  either in Xcode (File > Add Package Dependencies > Add Local) or by editing `project.xcproj` once its
-  package format has been checked against a real example; verify the app builds through Xcode MCP
-  with `import ConsoleCore` in `MyApp.swift`
+- [ ] 1.1 Create `ConsoleCore/` with `Package.swift` (tools 6.2, `swiftLanguageModes: [.v6]`,
+  `.macOS("27.2")` to match the app target, `.treatAllWarnings(as: .error)` on both targets, library
+  `ConsoleCore`, Swift Testing target `ConsoleCoreTests`) and one placeholder test; verify
+  `swift test` passes from `ConsoleCore/`
+- [ ] 1.2 Ask the maintainer to add `ConsoleCore` in Xcode (File > Add Package Dependencies > Add
+  Local, choose `ConsoleCore/`, link it to the app target), as ruled 2026-11-03; then refresh the
+  workspace ID (`pitfalls.md`), and record the entries `project.xcproj` gained in `project-map.md`;
+  verify the app builds through Xcode MCP with `import ConsoleCore` in `MyApp.swift`
 - [ ] 1.3 Add the boundary tests from `app-boundaries` (no SwiftUI or AppKit in `ConsoleCore/Sources`,
   no Network or `URLSession` in `AudioVueConsole/`); verify they pass, then fail and name the file
   when a temporary offending import is added
@@ -27,8 +28,9 @@
 ## 3. Reading the version
 
 - [ ] 3.1 Implement `HostTransport`, its `URLSession` version (ephemeral session, 5 s timeout), and
-  `HostClient.version(at:)` decoding `{api, schema}`; verify with a fake transport that the request is
-  `GET http://<host>:<port>/v1/version` with no `Origin` header
+  `HostClient.version(at:)` decoding `{api, schema}`, with `schema` optional and unknown fields
+  ignored; verify with a fake transport that the request is `GET http://<host>:<port>/v1/version`
+  with no `Origin` header, and that a body without `schema` reads as the panel not answering
 - [ ] 3.2 Map outcomes to the `host-connection` failure kinds (unreachable or timed out, 403 refused,
   any other status or a bad body unexpected); verify a test for each, with the fake transport
   throwing or returning each case
@@ -47,8 +49,11 @@
 
 - [ ] 5.1 Replace the template's `ContentView` with a connect view (address field, Connect button,
   status for every state, including the API version and the schema or "panel not answering"), and
-  rename `MyApp` to `AudioVueConsoleApp`; verify the build through Xcode MCP and that
-  `RenderPreview` shows the view in its idle, connected and failed states
+  rename `MyApp` to `AudioVueConsoleApp`, with the connect view as its window and the sketch's
+  `SketchShell` as a second `Window` under `#if DEBUG`, sized from `SketchMetrics` as now; update the
+  app-target line in `project-map.md`; verify the build through Xcode MCP, that `RenderPreview` shows
+  the view in its idle, connected and failed states, and that the Debug app's Window menu opens the
+  sketch
 - [ ] 5.2 Add `INFOPLIST_KEY_NSLocalNetworkUsageDescription` and a partial Info.plist outside
   `AudioVueConsole/` with `NSAppTransportSecurity` → `NSAllowsArbitraryLoads`, set as
   `INFOPLIST_FILE`; verify the built app's Info.plist contains both and the build log shows no
