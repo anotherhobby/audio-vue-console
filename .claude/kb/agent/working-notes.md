@@ -27,7 +27,7 @@ Done (2026-11-03): built, run against the proving host, and archived as
 
 ## Change order after the walking skeleton (maintainer, 2026-11-02)
 
-1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike: two days on stub data, the riskiest UI.
+1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike (archived 2026-11-04).
 3. Pairing (measure Keychain under ad-hoc signing first), moved ahead of the client (maintainer,
 2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
 a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (client generator decided first,
@@ -36,8 +36,9 @@ on a real host waits on audio-vue's settings documents and card tiles.
 
 ## Canvas rulings, pending `product.md` (maintainer, 2026-11-02)
 
-Built as `scene-layout` and `scene-canvas` in `openspec/changes/canvas-spike` (2026-11-04), still
-pending in `product.md`, which only the maintainer edits.
+Built and archived as the specs `scene-layout` and `scene-canvas` (2026-11-04), still pending in
+`product.md`, which only the maintainer edits. UI quirks from the spike's manual run are held by the
+maintainer for when the editor is built out, not recorded.
 
 - The grid's shape comes from the connected panel: `/v1/host`'s `width_px`/`height_px` and the scene's
   `grid` in `/v1/state`. When it cannot be told, 16:9 (64x36) is the default. 96x36 at 8:3 is only the
