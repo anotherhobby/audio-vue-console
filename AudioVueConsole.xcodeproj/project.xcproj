@@ -10,6 +10,12 @@
       "Base",
     ],
   },
+  "packages": [
+    {
+      "kind": "local",
+      "path": "ConsoleCore",
+    },
+  ],
   "files": [
     { "kind": "folder", "path": "AudioVueConsole", "target-membership": [ "AudioVueConsole" ] },
     {
@@ -31,6 +37,12 @@
         "frameworks",
         "resources",
       ],
+      "package-product-members": [
+        {
+          "product-name": "ConsoleCore",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
       "build-settings": {
         "CODE_SIGN_STYLE": "Automatic",
         "CURRENT_PROJECT_VERSION": "1",
@@ -39,6 +51,8 @@
         "ENABLE_PREVIEWS": "YES",
         "ENABLE_USER_SELECTED_FILES": "readonly",
         "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "AudioVueConsole-Info.plist",
+        "INFOPLIST_KEY_NSLocalNetworkUsageDescription": "AudioVueConsole connects to the audio-vue panels on your local network.",
         "LD_RUNPATH_SEARCH_PATHS": "@executable_path/../Frameworks",
         "MARKETING_VERSION": "1.0",
         "PRODUCT_BUNDLE_IDENTIFIER": "com.hobbysprawl.AudioVueConsole",

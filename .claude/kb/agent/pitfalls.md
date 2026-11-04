@@ -62,3 +62,11 @@ a toolbar, crashed at 1280x760 with `fatalError in TableViewListCore_Mac2.swift:
 in previews and the running app. Each part alone rendered; the cause was not isolated (not the tag,
 `onAppear` selection, title or row height). The scene strip became a `ScrollView` of tiles, which
 suits a Keynote-style navigator anyway. Bisect with probe `#Preview`s and `RenderPreview`.
+
+## No Local Network prompt when Xcode launches the app (2026-11-03)
+
+Run from Xcode (`RunProject`), the sandboxed app reached the proving host by FQDN, short name and IP
+with no Local Network prompt (Measured, `walking-skeleton` task 6.1). Likely cause, unverified:
+macOS credits the access to the responsible process, Xcode, which already has it. A user launching
+the built app from Finder should see the prompt once. Test the prompt, or a denial, with a
+standalone launch (`open` the built `.app`), not from Xcode. A denial reports unreachable.

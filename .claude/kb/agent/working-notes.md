@@ -20,10 +20,10 @@ and the API version, or a version mismatch. A `Core` local Swift package that ca
 SwiftUI, from the start; views stay in the app target for now. The OpenAPI client generator and
 `/v1/events` are change 2's first decision.
 
-Done: the template settings (`decisions-log.md`). `openspec/changes/walking-skeleton` is fully
-planned and aligned (2026-11-03), ready to apply. Task 1.2 pauses for the maintainer to add the
-package in Xcode. The maintainer is to ask audio-vue to name the default port in `host-store`
-(`alignment.md` F4).
+Done: the template settings (`decisions-log.md`). `openspec/changes/walking-skeleton` is built,
+14 of 14 tasks, and passed the manual run against the proving host (2026-11-03). Next: the
+maintainer's review, then archive. audio-vue is naming the default port in `host-store`
+(`alignment.md` F4); check it landed before archiving.
 
 ## Change order after the walking skeleton (maintainer, 2026-11-02)
 

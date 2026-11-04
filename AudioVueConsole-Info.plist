@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Plain HTTP to any host the user names: the host API has no TLS yet, and a fully qualified
+	     LAN name is outside NSAllowsLocalNetworking (decisions-log.md). Revisit when the host
+	     serves TLS. Xcode merges this with the Info.plist it generates. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

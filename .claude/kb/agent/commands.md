@@ -17,3 +17,8 @@ Format:
   "isn't approved"; call `XcodeOpenWorkspace` on `AudioVueConsole.xcodeproj` first, which is what
   raises the approval. `xcrun mcpbridge run-agent --dry-run claude` prints how Xcode launches its
   own agent.
+
+- 2026-11-03: `cd ConsoleCore && xcrun swift test` - builds the core and runs its Swift Testing
+  suite, the boundary tests included. Runs from the package folder, not the root. Add
+  `--filter BoundaryTests` to run only the boundaries. The runner prints `Target Platform:
+  macos14.0`; that is the test host, not the package's platform.
