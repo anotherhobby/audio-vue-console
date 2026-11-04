@@ -20,15 +20,36 @@ a ruling with no change yet). As of 2026-11-02.
   it again. It also gives start, stop, status, logs, run history (calibration runs by id), and the
   host's id, name, display size and capture devices.
 - The API states its own version. The app checks it on connect, since it can fall behind its host.
+- The proving host runs Pi OS (since 2026-11-02; audio-vue ships an SD image by default, with manual
+  install as an option). Avahi runs and announces it as `audio-image`, so `audio-image.local`
+  resolves; the LAN's DNS also names it `audio-vue.cabin.hobbysprawl.com`, or `audio-vue` by the
+  search domain (Measured, 2026-11-02). The agent advertises no Bonjour service yet. `GET /v1/version` answers
+  `{"api": "1.0.0", "schema": 1}`, and any `Origin` header gets a 403 (Measured, same day).
+
+## Discovery (Built, `control-service`)
+
+- The agent registers DNS-SD type `_audio-vue._tcp` with Avahi once it listens: instance named by the
+  store's host name, at the bound port, TXT `id` (as `/v1/host`) and `api` (as `/v1/version`). Keys
+  keep their names and meanings within an API version. Tell hosts apart by `id`, since an instance
+  name can be renamed on a clash, and a reinstalled host gets a new id.
+- Withdrawn when the agent stops; nothing announced when bound to loopback or with no responder.
+  A typed address stays supported.
+- The proving host announces `audio-vue` at `audio-vue.local:19200`, TXT `id=779b365c-...`,
+  `api=1.0.0` (Measured, `dns-sd -L`, 2026-11-03).
 
 ## Pairing and tokens (Built, `control-service`)
 
 - `POST /v1/pairing` shows a six-digit code on the panel for 120 s and five wrong tries, one pairing
   at a time and 30 s between them. `POST /v1/pairing/confirm` gives the token once. Pairing works
   even on the audio-vue screen, where a new host with no ADC sits.
-- One token per client; the app stores one per panel. Revoking a client is Recommended.
-- Reads are open on the network. Anything that changes state takes a token, and so do logs and the
-  capture devices. An unpaired client cannot start a stopped panel.
+- One token per client; the app stores one per panel. `GET /v1/clients` lists clients and
+  `DELETE /v1/clients/{client_id}` revokes one (Read in the proving host's `/v1/openapi.json`,
+  2026-11-02).
+- Today reads are open on the network, and anything that changes state takes a token, as do logs and
+  the capture devices. **Planned** (maintainer, 2026-11-03; audio-vue `settings-store`, a delta to
+  `control-service`): every route takes a token, `/v1/openapi.json` and `/v1/host` included, except
+  asking for a pairing code, confirming it, and `GET /v1/version`. So an unpaired app knows only the
+  version and the TXT record; the display shape and the contract come after pairing.
 - A request with any `Origin` header is refused: HTTP with a 403, a WebSocket closed with 1008
   (Read, `NoOrigin` in `src/control_service/app.py`, 2026-11-02; the spec words it as another site's
   origin, and the code is stricter). The app must send none. `pitfalls.md`.

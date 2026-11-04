@@ -21,3 +21,8 @@ Format:
   Default actor isolation MainActor kept for the app target. Hardened runtime left off: it matters
   for notarization, and the app is ad-hoc signed (`product.md`, "Packaging"). Built and checked via
   Xcode MCP.
+
+- 2026-11-02: The app allows plain HTTP to any host (`NSAllowsArbitraryLoads`, maintainer). The proving
+  host is named by a fully qualified name that `NSAllowsLocalNetworking` does not cover, the host API
+  is HTTP-only until it serves TLS, and a domain exception would write one network into the app.
+  Revisit when the host gains TLS. `openspec/changes/walking-skeleton/design.md`.

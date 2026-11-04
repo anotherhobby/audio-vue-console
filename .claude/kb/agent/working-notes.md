@@ -20,8 +20,29 @@ and the API version, or a version mismatch. A `Core` local Swift package that ca
 SwiftUI, from the start; views stay in the app target for now. The OpenAPI client generator and
 `/v1/events` are change 2's first decision.
 
-Done: the template settings (`decisions-log.md`). Not yet proposed in OpenSpec; nothing committed.
+Done: the template settings (`decisions-log.md`). Proposed as `openspec/changes/walking-skeleton`
+(2026-11-02), not yet reviewed or applied.
 
 For the change to settle, from memory and unverified on macOS 27: connecting to a LAN host may need
 `NSLocalNetworkUsageDescription` (local network privacy), and plain HTTP to a `.local` name needs
 ATS's `NSAllowsLocalNetworking`. Also a test target or `swift test` on `Core` only.
+
+## Change order after the walking skeleton (maintainer, 2026-11-02)
+
+1. `walking-skeleton` (proposed). 2. Canvas spike: two days on stub data, the riskiest UI.
+3. Pairing (measure Keychain under ad-hoc signing first), moved ahead of the client (maintainer,
+2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
+a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (client generator decided first,
+from a saved contract; `/v1/events` hand-written). 5. Discovery (the host side is built). Scene editing
+on a real host waits on audio-vue's settings documents and card tiles.
+
+## Canvas rulings, pending `product.md` (maintainer, 2026-11-02)
+
+- The grid's shape comes from the connected panel: `/v1/host`'s `width_px`/`height_px` and the scene's
+  `grid` in `/v1/state`. When it cannot be told, 16:9 (64x36) is the default. 96x36 at 8:3 is only the
+  maintainer's display; most users are expected to be 16:9.
+- Cards never overlap.
+- A card is refused on drop unless its cells are free; no push and no swap.
+- A resize stops at the neighbouring card's edge, by the same rule as a drop.
+- Grouping: select cards (click, shift-click, marquee), then Group (⌘G), enabled only when the
+  selection tiles a rectangle, saying why when not; a group moves and is removed as one; Ungroup ⇧⌘G.

@@ -1,4 +1,14 @@
-schema: spec-driven
+schema: code-aligned
+
+references:
+  - audio-vue
+
+rules:
+  proposal:
+    - Under Impact, name each spec of a referenced project (`references:` above) this change relies on, as `<store>:<spec-id>`, or say none.
+  alignment:
+    - Read each referenced spec the proposal names in full (`openspec show <spec-id> --type spec --store <store>`), and check every requirement the plan relies on says what the plan assumes. Check that project's open changes (`openspec list --store <store>`, then `openspec show <change> --type change --store <store> --json --deltas-only`) for a delta to it; one is a finding, since it can change under the plan.
+    - Where this change modifies a spec of ours that a referenced project's open change names under its Impact, that is a finding too, so the maintainer knows to tell that project's session.
 
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.

@@ -54,3 +54,11 @@ unchecked there. Keep logic in packages and the shell thin.
   ("Unknown build setting"). Edit `project.xcproj` directly for those; Xcode reloads it.
 - After an on-disk edit to `project.xcproj`, the workspace ID returned by `XcodeOpenWorkspace`
   goes stale ("No active scheme"). Call `XcodeListWorkspaces` and use the window's `windowtab-*` ID.
+
+## A SwiftUI List crashed inside the scene editor (2026-11-02)
+
+`List(selection:)` with two sections of thumbnail rows, in an `HSplitView` with an `.inspector` and
+a toolbar, crashed at 1280x760 with `fatalError in TableViewListCore_Mac2.swift:5556` (macOS 27.2),
+in previews and the running app. Each part alone rendered; the cause was not isolated (not the tag,
+`onAppear` selection, title or row height). The scene strip became a `ScrollView` of tiles, which
+suits a Keynote-style navigator anyway. Bisect with probe `#Preview`s and `RenderPreview`.
