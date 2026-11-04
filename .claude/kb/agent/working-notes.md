@@ -20,14 +20,14 @@ and the API version, or a version mismatch. A `Core` local Swift package that ca
 SwiftUI, from the start; views stay in the app target for now. The OpenAPI client generator and
 `/v1/events` are change 2's first decision.
 
-Done: the template settings (`decisions-log.md`). `openspec/changes/walking-skeleton` is built,
-14 of 14 tasks, and passed the manual run against the proving host (2026-11-03). Next: the
-maintainer's review, then archive. audio-vue is naming the default port in `host-store`
-(`alignment.md` F4); check it landed before archiving.
+Done (2026-11-03): built, run against the proving host, and archived as
+`openspec/changes/archive/2026-11-03-walking-skeleton`; its specs are now `host-connection` and
+`app-boundaries`. Open: audio-vue is naming the default port in `host-store` (archived
+`alignment.md` F4). Once it lands, update `host-connection`'s Source line, which says no spec names it.
 
 ## Change order after the walking skeleton (maintainer, 2026-11-02)
 
-1. `walking-skeleton` (proposed). 2. Canvas spike: two days on stub data, the riskiest UI.
+1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike: two days on stub data, the riskiest UI.
 3. Pairing (measure Keychain under ad-hoc signing first), moved ahead of the client (maintainer,
 2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
 a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (client generator decided first,

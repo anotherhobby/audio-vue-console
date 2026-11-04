@@ -48,4 +48,4 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
 - `.claude/`: the KB, plus the twelve `openspec-*` skills under `skills/`.
 - `openspec/`: OpenSpec planning (`config.yaml`, `specs/`, `changes/`). The `code-aligned` schema
   (`openspec/schemas/`), with audio-vue registered as a referenced store and rules that check its
-  specs.
+  specs. Main specs: `host-connection` and `app-boundaries` (from `walking-skeleton`, 2026-11-03).
