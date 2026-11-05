@@ -78,6 +78,30 @@ lapses after a time and a number of wrong tries, and one pairing runs at a time.
 - **WHEN** the host cannot show a code because its panel is not running
 - **THEN** the app says the panel must be running to pair
 
+### Requirement: A mistyped code is typed again
+
+After a wrong code, the app SHALL let the user type the code again at once, and SHALL NOT ask for a
+new code while its own code still stands on the panel. It SHALL offer a new code once the code has
+lapsed or the host says none is showing.
+
+Source: Decision (maintainer, 2026-11-04): typos are common and should not cost a wait; audio-vue
+`control-service` lets one code take several wrong tries, and refuses a new code while one stands.
+
+#### Scenario: Typing the code again
+
+- **WHEN** the user sends a wrong code with tries left
+- **THEN** the code field is cleared for the code to be typed again, and sending the right code pairs
+
+#### Scenario: Asking while the code stands
+
+- **WHEN** the app's code still stands on the panel after a wrong code
+- **THEN** the app does not ask the host for a new code
+
+#### Scenario: After the code lapses
+
+- **WHEN** the code's time has passed
+- **THEN** the app offers to ask for a new code
+
 ### Requirement: The app keeps one token per host
 
 The app SHALL keep one token for each host it has paired with, across launches and updates of the app,

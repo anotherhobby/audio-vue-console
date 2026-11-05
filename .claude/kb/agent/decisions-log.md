@@ -43,3 +43,9 @@ Format:
   must type the login password to read its own Keychain item, so every update and every Xcode rebuild
   would prompt (`pitfalls.md`). The token reaches only a LAN host and is revocable per client. A
   Keychain store can replace the file once there is a team, whose partition ID is stable.
+- 2026-11-04: A screen's default (blue) button is the next step the user should take, and a step
+  already done goes plain (maintainer, after the connect window kept Connect blue once connected,
+  beside an unpaired host's Pair button). First applied in `ConnectView.swift`: Connect until
+  connected at the typed address, then Reconnect, plain, with Pair with This Host… the default.
+- 2026-11-04: The app connects at launch to the last address a host answered at (maintainer,
+  reversing walking-skeleton's "never on its own"): `HostConnection.connectAtLaunch()`.

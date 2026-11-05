@@ -5,13 +5,14 @@ import Testing
 /// `host-connection`, "The app checks API compatibility on connect".
 struct APIVersionTests {
     @Test(arguments: [
-        ("1.4.2", APIVersion.Compatibility.compatible),
-        ("1.0.0", .compatible),
-        ("2.0.0", .hostNewer),
+        ("2.4.2", APIVersion.Compatibility.compatible),
+        ("2.0.0", .compatible),
+        ("3.0.0", .hostNewer),
+        ("1.0.0", .hostOlder),
         ("0.9.0", .hostOlder),
-        ("1.0.0-rc.1", .compatible),
-        ("2.0.0-beta+exp.sha.5114f85", .hostNewer),
-        ("1.2.3+build.7", .compatible),
+        ("2.0.0-rc.1", .compatible),
+        ("3.0.0-beta+exp.sha.5114f85", .hostNewer),
+        ("2.2.3+build.7", .compatible),
     ])
     func theVerdict(text: String, verdict: APIVersion.Compatibility) throws {
         #expect(try #require(APIVersion(parsing: text)).compatibility == verdict)

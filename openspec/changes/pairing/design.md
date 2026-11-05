@@ -93,8 +93,10 @@ The app picks its message's kind from the call and status (D4) and shows the hos
 it. A 503 is also the host's answer when a running panel would not show a code, so the kind reads
 "the panel can't show a code" and the detail says which (F11). Whether a
 wrong code left tries or withdrew the code is only in the detail, so the app does not parse it; after a
-403, it offers to send another code and to ask for a new one, and the host's answer to either says
-which applies. The `Retry-After` seconds of a 429 enable asking again when they have passed.
+403, it clears the field for the code to be typed again, and a withdrawn code shows itself as the
+next send's 409. It never asks while its own code stands, since the host answers that with 409 too:
+the maintainer's run (2026-11-04) took "Ask for a New Code" after a typo and was left waiting out
+the code and the cooldown. `HostPairing.mayAsk(at:)` holds the rule. The `Retry-After` seconds of a 429 enable asking again when they have passed.
 
 Alternative: counting tries from `PairingShown.tries`. It duplicates the host's count and goes wrong
 if the host changes its rule. Rejected.
@@ -116,10 +118,16 @@ in `ConsoleCore` runs one pairing (asking, waiting for a code, confirming, refus
 `PairedClients` model loads, lists and revokes, marking this app by its `client_id`.
 
 `HostConnection` owns the `HostClient` and the `TokenStore`, and makes a `HostPairing` or a
-`PairedClients` for the host it is connected to when the view opens a sheet. Each reports back to the
-connection that made it, which moves to paired or not paired. `ConnectView` keeps its one `@State`
-connection, so no view wires models to one another (F6). The app target adds a pairing sheet and a
+`PairedClients` for the host it is connected to, which it holds while shown (`pairing`, `clients`).
+Each reports back to the connection that made it, which moves to paired or not paired. The App holds
+the one connection, so closing the connect window keeps it, and the window and the Host menu open the
+same sheets; no view wires models to one another (F6). The app target adds a pairing sheet and a
 clients list, which call these models only (`app-boundaries`).
+
+The connect window is a single `Window` with its own Pairing section, and a Host menu offers Pair…
+and Show Clients…, after the maintainer found the first build's status-row button hard to find
+(2026-11-04). The panel window's Overview and Access pages take pairing over in the panel client
+change, which builds that window.
 
 A client's `paired_at` is a string in the contract; the store writes ISO 8601 to the second with an
 offset (`host_store.py`, `add_client`). The app reads it as ISO 8601 and shows the date, or the text as

@@ -34,10 +34,14 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   "build-phase": { "build-phase": "frameworks" } }]` (written by Xcode's Add Local, 2026-11-03).
   `INFOPLIST_FILE` is `AudioVueConsole-Info.plist` at the root, a partial plist Xcode merges with
   the generated one (ATS only); it sits outside the synchronized folder so it is not a resource.
-- `AudioVueConsole/`: the app target's sources. `AudioVueConsoleApp.swift` (the `App`: the connect
-  window, and in Debug builds a second "UI Sketch" window from the Window menu), `ConnectView.swift`
-  (binds `HostConnection`; `ConnectForm` takes a state so previews show each), assets, and
-  `Sketches/`, the throwaway clickable UI sketch, whose scene editor now hosts the kept canvas.
+- `AudioVueConsole/`: the app target's sources. `AudioVueConsoleApp.swift` (the `App`: it owns the
+  one `HostConnection`, so closing the window keeps it; the single "Host Connection" window; an app
+  delegate that keeps the app running with no window; and in Debug builds a second "UI Sketch"
+  window from the Window menu), `ConnectView.swift` (binds the connection, connects at launch, and
+  opens the pairing and clients sheets; `ConnectForm` takes a state so previews show each),
+  `PairingSheet.swift` and `ClientsSheet.swift` (each a form taking plain values, for previews),
+  `HostCommands.swift` (the Host menu: Pair, Show Clients), assets, and `Sketches/`, the throwaway
+  clickable UI sketch, whose scene editor now hosts the kept canvas (`pairing`, 2026-11-04).
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
   marquee and keys into editor calls; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands`
@@ -50,6 +54,14 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Its scene layout (`SceneLayout`, `SceneLayoutEdits`, `LayoutRefusal`, `GridGeometry`,
   `SceneEditor`) holds every canvas rule: a layout value is always one the panel would load, each
   edit returns a new one or a refusal, and the editor owns selection and undo.
+  Its host side (`pairing`, 2026-11-04): `HostClient` builds every request in one `send` (method,
+  JSON body, optional Bearer token, never `Origin`) through `HostTransport.send`, with the calls by
+  subject in `HostClient+Pairing.swift` and `HostClient+Clients.swift` and statuses named in
+  `HTTPStatus`. `HostConnection` owns the client and the `TokenStore`, says whether the app is
+  paired, and makes and holds the `HostPairing` and `PairedClients` models the sheets show.
+  `TokenStore.swift` holds the protocol and `Pairings`, the rules every store follows;
+  `FileTokenStore` writes `pairings.json` in Application Support, owner-only. `ClientName` is the
+  name the app pairs under. Tests drive it all through `FakeTransport`, which answers by route.
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:
   no SwiftUI or AppKit import under `ConsoleCore/Sources`, and no `import Network` or `URLSession`
   under `AudioVueConsole/`. It finds the repository from `#filePath`, so moving the test file

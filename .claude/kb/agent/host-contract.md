@@ -64,6 +64,11 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
   confirming answers 403 for a wrong code and 409 when none is showing (lapsed or withdrawn). The
   header is in the code, not the contract (Read, `pairing.py` and `app.py`, 2026-11-04; the maintainer
   is asking audio-vue to declare it). A client's `paired_at` is ISO 8601 to the second, UTC.
+- A wrong code costs one of the five tries and leaves the code standing; asking for a new code
+  while it stands is refused with 409, and the 30 s wait follows every end, a success or a lapse as
+  well as a withdrawal (Measured, the maintainer's run, 2026-11-04: an app that asked again after a
+  typo waited out the 120 s code, then 30 s). The maintainer is asking audio-vue to keep the wait
+  for a withdrawal only.
 - HTTP is fine on a LAN. TLS comes before the API can update software.
 
 ## Scenes and commands (Built, `control-commands`, `scene-reload`)

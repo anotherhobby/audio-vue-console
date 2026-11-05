@@ -50,6 +50,26 @@ not answer.
 - **WHEN** the host answers with API version `2.0.0` and a null schema
 - **THEN** the app shows it is connected, and that the panel is not answering
 
+### Requirement: The app remembers the last address
+
+The app SHALL remember the last address a host answered at and, when it next launches, SHALL connect
+to it once without being asked, showing whether it is paired. With no address remembered it SHALL
+send nothing at launch.
+
+Source: Decision (walking-skeleton): retyping an address on every launch is friction in daily use.
+Decision (maintainer, 2026-11-04): once paired, a launch that waits for Connect is a step for nothing.
+
+#### Scenario: Relaunching
+
+- **WHEN** the user connected to `audio-vue` and relaunches the app
+- **THEN** the address field holds `audio-vue`, and the app connects to it and shows whether it is
+  paired
+
+#### Scenario: A first launch
+
+- **WHEN** the app launches with no address remembered
+- **THEN** it sends nothing and waits for an address
+
 ## ADDED Requirements
 
 ### Requirement: Connecting says whether the app is paired

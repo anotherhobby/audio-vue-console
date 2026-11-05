@@ -48,7 +48,9 @@ maintainer for when the editor is built out, not recorded.
 
 ## Pairing (2026-11-04)
 
-Keychain under ad-hoc signing measured first: every build is asked for the login password to read its
-own item (`pitfalls.md`), so tokens go in a container file (`decisions-log.md`). Planned as the
-`pairing` change. audio-vue's `settings-store` is archived and deployed: every route but pairing and
-the version takes a token, and the API is 2.0.0, which the app (major 1) refuses until `pairing`.
+Built and run against the proving host by the maintainer (`pairing` change, awaiting review and
+archive). Tokens are in a container file, not the Keychain (`decisions-log.md`). Next is the panel
+client (change order item 4). For it: the panel window's Overview should show paired or not with a
+Pair button, and its Access page should hold the clients list, as the UI sketch lays out
+(maintainer, 2026-11-04); the connect window's Pairing section and the Host menu
+(`HostCommands.swift`) hold pairing until then.

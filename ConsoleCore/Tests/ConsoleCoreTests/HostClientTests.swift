@@ -67,6 +67,48 @@ struct HostClientTests {
             .unexpectedAnswer, from: FakeTransport(.failure(URLError(.badServerResponse))))
     }
 
+    @Test func aRequestWithATokenCarriesItAsBearer() async throws {
+        let transport = FakeTransport([.host: .status(200, "{}")])
+        _ = try await HostClient(transport: transport)
+            .send(.get, "v1/host", at: try #require(address), token: HostToken("secret"))
+        let request = try #require(await transport.requests.first)
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer secret")
+        #expect(request.value(forHTTPHeaderField: "Origin") == nil)
+    }
+
+    @Test func aRequestWithNoTokenCarriesNone() async throws {
+        let transport = FakeTransport.version()
+        _ = try await HostClient(transport: transport).version(at: try #require(address))
+        let request = try #require(await transport.requests.first)
+        #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+
+    @Test func aBodyGoesAsJSON() async throws {
+        struct Body: Encodable { let name: String }
+        let transport = FakeTransport([.ask: .status(200, "{}")])
+        _ = try await HostClient(transport: transport).send(
+            .post, "v1/pairing", at: try #require(address), body: Body(name: "hobbymac"))
+        let request = try #require(await transport.requests.first)
+        #expect(request.httpMethod == "POST")
+        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+        #expect(request.value(forHTTPHeaderField: "Origin") == nil)
+        let body = try #require(request.httpBody)
+        #expect(String(bytes: body, encoding: .utf8) == #"{"name":"hobbymac"}"#)
+    }
+
+    @Test func aRefusedTokenIsToldApart() async throws {
+        let transport = FakeTransport([.host: .status(401, #"{"detail": "pair first"}"#)])
+        let address = try #require(address)
+        await #expect(throws: HostFailure.tokenRefused) {
+            try await HostClient(transport: transport)
+                .send(.get, "v1/host", at: address, token: HostToken("stale"))
+        }
+    }
+
+    @Test func aTokenHidesItsValueWhenPrinted() {
+        #expect(!"\(HostToken("secret"))".contains("secret"))
+    }
+
     private func expectFailure(_ failure: HostFailure, from transport: FakeTransport) async {
         guard let address else {
             Issue.record("The test address did not parse")

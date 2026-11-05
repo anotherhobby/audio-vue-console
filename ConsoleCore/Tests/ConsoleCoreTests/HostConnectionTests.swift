@@ -9,7 +9,8 @@ import Testing
         _ transport: FakeTransport, store: MemoryAddressStore = MemoryAddressStore(),
         typing text: String = "audio-vue"
     ) -> HostConnection {
-        let connection = HostConnection(client: HostClient(transport: transport), store: store)
+        let connection = HostConnection(
+            client: HostClient(transport: transport), store: store, tokens: InMemoryTokenStore())
         connection.addressText = text
         return connection
     }
@@ -37,21 +38,21 @@ import Testing
     }
 
     @Test func aCompatibleHost() async throws {
-        let connection = connection(FakeTransport.version("1.4.2", schema: "3"))
+        let connection = connection(FakeTransport.version("2.0.0", schema: "3"))
         await connection.connect()
-        guard case .connected(let address, let version) = connection.state else {
+        guard case .connected(let address, let version, paired: false) = connection.state else {
             Issue.record("Not connected: \(connection.state)")
             return
         }
         #expect(address.description == "audio-vue")
-        #expect(version.api.description == "1.4.2")
+        #expect(version.api.description == "2.0.0")
         #expect(version.schema == 3)
     }
 
     @Test func thePanelIsDown() async {
         let connection = connection(FakeTransport.version(schema: "null"))
         await connection.connect()
-        guard case .connected(_, let version) = connection.state else {
+        guard case .connected(_, let version, _) = connection.state else {
             Issue.record("Not connected: \(connection.state)")
             return
         }
@@ -59,8 +60,8 @@ import Testing
     }
 
     @Test(arguments: [
-        ("2.0.0", APIVersion.Compatibility.hostNewer),
-        ("0.9.0", .hostOlder),
+        ("3.0.0", APIVersion.Compatibility.hostNewer),
+        ("1.0.0", .hostOlder),
     ])
     func anIncompatibleHostIsNotConnected(api: String, verdict: APIVersion.Compatibility) async {
         let connection = connection(FakeTransport.version(api))
@@ -91,14 +92,15 @@ import Testing
             .connect()
         #expect(store.saved == "audio-vue")
         let relaunched = HostConnection(
-            client: HostClient(transport: FakeTransport.version()), store: store)
+            client: HostClient(transport: FakeTransport.version()), store: store,
+            tokens: InMemoryTokenStore())
         #expect(relaunched.addressText == "audio-vue")
         #expect(relaunched.state == .idle)
     }
 
     @Test func anIncompatibleHostsAddressIsSavedToo() async {
         let store = MemoryAddressStore()
-        await connection(FakeTransport.version("2.0.0"), store: store).connect()
+        await connection(FakeTransport.version("3.0.0"), store: store).connect()
         #expect(store.saved == "audio-vue")
     }
 
@@ -116,7 +118,30 @@ import Testing
     @Test func nothingIsSentAtLaunch() async {
         let transport = FakeTransport.version()
         let connection = HostConnection(
-            client: HostClient(transport: transport), store: MemoryAddressStore(saved: "audio-vue"))
+            client: HostClient(transport: transport), store: MemoryAddressStore(saved: "audio-vue"),
+            tokens: InMemoryTokenStore())
+        #expect(connection.state == .idle)
+        #expect(await transport.requests.isEmpty)
+    }
+
+    @Test func relaunchingConnectsToTheLastAddressOnce() async {
+        let transport = FakeTransport.version()
+        let connection = HostConnection(
+            client: HostClient(transport: transport), store: MemoryAddressStore(saved: "audio-vue"),
+            tokens: InMemoryTokenStore())
+        await connection.connectAtLaunch()
+        #expect(connection.addressText == "audio-vue")
+        #expect(connection.isPaired == false)
+        await connection.connectAtLaunch()
+        #expect(await transport.requests(to: .version).count == 1)
+    }
+
+    @Test func aFirstLaunchSendsNothing() async {
+        let transport = FakeTransport.version()
+        let connection = HostConnection(
+            client: HostClient(transport: transport), store: MemoryAddressStore(),
+            tokens: InMemoryTokenStore())
+        await connection.connectAtLaunch()
         #expect(connection.state == .idle)
         #expect(await transport.requests.isEmpty)
     }

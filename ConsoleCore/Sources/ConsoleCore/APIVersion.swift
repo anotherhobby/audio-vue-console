@@ -1,7 +1,7 @@
-/// A host API's semantic version, read by its numeric core: `1.4.2-rc.1+abc` is 1.4.2.
+/// A host API's semantic version, read by its numeric core: `2.4.2-rc.1+abc` is 2.4.2.
 public struct APIVersion: Sendable, Hashable, CustomStringConvertible {
     /// The one major version this app speaks. Minor releases are taken to be additive.
-    public static let supportedMajor = 1
+    public static let supportedMajor = 2
 
     public let major: Int
     public let minor: Int
