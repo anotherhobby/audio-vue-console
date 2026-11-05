@@ -25,8 +25,7 @@ Done (2026-11-03): built, run against the proving host, and archived as
 ## Change order after the walking skeleton (maintainer, 2026-11-02)
 
 1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike (archived 2026-11-04).
-3. Pairing (measure Keychain under ad-hoc signing first), moved ahead of the client (maintainer,
-2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
+3. Pairing (archived 2026-11-05), moved ahead of the client (maintainer, 2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
 a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (client generator decided first,
 from a saved contract; `/v1/events` hand-written). 5. Discovery (the host side is built). Scene editing
 on a real host waits on audio-vue's settings documents and card tiles.
@@ -48,8 +47,9 @@ maintainer for when the editor is built out, not recorded.
 
 ## Pairing (2026-11-04)
 
-Built and run against the proving host by the maintainer (`pairing` change, awaiting review and
-archive). Tokens are in a container file, not the Keychain (`decisions-log.md`). Next is the panel
+Built, run against the proving host by the maintainer, and archived as
+`openspec/changes/archive/2026-11-05-pairing` (2026-11-05); its specs are now `host-pairing` and the
+updated `host-connection`. Tokens are in a container file, not the Keychain (`decisions-log.md`). Next is the panel
 client (change order item 4). For it: the panel window's Overview should show paired or not with a
 Pair button, and its Access page should hold the clients list, as the UI sketch lays out
 (maintainer, 2026-11-04); the connect window's Pairing section and the Host menu
