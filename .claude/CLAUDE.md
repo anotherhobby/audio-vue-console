@@ -100,3 +100,13 @@ When that happens, stop and raise it with the user in the moment. Show the findi
 - For a size finding, the gate's own `propose` command records the case, and the user approves it. Explain the case to the user as well. Do not just file it.
 - For any other finding, nothing can keep it, so ask. Do not work around it, and do not leave it unfixed.
 - Never restructure code only to hide it from the gate.
+
+## Host Versions
+
+**Follow the host; nothing is backward until a release.** Neither audio-vue nor this app is released, and the maintainer is the only user. Until the maintainer declares a release:
+
+- The app supports exactly one host API: the saved contract's. A new one replaces it. Write no version ranges, second majors, shims or fallbacks for an older host.
+- At the start of project work, regenerate audio-vue's contract (`make openapi` in `../audio-vue`) and diff it, and the settings schema's version, against the saved copy. If nothing the app uses changed, refresh the saved copy and say so in one line. Otherwise read the diff and propose one OpenSpec change that brings the app up to it.
+- The app's own stored data has no migrations. A changed format discards the old file; tokens are re-paired.
+- Say nothing about versions, compatibility or migrations in chat, plans or proposals. A step only the maintainer or audio-vue can take is listed as a plain next step.
+- Record no API or schema version numbers in the KB or specs. Point to where the current one is read instead.

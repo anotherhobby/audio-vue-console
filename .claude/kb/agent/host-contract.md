@@ -23,10 +23,10 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
 - The proving host runs Pi OS (since 2026-11-02; audio-vue ships an SD image by default, with manual
   install as an option). It answers as `audio-vue.local`, and the LAN's DNS names it
   `audio-vue.cabin.hobbysprawl.com`, or `audio-vue` by the search domain (Measured, 2026-11-03;
-  the host was `audio-image` before). `GET /v1/version` answers `{"api": "1.0.0", "schema": 1}`, and
-  any `Origin` header gets a 403 (Measured, 2026-11-02); `{"api": "2.0.0", "schema": 1}` since
-  `settings-store` (Measured, 2026-11-04). The contract requires only `api`, so treat a
-  missing `schema` as null.
+  the host was `audio-image` before). `GET /v1/version` answers `{"api": ..., "schema": ...}`
+  (Measured, 2026-11-02). The contract requires only `api`, so treat a missing `schema` as null.
+- Record no version numbers in this KB; they go stale. The saved contract, `GET /v1/version` and
+  `make openapi` in `../audio-vue` say what is current.
 - The agent's default port, 19200, is `DEFAULT_PORT` in `../audio-vue/src/host_store.py`; no spec
   names it (2026-11-03).
 
@@ -39,7 +39,7 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
 - Withdrawn when the agent stops; nothing announced when bound to loopback or with no responder.
   A typed address stays supported.
 - The proving host announces `audio-vue` at `audio-vue.local:19200`, TXT `id=779b365c-...`,
-  `api=1.0.0` (Measured, `dns-sd -L`, 2026-11-03).
+  and `api` (Measured, `dns-sd -L`, 2026-11-03).
 
 ## Pairing and tokens (Built, `control-service`)
 
@@ -54,8 +54,6 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
   `GET /v1/version` (Built: audio-vue `settings-store`, archived 2026-11-04; Measured on the proving
   host, 2026-11-04: `{"detail": "pair first: this takes a token"}` with a 401). So an unpaired app
   knows only the version and the TXT record; the display shape and the contract come after pairing.
-- Closing the reads made the API 2.0.0 (audio-vue `6eb0c3e`). The app supports major 2 only from the
-  `pairing` change (maintainer, 2026-11-04).
 - A request with any `Origin` header is refused: HTTP with a 403, a WebSocket closed with 1008
   (Read, `NoOrigin` in `src/control_service/app.py`, 2026-11-02; the spec words it as another site's
   origin, and the code is stricter). The app must send none. `pitfalls.md`.
