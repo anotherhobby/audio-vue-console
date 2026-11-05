@@ -22,6 +22,8 @@ A scene's `name` is a label (`Glass check`); its spec is the filename stem the h
 audio-vue this hid on macOS, where a case-insensitive filesystem resolved labels that differed only in
 case, and failed on the Pi. Anything the app hands back to the host as a scene's identity uses the
 spec. `../audio-vue/.claude/kb/agent/pitfalls.md`, "A scene's `name` is a label".
+Since `settings-store` (2026-11-04), a stored scene's identity is the UUID the host assigned, and a
+built-in's is still its stem; the rule holds for both.
 
 ## A token can stop working without a revocation (2026-11-02)
 
@@ -89,3 +91,20 @@ actions from the window's manager. The `onAppear` path renders in `RenderPreview
 A drop delegate gets the dragged item only at `performDrop`, but the canvas previews a card's size
 while it hovers. The library's tile uses `onDrag` to set `SceneStore.draggedKind` as the drag
 starts, in place of `.draggable`, and the drop delegate reads the kind from there.
+
+## An ad-hoc signed app loses silent access to its Keychain items on every build (2026-11-04)
+
+Measured with a sandboxed, ad-hoc signed probe (the app's entitlements, its own bundle ID), macOS 27.2:
+
+- The data-protection keychain (`kSecUseDataProtectionKeychain`) is closed: `SecItemAdd` gives
+  `-34018 errSecMissingEntitlement`, since there is no team and so no access group.
+- The login keychain works, from inside the sandbox, and silently within one build. The item's ACL
+  and its partition ID are both the build's cdhash.
+- A new build (any rebuilt or updated app) reading it gets a dialog asking for the **login
+  password**, with Always Allow, Deny and Allow. Allow lasts one read. Always Allow adds that build to
+  the ACL and the partition list, so the next build asks again. Deny gives `-128 errSecUserCanceled`.
+- `kSecUseAuthenticationUIFail` does not stop the dialog.
+- Pinning the designated requirement to the identifier (`codesign -s - -r='designated => identifier
+  "…"'`) changes the ACL, but the partition ID stays `cdhash:…`, and the dialog still comes.
+- A new build can `SecItemUpdate` or `SecItemDelete` an item it cannot read, silently, and then owns
+  what it adds.

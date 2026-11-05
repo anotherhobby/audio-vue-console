@@ -2,9 +2,6 @@
 
 Record short-lived but useful task context here. When touching `working-notes.md`, remove stale task notes that no longer help future work.
 
-- 2026-11-02: Recommended first step per `product.md`: a two-day canvas spike (snap, resize,
-  groups by drag and drop) against a stub host. Since recommended to run it inside the scaffolded
-  app, after the first change, since it touches only the UI layer.
 - 2026-11-02: The Swift quality gate 0.3.0 is installed and enabled at user scope. Its rules:
   `product.md`, "The quality gate".
 
@@ -48,3 +45,10 @@ maintainer for when the editor is built out, not recorded.
 - A resize stops at the neighbouring card's edge, by the same rule as a drop.
 - Grouping: select cards (click, shift-click, marquee), then Group (⌘G), enabled only when the
   selection tiles a rectangle, saying why when not; a group moves and is removed as one; Ungroup ⇧⌘G.
+
+## Pairing (2026-11-04)
+
+Keychain under ad-hoc signing measured first: every build is asked for the login password to read its
+own item (`pitfalls.md`), so tokens go in a container file (`decisions-log.md`). Planned as the
+`pairing` change. audio-vue's `settings-store` is archived and deployed: every route but pairing and
+the version takes a token, and the API is 2.0.0, which the app (major 1) refuses until `pairing`.

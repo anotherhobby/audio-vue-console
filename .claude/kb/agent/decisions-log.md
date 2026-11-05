@@ -37,3 +37,9 @@ Format:
   `onDrop(of:delegate:)` for the library. Confirmed by the maintainer's manual run (`canvas-spike`
   5.1, 2026-11-04): every `scene-canvas` scenario held. UI quirks were seen but held for a later
   change, since none contradicts a scenario. `openspec/changes/archive/2026-11-04-canvas-spike/design.md`.
+
+- 2026-11-04: Pairing tokens are kept in a file in the app's sandbox container, owner-only, behind a
+  token-store seam in `ConsoleCore`, not in the Keychain (maintainer). Ad-hoc signed, every new build
+  must type the login password to read its own Keychain item, so every update and every Xcode rebuild
+  would prompt (`pitfalls.md`). The token reaches only a LAN host and is revocable per client. A
+  Keychain store can replace the file once there is a team, whose partition ID is stable.
