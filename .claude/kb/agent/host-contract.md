@@ -5,6 +5,9 @@ in order: the running agent's `/v1/openapi.json`; audio-vue's specs `control-api
 `host-store`, `control-state` and `control-commands` (`../audio-vue/openspec/specs/`); its open changes
 `settings-schema` and `settings-documents` (`../audio-vue/openspec/changes/`); and
 `../audio-vue/.claude/kb/agent/host-platform.md`. Check them before building against anything here.
+The saved contract the app is generated from stands level with audio-vue's specs as a source for host
+behaviour: what only it and the code state (the `/v1/events` message shape, 401 and Bearer, 403 and
+1008) needs no spec before the app relies on it (maintainer, 2026-11-05).
 
 Each item is **Built** (in audio-vue and running on the proving host) or **Planned** (an open change or
 a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairing as of 2026-11-05.

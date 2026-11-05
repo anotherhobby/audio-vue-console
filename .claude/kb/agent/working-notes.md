@@ -50,7 +50,10 @@ maintainer for when the editor is built out, not recorded.
 Built, run against the proving host by the maintainer, and archived as
 `openspec/changes/archive/2026-11-05-pairing` (2026-11-05); its specs are now `host-pairing` and the
 updated `host-connection`. Tokens are in a container file, not the Keychain (`decisions-log.md`). Next is the panel
-client (change order item 4). For it: the panel window's Overview should show paired or not with a
-Pair button, and its Access page should hold the clients list, as the UI sketch lays out
-(maintainer, 2026-11-04); the connect window's Pairing section and the Host menu
-(`HostCommands.swift`) hold pairing until then.
+client (change order item 4), started 2026-11-05 as `openspec/changes/panel-client`. For it: the
+panel window has no Access page; the connect window's details, pairing among them, move into a Pairing
+section of the Overview, so they are all in one spot (maintainer, 2026-11-05, replacing the 2026-11-04
+Access ruling). Also ruled 2026-11-05: the Host Connection window is retired, the panel window
+becomes the app's window, and an address is typed in the panel picker's Add Panel…; the clients list
+is inline in the Pairing section; Overview keeps its sketched sections in order (Panel, Capture,
+Calibration) with Pairing last, and shows `—` for any value not read from the host yet.
