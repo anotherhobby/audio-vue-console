@@ -7,7 +7,7 @@ in order: the running agent's `/v1/openapi.json`; audio-vue's specs `control-api
 `../audio-vue/.claude/kb/agent/host-platform.md`. Check them before building against anything here.
 
 Each item is **Built** (in audio-vue and running on the proving host) or **Planned** (an open change or
-a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-11-04.
+a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairing as of 2026-11-05.
 
 ## Reaching a panel (Built, `control-service`)
 
@@ -44,7 +44,7 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
 ## Pairing and tokens (Built, `control-service`)
 
 - `POST /v1/pairing` shows a six-digit code on the panel for 120 s and five wrong tries, one pairing
-  at a time and 30 s between them. `POST /v1/pairing/confirm` gives the token once. Pairing works
+  at a time, and a 30 s wait only after a code is withdrawn for its wrong tries. `POST /v1/pairing/confirm` gives the token once. Pairing works
   even on the audio-vue screen, where a new host with no ADC sits.
 - One token per client; the app stores one per panel. `GET /v1/clients` lists clients and
   `DELETE /v1/clients/{client_id}` revokes one (Read in the proving host's `/v1/openapi.json`,
@@ -58,15 +58,17 @@ a ruling with no change yet). As of 2026-11-02; pairing and settings as of 2026-
   (Read, `NoOrigin` in `src/control_service/app.py`, 2026-11-02; the spec words it as another site's
   origin, and the code is stricter). The app must send none. `pitfalls.md`.
 - A refusal is `{"detail": "<reason>"}`, worded for people. Asking for a code answers 409 when one is
-  showing, 429 with `Retry-After` in the wait after one ends, 503 when the panel cannot show it;
-  confirming answers 403 for a wrong code and 409 when none is showing (lapsed or withdrawn). The
-  header is in the code, not the contract (Read, `pairing.py` and `app.py`, 2026-11-04; the maintainer
-  is asking audio-vue to declare it). A client's `paired_at` is ISO 8601 to the second, UTC.
+  showing, 429 with `Retry-After` in the wait after a withdrawn code, 503 when the panel cannot show
+  it; confirming answers 403 for a wrong code and 409 when none is showing (lapsed or withdrawn). The
+  contract names only these refusals per route and declares `Retry-After` as an integer of whole
+  seconds, at least 1, not marked required, so a generated client sees it as optional (audio-vue
+  `control-api`, "The contract states the pairing refusals"; Read in `make openapi`'s output,
+  2026-11-05). A client's `paired_at` is ISO 8601 to the second, UTC.
 - A wrong code costs one of the five tries and leaves the code standing; asking for a new code
-  while it stands is refused with 409, and the 30 s wait follows every end, a success or a lapse as
-  well as a withdrawal (Measured, the maintainer's run, 2026-11-04: an app that asked again after a
-  typo waited out the 120 s code, then 30 s). The maintainer is asking audio-vue to keep the wait
-  for a withdrawal only.
+  while it stands is refused with 409. Only a code withdrawn for its wrong tries makes the next
+  pairing wait; a success or a lapse lets the next be asked for at once (audio-vue `control-service`,
+  "Only a withdrawn code makes the next pairing wait", archived 2026-11-05). In audio-vue but not yet
+  deployed to the proving host, which still waits after every end (Measured, 2026-11-04).
 - HTTP is fine on a LAN. TLS comes before the API can update software.
 
 ## Scenes and commands (Built, `control-commands`, `scene-reload`)

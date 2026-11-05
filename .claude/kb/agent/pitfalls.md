@@ -113,7 +113,8 @@ Measured with a sandboxed, ad-hoc signed probe (the app's entitlements, its own 
 
 After a wrong code the host keeps the code for its remaining tries and refuses a new one with 409,
 "a pairing is under way". The first build offered "Ask for a New Code" after a typo, and the
-maintainer's run was left waiting out the 120 s code and the 30 s wait after it. Keep the user on the
+maintainer's run was left waiting out the 120 s code and the 30 s wait after it (a wait the host has
+since dropped after a lapse). Keep the user on the
 code field after a 403 and offer a new code only once the code lapses or the host says none is
 showing (`HostPairing.mayAsk(at:)`, `host-pairing`, "A mistyped code is typed again").
 
