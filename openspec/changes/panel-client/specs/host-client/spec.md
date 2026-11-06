@@ -63,11 +63,12 @@ contract's. The version is read from the saved contract's `info.version`.
 
 ### Requirement: Every call follows the host's rules in one place
 
-Every call the app makes to a host, HTTP and WebSocket alike, SHALL pass through one place that sends
-no `Origin` header and attaches the host's token to every call that takes one.
+Every HTTP call the app makes to a host SHALL pass through one place that sends no `Origin` header
+and attaches the host's token to every call that takes one. The events socket's handshake SHALL follow
+the same rules, carrying the token as that place writes it and no `Origin` header.
 
-Source: audio-vue `control-api`, "The API serves no browser"; audio-vue `control-service`, "Everything
-but pairing and the version takes a token".
+Source: audio-vue `control-api`, "The API serves no browser"; `control-service`, "Everything but
+pairing and the version takes a token". A socket has no middleware (maintainer, 2026-11-06).
 
 #### Scenario: A new route used
 
@@ -101,17 +102,23 @@ connect, then as it changes and in whole every second (the contract's descriptio
 
 ### Requirement: A closed events socket is opened again
 
-When the events socket closes while the app still shows the host, the app SHALL say the state is not
-live and SHALL keep the last state it held, marked as not current, until a new socket gives a state.
-It SHALL try again, waiting longer after each failure up to a limit.
+When the events socket closes, or sends nothing for five seconds, while the app still shows the
+host, the app SHALL close it, say the state is not live and keep the last state it held, marked as
+not current, until a new socket gives a state. It SHALL try again, waiting longer after each failure
+up to a limit.
 
-Source: Inferred (this change): a host restarts its agent on deploy and on reboot, and the app should
-come back without being asked.
+Source: Inferred: an agent restarts on deploy and reboot. Five seconds is five whole-state pushes a
+second apart (the contract); timed by the app (maintainer, 2026-11-06).
 
 #### Scenario: The agent restarts
 
 - **WHEN** the host's agent restarts while the app shows the host
 - **THEN** the app says the state is not live, and shows live state again once the agent answers
+
+#### Scenario: A socket that goes quiet
+
+- **WHEN** the events socket stays open and sends nothing for five seconds
+- **THEN** the app closes it, says the state is not live, and opens it again
 
 #### Scenario: A host that stays away
 

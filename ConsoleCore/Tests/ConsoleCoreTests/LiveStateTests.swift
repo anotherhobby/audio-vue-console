@@ -103,6 +103,20 @@ struct LiveStateTests {
         await watching.value
     }
 
+    @Test func aSilentSocketIsClosedAndOpenedAgain() async throws {
+        let events = ScriptedEvents([.init(messages: [Self.up], end: nil)])
+        let (live, watching) = try watch(events, watchdog: events.silenceAfterTheMessages)
+        await events.settled()
+        await events.settled()
+        // The silence closed the first socket, which had given a state, so the wait stayed short.
+        #expect(events.opened >= 2)
+        #expect(events.cancelled >= 1)
+        #expect(waits.all.first == .seconds(1))
+        #expect(live.state?.condition == .up)
+        watching.cancel()
+        await watching.value
+    }
+
     @Test func cancellingClosesTheSocket() async throws {
         let events = ScriptedEvents([])
         let (live, watching) = try watch(events)
@@ -124,7 +138,8 @@ struct LiveStateTests {
 
     /// A live state of the host at `audio-vue` over `events`, watching in a task.
     private func watch(
-        _ events: ScriptedEvents, transport: FakeTransport = FakeTransport([:])
+        _ events: ScriptedEvents, transport: FakeTransport = FakeTransport([:]),
+        watchdog: @escaping @Sendable (Duration) async -> Void = ScriptedEvents.noSilence
     ) throws -> (LiveState, Task<Void, Never>) {
         let address = try #require(HostAddress(parsing: "audio-vue"))
         let refused = refused
@@ -133,7 +148,7 @@ struct LiveStateTests {
             tokens: tokens)
         let waits = waits
         let live = LiveState(
-            link, events: events, sleep: { await waits.wait($0) },
+            link, events: events, sleep: { await waits.wait($0) }, watchdog: watchdog,
             onTokenRefused: { refused.times += 1 })
         return (live, Task { await live.watch() })
     }

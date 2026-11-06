@@ -91,8 +91,8 @@ compatibility is measured against `SavedContract`'s major, and `supportedMajor` 
 A `HostRules` `ClientMiddleware`, made with the call's token, removes any `Origin` header and adds
 `Authorization: Bearer` to every operation not in `SavedContract`'s open set. `HostClient`'s calls
 keep their `token:` argument, as today, and hand it to the `Client` they build; the per-route code
-never touches a header. A 401 on a call that carried a token is `HostFailure.tokenRefused`, decided
-once in `HostClient` for all calls.
+never touches a header. A 401 on a call that carried a token is thrown by `HostRules` as
+`TokenRefused`, once for all calls, and `HostClient` maps it to `HostFailure.tokenRefused`.
 
 - *Over reading the token from the `TokenStore` in the middleware*: `HostPairing.confirm` reads
   `/v1/host` with the new token before it is saved, since the store is keyed by the host id that read
@@ -112,22 +112,29 @@ does now.
 
 `LiveState`, `@Observable` and `@MainActor` in `ConsoleCore`, holds the newest `PanelState`, whether
 it is live, and runs the socket through an `EventSource` seam: `URLSessionWebSocketTask` in the app,
-a scripted fake in tests. The handshake request is built by the same rules as D4. Each message is
-decoded as the generated `State` and turned into a `PanelState`.
+a scripted fake in tests. The handshake follows D4's rules without passing through `HostRules`, which
+a socket cannot: it carries the token as `HostRules.bearer` writes it, and URLSession adds no `Origin`
+(Measured on the proving host, task 4.4). Each message is decoded as the generated `State` and turned
+into a `PanelState`.
 
 - **Lifetime.** The panel window starts `LiveState.watch()` in a `.task`, so the socket is open while
   the window shows a paired host and closes when it closes, when the host changes, or when the token
   is forgotten. The connection outlives the window; the stream does not need to.
 - **Closing.** On a close or error, the state is kept and marked not live, and the socket is opened
   again after 1 s, doubling to at most 30 s, back to 1 s after a message arrives.
-- **Silence.** The socket's session keeps the five-second request timeout. The host pushes the whole
-  state every second, so five seconds with no message is treated as a close.
+- **Silence.** `LiveState` times it: a watchdog races each socket, and a whole five seconds with no
+  message ends it as a close, cancelling the read and so the socket. The host pushes the whole state
+  every second. An explicit timer over the session's request timeout, whose effect on an open socket
+  URLSession does not document (maintainer, 2026-11-06). The watchdog is injected, as the wait is, so
+  tests time it.
 - **Revoked elsewhere.** The host does not close an open socket when its client is revoked
   (audio-vue's `events` loop checks the token only at the handshake), so the stream runs on until the
   next close; the next request or reopening finds the token refused.
 - **Refusal.** A refused handshake cannot be told from an `Origin` refusal (both 1008), so it is
   followed by `GET /v1/host` with the token. A 401 there forgets the token, as `host-pairing` says,
-  and stops the loop; anything else retries as a close.
+  and stops the loop; anything else retries as a close. The token is forgotten only while it is still
+  the one kept: after pairing again the stored token is new, and the old socket's refusal must not
+  undo it, so the loop stops without forgetting.
 
 ### D7. The Overview's rows are decided in `ConsoleCore`
 
@@ -156,10 +163,14 @@ not paired. The view only lays them out. Formatting:
 - The picker shows the one panel from `HostConnection`; Add Panel… opens a sheet with today's address
   field, status and Connect, and a connect there replaces the held panel. The connect at launch moves
   from `ConnectView`'s `.task` to `PanelWindow`'s.
-- `ConnectionStatus` and `PairingSection` (in `ConnectView.swift`) and `ClientsForm` (in
-  `ClientsSheet.swift`) move to files of their own before those files go, for the sheet and the
-  Pairing section to use. `PairingSheet` stays a sheet. `ConnectView`, `ClientsSheet` and
-  `HostCommands` go.
+- `ConnectionStatus` moves to a file of its own before `ConnectView.swift` goes, for the sheet and the
+  Pairing section to use. The Pairing section's view is `PairingSection` in `OverviewPage.swift`, and
+  `ClientsForm` became `ClientRows` in `ClientsList.swift`, each row asking before it revokes; the
+  Overview loads the list where it makes it, since rows with nothing to show never start a task.
+  `PairingSheet` stays a sheet. `ConnectView`, `ClientsSheet` and `HostCommands` go.
+- The picker's name, shape and up mark are `PanelLabel`, decided in `ConsoleCore` like D7's rows. The
+  mark and the shape sit beside the menu, since a borderless menu shows its label as plain text.
+- The window's sizes are `PanelMetrics`; `SketchMetrics` keeps the sample pages' own.
 - `HostConnection` gains `host: HostIdentity?`, kept from the `/v1/host` read it already makes to
   learn whether it is paired, and makes `LiveState` and `PairedClients` for the window; `showClients()`
   and the `clients` sheet item go, since the list is always shown when paired.

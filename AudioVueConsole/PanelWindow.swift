@@ -32,7 +32,7 @@ struct PanelWindow: View {
             live = connection.liveState()
             await live?.watch()
         }
-        .frame(minWidth: SketchMetrics.windowMinWidth, minHeight: SketchMetrics.windowMinHeight)
+        .frame(minWidth: PanelMetrics.windowMinWidth, minHeight: PanelMetrics.windowMinHeight)
     }
 
     @ViewBuilder private var detail: some View {
@@ -44,19 +44,12 @@ struct PanelWindow: View {
         }
     }
 
-    /// The panel as the picker names it: the host's name and shape once paired, else its address.
+    /// The panel as the picker names it, with the host's identity only while paired.
     private var panelLabel: PanelLabel? {
-        guard let address = connection.address else { return nil }
-        let host = connection.isPaired == true ? connection.host : nil
-        let state = live?.state
-        let width = state?.displayWidthPx ?? host?.widthPx
-        let height = state?.displayHeightPx ?? host?.heightPx
-        return PanelLabel(
-            name: host?.name ?? address.description,
-            shape: width.flatMap { width in
-                height.flatMap { DisplayShape.name(width: width, height: $0) }
-            },
-            isUp: live?.isLive == true && state?.condition == .up)
+        PanelLabel(
+            address: connection.address,
+            host: connection.isPaired == true ? connection.host : nil,
+            state: live?.state, isLive: live?.isLive == true)
     }
 
     /// What the live state is for: the host, and whether it is paired. A new key, as after pairing
@@ -93,13 +86,6 @@ enum PanelSection: String, CaseIterable, Identifiable {
     }
 }
 
-/// How the picker names a panel.
-struct PanelLabel: Equatable {
-    let name: String
-    let shape: String?
-    let isUp: Bool
-}
-
 struct PanelSidebar: View {
     let panel: PanelLabel?
     @Binding var section: PanelSection?
@@ -113,7 +99,7 @@ struct PanelSidebar: View {
         }
         .safeAreaInset(edge: .top) { picker }
         .navigationSplitViewColumnWidth(
-            min: SketchMetrics.sidebarMinWidth, ideal: SketchMetrics.sidebarIdealWidth)
+            min: PanelMetrics.sidebarMinWidth, ideal: PanelMetrics.sidebarIdealWidth)
     }
 
     /// The panel's up mark and shape sit beside the menu, since a borderless menu shows its label
@@ -132,7 +118,7 @@ struct PanelSidebar: View {
             .fixedSize()
             if let shape = panel?.shape { Text(verbatim: shape).foregroundStyle(.secondary) }
         }
-        .padding(SketchMetrics.pickerPadding)
+        .padding(PanelMetrics.pickerPadding)
     }
 }
 
@@ -143,7 +129,7 @@ struct UpMark: View {
     var body: some View {
         Circle()
             .fill(isUp ? Color.green : Color.secondary)
-            .frame(width: SketchMetrics.statusDotSize, height: SketchMetrics.statusDotSize)
+            .frame(width: PanelMetrics.statusDotSize, height: PanelMetrics.statusDotSize)
             .accessibilityLabel(isUp ? "Up" : "Not up")
     }
 }

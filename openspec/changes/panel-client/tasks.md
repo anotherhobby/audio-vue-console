@@ -133,6 +133,16 @@ in 7.1. The window was seen opening by `NSApp.windows` and the window list.
   list leaves it not paired with every value `—`. Record anything surprising in `pitfalls.md`, and
   update `working-notes.md`'s panel-client note
 
+## 8. After the verify (maintainer, 2026-11-06)
+
+- [x] 8.1 Time a silent socket in `LiveState` by an injected watchdog: five seconds with no message
+  closes the socket and opens it again; `host-client`'s "A closed events socket is opened again"
+  gains the scenario. Verify `LiveStateTests.aSilentSocketIsClosedAndOpenedAgain`, three runs
+- [x] 8.2 Move the picker's naming to `PanelLabel` in `ConsoleCore`. Verify `PanelLabelTests`
+- [x] 8.3 Split the window's sizes into `PanelMetrics`. Verify the Debug and Release builds
+- [x] 8.4 Reword `host-client`'s "Every call follows the host's rules in one place" for the socket's
+  handshake, and design D4, D6 and D8 to the code. Verify `openspec validate --strict`
+
 ## Workflow follow-up
 
 - Verify the change against its artifacts (`openspec-verify-change`).

@@ -18,6 +18,8 @@ final class ScriptedEvents: EventSource {
         var runs: [Run]
         var opened = 0
         var cancelled = 0
+        /// Whether the socket last opened has given every message it has.
+        var drained = false
     }
 
     /// One socket's messages not yet read.
@@ -50,11 +52,27 @@ final class ScriptedEvents: EventSource {
     var opened: Int { script.withLock { $0.opened } }
     var cancelled: Int { script.withLock { $0.cancelled } }
 
+    /// A watchdog for a silence: it times out once the open socket has given every message it has,
+    /// so the silence comes after them and not before. Cancelling it returns at once.
+    func silenceAfterTheMessages(_ duration: Duration) async {
+        while !script.withLock({ $0.drained }), !Task.isCancelled { await Task.yield() }
+    }
+
+    /// A watchdog that never times out, for a test about anything but silence.
+    static func noSilence(_ duration: Duration) async {
+        do {
+            try await Task.sleep(for: .seconds(3600))
+        } catch {
+            return
+        }
+    }
+
     func messages(at address: HostAddress, token: HostToken)
         -> AsyncThrowingStream<Data, any Error>
     {
         let run = script.withLock { script -> Run? in
             script.opened += 1
+            script.drained = false
             return script.runs.isEmpty ? nil : script.runs.removeFirst()
         }
         let pending = Pending(run?.messages ?? [])
@@ -62,6 +80,7 @@ final class ScriptedEvents: EventSource {
         return AsyncThrowingStream { [self] in
             if let message = pending.next() { return Data(message.utf8) }
             if let end { throw end }
+            script.withLock { $0.drained = true }
             signal.yield()
             await waitUntilCancelled()
             return nil

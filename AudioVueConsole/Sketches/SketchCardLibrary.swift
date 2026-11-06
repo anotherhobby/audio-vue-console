@@ -59,6 +59,6 @@ struct SketchCardTile: View {
 
 #Preview("Card library") {
     SketchCardLibrary(kinds: SketchCardKind.roster(from: SketchData.shared.scenes))
-        .frame(width: SketchMetrics.libraryIdealWidth, height: SketchMetrics.windowDefaultHeight)
+        .frame(width: SketchMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
         .environment(SceneStore())
 }

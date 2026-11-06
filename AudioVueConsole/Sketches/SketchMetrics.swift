@@ -1,17 +1,7 @@
 import SwiftUI
 
-/// Sizes and colours for the UI sketches.
+/// Sizes and colours for the sample pages; the window's own are `PanelMetrics`.
 enum SketchMetrics {
-    static let windowMinWidth: CGFloat = 900
-    static let windowMinHeight: CGFloat = 560
-    static let windowDefaultWidth: CGFloat = 1280
-    static let windowDefaultHeight: CGFloat = 760
-
-    static let sidebarMinWidth: CGFloat = 200
-    static let sidebarIdealWidth: CGFloat = 220
-    static let pickerPadding: CGFloat = 10
-    static let statusDotSize: CGFloat = 8
-
     static let libraryMinWidth: CGFloat = 180
     static let libraryIdealWidth: CGFloat = 230
     static let libraryMaxWidth: CGFloat = 320

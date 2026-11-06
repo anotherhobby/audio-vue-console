@@ -107,7 +107,7 @@ struct SketchSceneRow: View {
         )
         .environment(SceneStore())
         .frame(
-            width: SketchMetrics.windowDefaultWidth,
-            height: SketchMetrics.windowDefaultHeight)
+            width: PanelMetrics.windowDefaultWidth,
+            height: PanelMetrics.windowDefaultHeight)
     }
 }

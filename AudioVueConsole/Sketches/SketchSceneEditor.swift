@@ -143,8 +143,8 @@ struct SketchInspector: View {
         )
         .environment(SceneStore())
         .frame(
-            width: SketchMetrics.windowDefaultWidth,
-            height: SketchMetrics.windowDefaultHeight)
+            width: PanelMetrics.windowDefaultWidth,
+            height: PanelMetrics.windowDefaultHeight)
     }
 }
 
@@ -174,7 +174,7 @@ private struct SelectedPreview: View {
             }
             .environment(store)
             .frame(
-                width: SketchMetrics.windowDefaultWidth, height: SketchMetrics.windowDefaultHeight)
+                width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
         }
     }
 }

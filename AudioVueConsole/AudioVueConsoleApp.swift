@@ -16,7 +16,7 @@ import SwiftUI
                 .environment(sceneStore)
         }
         .defaultSize(
-            width: SketchMetrics.windowDefaultWidth, height: SketchMetrics.windowDefaultHeight
+            width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight
         )
         .commands { ArrangeCommands() }
     }

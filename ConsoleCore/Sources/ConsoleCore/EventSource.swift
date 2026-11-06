@@ -15,8 +15,8 @@ public protocol EventSource: Sendable {
     func messages(at address: HostAddress, token: HostToken) -> AsyncThrowingStream<Data, any Error>
 }
 
-/// `/v1/events` over a `URLSessionWebSocketTask`. The session keeps the client's five-second
-/// timeout, so a socket silent for five whole-state pushes counts as closed (design D6).
+/// `/v1/events` over a `URLSessionWebSocketTask`. A socket that goes quiet is `LiveState`'s to
+/// close, by its own timer (design D6).
 public struct WebSocketEventSource: EventSource {
     private let session: URLSession
 

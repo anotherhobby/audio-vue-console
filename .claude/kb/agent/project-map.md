@@ -42,6 +42,7 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `SketchData`), `OverviewPage.swift` (Panel, Capture and Calibration from `OverviewRows`, then the
   Pairing section; `OverviewForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
+  `PanelMetrics.swift` (the window's sizes; `Sketches/SketchMetrics` keeps the sample pages'),
   `PairingSheet.swift`, assets, and `Sketches/`, the sample pages and their data, whose Scenes page
   hosts the kept canvas.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
@@ -67,8 +68,8 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   and `HostClient+Clients.swift`. `HostConnection` owns the client and the `TokenStore`, says
   whether the app is paired, keeps the paired host's `HostIdentity`, and makes the `HostPairing`,
   `PairedClients` and `LiveState` models. `LiveState` holds the pushed `PanelState` from an
-  `EventSource` (`WebSocketEventSource` in the app), reopening after a close; `OverviewRows` turns
-  it into the Overview's text. `TokenStore.swift` holds the protocol and `Pairings`, the rules every
+  `EventSource` (`WebSocketEventSource` in the app), reopening after a close or five seconds' silence;
+  `OverviewRows` turns it into the Overview's text and `PanelLabel` into the picker's. `TokenStore.swift` holds the protocol and `Pairings`, the rules every
   store follows; `FileTokenStore` writes `pairings.json` in Application Support, owner-only.
   `ClientName` is the name the app pairs under. Tests drive it through `FakeTransport`, a
   `ClientTransport` that answers by method and path and records each request as a `URLRequest`, and

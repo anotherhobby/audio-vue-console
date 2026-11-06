@@ -3,7 +3,9 @@ import Observation
 
 /// The panel's state as the host pushes it on `/v1/events`, for one paired host (`host-client`,
 /// "The app keeps the panel's live state"; design D6). `watch()` runs the socket until cancelled:
-/// the window runs it in a `.task`, so the socket is open while the window shows the host.
+/// the window runs it in a `.task`, so the socket is open while the window shows the host. A socket
+/// silent for `silence` is closed and opened again, since the host pushes the whole state every
+/// second.
 @MainActor @Observable
 public final class LiveState {
     /// The newest state the host pushed, kept after the socket closes.
@@ -15,6 +17,10 @@ public final class LiveState {
     static let firstWait = Duration.seconds(1)
     static let longestWait = Duration.seconds(longestWaitSeconds)
     private static let longestWaitSeconds: Int64 = 30
+    /// How long a socket may go without a message before it counts as closed: five of the host's
+    /// whole-state pushes, a second apart.
+    static let silence = Duration.seconds(silenceSeconds)
+    private static let silenceSeconds: Int64 = 5
 
     private let address: HostAddress
     private let pairing: Pairing
@@ -22,7 +28,11 @@ public final class LiveState {
     private let tokens: any TokenStore
     private let events: any EventSource
     private let sleep: @Sendable (Duration) async -> Void
+    private let watchdog: @Sendable (Duration) async -> Void
     private let onTokenRefused: () -> Void
+    /// The messages the open socket has given, which the watchdog reads to tell silence.
+    private var messagesSeen = 0
+    private var socketGaveState = false
 
     /// The live state of the host at `address`, paired as `pairing`, calling `onTokenRefused` once
     /// the host no longer takes the token, which it forgets first.
@@ -32,7 +42,8 @@ public final class LiveState {
     ) {
         self.init(
             Link(address: address, pairing: pairing, client: HostClient(), tokens: tokens),
-            events: WebSocketEventSource(), sleep: Self.taskSleep, onTokenRefused: onTokenRefused)
+            events: WebSocketEventSource(), sleep: Self.taskSleep, watchdog: Self.taskSleep,
+            onTokenRefused: onTokenRefused)
     }
 
     /// The host this follows, and how to reach it.
@@ -43,9 +54,10 @@ public final class LiveState {
         let tokens: any TokenStore
     }
 
+    /// `sleep` waits before a reopening, and `watchdog` times a silence; tests pass their own.
     init(
         _ link: Link, events: any EventSource, sleep: @escaping @Sendable (Duration) async -> Void,
-        onTokenRefused: @escaping () -> Void
+        watchdog: @escaping @Sendable (Duration) async -> Void, onTokenRefused: @escaping () -> Void
     ) {
         address = link.address
         pairing = link.pairing
@@ -53,6 +65,7 @@ public final class LiveState {
         tokens = link.tokens
         self.events = events
         self.sleep = sleep
+        self.watchdog = watchdog
         self.onTokenRefused = onTokenRefused
     }
 
@@ -89,22 +102,46 @@ public final class LiveState {
         return true
     }
 
-    /// One socket, from opening to its end.
+    /// One socket, from opening to its end: its close, or a silence the watchdog times. Whichever
+    /// comes first ends it, and the other is cancelled, which closes the socket.
     private func follow() async -> End {
-        var gaveState = false
+        messagesSeen = 0
+        socketGaveState = false
+        return await withTaskGroup(of: End.self) { group in
+            group.addTask { await self.read() }
+            group.addTask { await self.silenceEnds() }
+            let end = await group.next() ?? .closed
+            group.cancelAll()
+            return end
+        }
+    }
+
+    /// Holds each state the socket gives, until it ends.
+    private func read() async -> End {
         do {
             for try await message in events.messages(at: address, token: pairing.token) {
+                messagesSeen += 1
                 guard let next = Self.state(from: message) else { continue }
                 state = next
                 isLive = true
-                gaveState = true
+                socketGaveState = true
             }
         } catch EventsEnd.refused {
             return .refused
         } catch {
-            return gaveState ? .gaveState : .closed
+            return socketGaveState ? .gaveState : .closed
         }
-        return gaveState ? .gaveState : .closed
+        return socketGaveState ? .gaveState : .closed
+    }
+
+    /// Returns once a whole `silence` passes with no message, or when cancelled.
+    private func silenceEnds() async -> End {
+        var seen = -1
+        while seen != messagesSeen, !Task.isCancelled {
+            seen = messagesSeen
+            await watchdog(Self.silence)
+        }
+        return socketGaveState ? .gaveState : .closed
     }
 
     /// A message's state, or nil for one that is not a state, which is skipped.
