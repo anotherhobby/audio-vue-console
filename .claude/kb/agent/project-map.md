@@ -84,4 +84,5 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
 - `openspec/`: OpenSpec planning (`config.yaml`, `specs/`, `changes/`). The `code-aligned` schema
   (`openspec/schemas/`), with audio-vue registered as a referenced store and rules that check its
   specs. Main specs: `host-connection` and `app-boundaries` (from `walking-skeleton`,
-  2026-11-03); `scene-layout` and `scene-canvas` (from `canvas-spike`, 2026-11-04).
+  2026-11-03); `scene-layout` and `scene-canvas` (from `canvas-spike`, 2026-11-04); `host-pairing`
+  (from `pairing`, 2026-11-05); `host-client` and `panel-window` (from `panel-client`, 2026-11-06).

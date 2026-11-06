@@ -45,27 +45,27 @@ Source: audio-vue `control-api`, "The API serves no browser".
 
 ### Requirement: The app checks API compatibility on connect
 
-The app SHALL read the host's API version as semantic versioning and support one major version, 2:
-any minor and patch of it is compatible. For another major, the app SHALL say whether the host is
-newer or older than the app.
+The app SHALL read the host's API version as semantic versioning and support one major version, the
+saved contract's: any minor and patch of it is compatible. For another major, the app SHALL say
+whether the host is newer or older than the app.
 
 Source: `product.md`, which checks versions on connect. The semver rule is assumed (walking-skeleton
-`design.md`). Major 2 is the API with every read behind the token (audio-vue `settings-store`); the
-app dropped major 1 (maintainer, 2026-11-04).
+`design.md`). The supported major is the saved contract's (`host-client`, "The supported API is the
+saved contract's").
 
 #### Scenario: A compatible host
 
-- **WHEN** the host answers with API version `2.4.2`
+- **WHEN** the saved contract states API `2.0.0` and the host answers with API version `2.4.2`
 - **THEN** the app shows it is connected, with API version 2.4.2
 
 #### Scenario: A newer host
 
-- **WHEN** the host answers with API version `3.0.0`
+- **WHEN** the saved contract states API `2.0.0` and the host answers with API version `3.0.0`
 - **THEN** the app says the host is newer than this app supports and does not show itself connected
 
 #### Scenario: An older host
 
-- **WHEN** the host answers with API version `1.0.0`
+- **WHEN** the saved contract states API `2.0.0` and the host answers with API version `1.0.0`
 - **THEN** the app says the host is older than this app supports and does not show itself connected
 
 #### Scenario: A version that is not semantic
@@ -127,13 +127,13 @@ Decision (maintainer, 2026-11-04): once paired, a launch that waits for Connect 
 #### Scenario: Relaunching
 
 - **WHEN** the user connected to `audio-vue` and relaunches the app
-- **THEN** the address field holds `audio-vue`, and the app connects to it and shows whether it is
-  paired
+- **THEN** the panel window shows the panel at `audio-vue`, and the app connects to it and shows
+  whether it is paired
 
 #### Scenario: A first launch
 
 - **WHEN** the app launches with no address remembered
-- **THEN** it sends nothing and waits for an address
+- **THEN** it sends nothing, and the panel window offers Add Panel…
 
 ### Requirement: Connecting says whether the app is paired
 
