@@ -13,7 +13,8 @@ import Testing
         _ transport: FakeTransport, tokens: InMemoryTokenStore, typing text: String = "audio-vue"
     ) -> HostConnection {
         let connection = HostConnection(
-            client: HostClient(transport: transport), store: MemoryAddressStore(), tokens: tokens)
+            client: HostClient(transport: transport), store: MemoryAddressStore(), tokens: tokens,
+            discovery: PanelDiscovery(browser: ScriptedBrowser()))
         connection.addressText = text
         return connection
     }

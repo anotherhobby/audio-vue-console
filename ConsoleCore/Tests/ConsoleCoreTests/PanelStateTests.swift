@@ -3,7 +3,7 @@ import Testing
 
 @testable import ConsoleCore
 
-/// The state the Overview reads, from the host's state messages (`panel-window`; design D7).
+/// The state the Panel page reads, from the host's state messages (`panel-window`; design D7).
 struct PanelStateTests {
     /// A state as the proving host pushes it with the panel up, cut to the sections read.
     static let up = #"""

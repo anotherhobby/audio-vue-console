@@ -10,5 +10,11 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<!-- The service the panel picker browses for (discovery design D7). macOS refuses a browse for a
+	     type not listed here, and an array cannot be an INFOPLIST_KEY_ build setting. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_audio-vue._tcp</string>
+	</array>
 </dict>
 </plist>

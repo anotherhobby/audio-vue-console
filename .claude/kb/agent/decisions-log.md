@@ -49,3 +49,11 @@ Format:
   connected at the typed address, then Reconnect, plain, with Pair with This Host… the default.
 - 2026-11-04: The app connects at launch to the last address a host answered at (maintainer,
   reversing walking-skeleton's "never on its own"): `HostConnection.connectAtLaunch()`.
+- 2026-11-06: Discovery browses with Network's `NetworkBrowser` (`.bonjour`, TXT included) and
+  resolves each instance with dnssd's `DNSServiceResolve` on interface 0 (`discovery` design D1):
+  `NetworkBrowser` gives no host name and port, which a typed-address `HostAddress` needs, and
+  resolving on any interface gives one answer for a host seen on two. Proved against the proving
+  host in the maintainer's run.
+- 2026-11-06: Connected means the panel can be used: green "Connected" only while paired (maintainer,
+  `discovery` design D10). The picker sits in the Panel page's toolbar, titled "Panel:", naming the
+  panel by address and "(discovered)" until paired (maintainer, D11).

@@ -9,6 +9,6 @@ enum PanelMetrics {
 
     static let sidebarMinWidth: CGFloat = 200
     static let sidebarIdealWidth: CGFloat = 220
-    static let pickerPadding: CGFloat = 10
-    static let statusDotSize: CGFloat = 8
+    /// Room either side of the panel's name in the picker's capsule.
+    static let pickerLabelPadding: CGFloat = 6
 }

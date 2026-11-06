@@ -35,7 +35,16 @@ struct AddPanelForm: View {
                 } footer: {
                     Text("A hostname or IPv4 address, with a port if it isn't 19200.")
                 }
-                Section { ConnectionStatus(state: state) }
+                Section {
+                    if case .connected(let reached, _, paired: false) = state {
+                        Label(
+                            """
+                            Reached \(reached.description). Pair with it on the Panel page to see \
+                            and control its panel.
+                            """, systemImage: "link.badge.plus")
+                    }
+                    ConnectionStatus(state: state)
+                }
             }
             .formStyle(.grouped)
             buttons
@@ -71,7 +80,7 @@ struct AddPanelForm: View {
     AddPanelForm(address: .constant(""), state: .idle)
 }
 
-#Preview("Connected") {
+#Preview("Reached, not paired") {
     if let address = HostAddress(parsing: "audio-vue"), let api = APIVersion(parsing: "2.1.0") {
         AddPanelForm(
             address: .constant("audio-vue"),

@@ -35,12 +35,17 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `INFOPLIST_FILE` is `AudioVueConsole-Info.plist` at the root, a partial plist Xcode merges with
   the generated one (ATS only); it sits outside the synchronized folder so it is not a resource.
 - `AudioVueConsole/`: the app target's sources (`panel-client`, 2026-11-05). `AudioVueConsoleApp.swift`
-  (the `App`: it owns the one `HostConnection` and the `SceneStore`, so closing the window keeps
-  them; the single panel window; an app delegate that keeps the app running with no window),
-  `PanelWindow.swift` (the window: the sidebar's picker with Add Panel…, the pages, the connect at
-  launch, and the `LiveState` it watches while open; pages other than Overview still read
-  `SketchData`), `OverviewPage.swift` (Panel, Capture and Calibration from `OverviewRows`, then the
-  Pairing section; `OverviewForm` takes plain values for previews), `AddPanelSheet.swift`,
+  (the `App`: its `init` makes the one `PanelDiscovery` and the `HostConnection` given it, starts the
+  browse, and browses again on activation while denied (`discovery`, 2026-11-06); it owns the
+  `SceneStore`, so closing the window keeps them; the single panel window; an app delegate that
+  keeps the app running with no window),
+  `PanelWindow.swift` (the window: the sidebar of pages, the picker in the Panel page's toolbar,
+  the connect at launch, and the `LiveState` it watches while open; pages other than Panel still
+  read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
+  discovered until paired: the panel held, the other panels found by address, or the denial line,
+  then Add Panel…; `PanelPickerItems` is the menu), `PanelPage.swift` (the page once called
+  Overview: a pairing prompt while unpaired, then Status, Capture and Calibration from `PanelRows`,
+  then the Pairing section; `PanelForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
   `PanelMetrics.swift` (the window's sizes; `Sketches/SketchMetrics` keeps the sample pages'),
   `PairingSheet.swift`, assets, and `Sketches/`, the sample pages and their data, whose Scenes page
@@ -67,9 +72,15 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   generated answers to this package's values; the calls by subject are in `HostClient+Pairing.swift`
   and `HostClient+Clients.swift`. `HostConnection` owns the client and the `TokenStore`, says
   whether the app is paired, keeps the paired host's `HostIdentity`, and makes the `HostPairing`,
-  `PairedClients` and `LiveState` models. `LiveState` holds the pushed `PanelState` from an
+  `PairedClients` and `LiveState` models. It also connects to a found panel with the token kept for
+  the announced id (`connect(to:)`, keeping `foundPanel`), and at launch waits for the remembered
+  host's id when its address is unreachable; `AddressStore` keeps the address and that id.
+  `PanelDiscovery` (`discovery`, 2026-11-06) keeps the panels announced on the LAN, merged by id
+  (`FoundPanels`), each resolved once, through the `ServiceBrowser` seam: `BonjourServiceBrowser`
+  browses with Network's `NetworkBrowser` and resolves with dnssd's `DNSServiceResolve`; tests use
+  `ScriptedBrowser`. `LiveState` holds the pushed `PanelState` from an
   `EventSource` (`WebSocketEventSource` in the app), reopening after a close or five seconds' silence;
-  `OverviewRows` turns it into the Overview's text and `PanelLabel` into the picker's. `TokenStore.swift` holds the protocol and `Pairings`, the rules every
+  `PanelRows` turns it into the Panel page's text and `PanelLabel` into the picker's. `TokenStore.swift` holds the protocol and `Pairings`, the rules every
   store follows; `FileTokenStore` writes `pairings.json` in Application Support, owner-only.
   `ClientName` is the name the app pairs under. Tests drive it through `FakeTransport`, a
   `ClientTransport` that answers by method and path and records each request as a `URLRequest`, and
@@ -85,4 +96,6 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   (`openspec/schemas/`), with audio-vue registered as a referenced store and rules that check its
   specs. Main specs: `host-connection` and `app-boundaries` (from `walking-skeleton`,
   2026-11-03); `scene-layout` and `scene-canvas` (from `canvas-spike`, 2026-11-04); `host-pairing`
-  (from `pairing`, 2026-11-05); `host-client` and `panel-window` (from `panel-client`, 2026-11-06).
+  (from `pairing`, 2026-11-05); `host-client` and `panel-window` (from `panel-client`, 2026-11-06);
+  `host-discovery` (from `discovery`, 2026-11-06, which also updated `host-connection` and
+  `panel-window`). No change is open.

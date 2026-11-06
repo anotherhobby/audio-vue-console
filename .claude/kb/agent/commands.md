@@ -39,4 +39,7 @@ Format:
   in `ConsoleCore/` - watches the real host's `/v1/events` with the app's own pairing, read but
   never written, and prints the first state. Skipped without both variables. Passed on the proving
   host (2026-11-05): states arrive and the handshake is not refused, so URLSession's WebSocket adds
-  no `Origin`.
+  no `Origin`. Since 2026-11-06 it also browses the LAN for the host by the id `/v1/host` gives and
+  checks the resolved address answers (`theHostIsFoundByItsID`); it passed, finding `audio-vue` at
+  `audio-vue.local`. `swift test` runs outside the app's sandbox, so any Local Network prompt goes to
+  the app that launched it (Terminal or the editor), and a denial there fails this test only.

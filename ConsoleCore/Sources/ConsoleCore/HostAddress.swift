@@ -40,6 +40,14 @@ public struct HostAddress: Sendable, Hashable, CustomStringConvertible {
         self.base = base
     }
 
+    /// The address a found panel's announcement resolves to (`host-discovery`, "A found panel is
+    /// reached where it is announced"): its host target, such as `audio-vue.local.`, without the
+    /// trailing dot DNS-SD gives it, and its port. Nil when the target is not a hostname.
+    public init?(resolvedHost target: String, port: Int) {
+        let host = target.hasSuffix(".") ? target.dropLast() : Substring(target)
+        self.init(parsing: "\(host):\(port)")
+    }
+
     /// The URL of an API path on this host, such as `v1/version`.
     public func url(path: String) -> URL {
         base.appending(path: path)

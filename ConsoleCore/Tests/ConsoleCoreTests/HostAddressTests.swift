@@ -55,6 +55,29 @@ struct HostAddressTests {
         #expect(HostAddress(parsing: host + "a") == nil)
     }
 
+    /// `host-discovery`, "A found panel is reached where it is announced".
+    @Test func aResolvedHostTargetLosesItsTrailingDot() throws {
+        let address = try #require(HostAddress(resolvedHost: "audio-vue.local.", port: 19200))
+        #expect(address.description == "audio-vue.local")
+        #expect(
+            address.url(path: "v1/version").absoluteString
+                == "http://audio-vue.local:19200/v1/version")
+    }
+
+    @Test func aResolvedPortIsKept() throws {
+        let address = try #require(HostAddress(resolvedHost: "audio-vue.local.", port: 8080))
+        #expect(address.port == 8080)
+        #expect(address.description == "audio-vue.local:8080")
+    }
+
+    @Test(arguments: [
+        ("audio_vue.local.", 19200), ("audio-vue.local..", 19200), ("", 19200),
+        ("audio-vue.local.", 0),
+    ])
+    func aResolvedTargetThatIsNotAnAddressIsRefused(target: String, port: Int) {
+        #expect(HostAddress(resolvedHost: target, port: port) == nil)
+    }
+
     @Test func theDescriptionLeavesOutTheDefaultPort() throws {
         #expect(try #require(HostAddress(parsing: "audio-vue:19200")).description == "audio-vue")
         #expect(

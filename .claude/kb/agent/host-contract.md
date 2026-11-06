@@ -41,8 +41,11 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   name can be renamed on a clash, and a reinstalled host gets a new id.
 - Withdrawn when the agent stops; nothing announced when bound to loopback or with no responder.
   A typed address stays supported.
-- The proving host announces `audio-vue` at `audio-vue.local:19200`, TXT `id=779b365c-...`,
-  and `api` (Measured, `dns-sd -L`, 2026-11-03).
+- The proving host announces `audio-vue` at `audio-vue.local:19200`, TXT `id` and `api`, seen on
+  two interfaces at once (Measured, `dns-sd -B`/`-L`, 2026-11-06). Its id changed between 2026-11-03
+  and 2026-11-06, as a reinstall gives; read it live, never from here.
+- `tools/panel.py agent stop` withdraws it on both interfaces within a second, and `agent start`
+  announces it again within a few seconds (Measured, `dns-sd -B`, 2026-11-06).
 
 ## Pairing and tokens (Built, `control-service`)
 

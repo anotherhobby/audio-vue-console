@@ -142,5 +142,34 @@ not found, and window restoration was ruled out. Check a launch more than once b
 The Overview's clients list loaded in a `.task` on its rows, which are an empty `ForEach` until the
 load: a view with no content never appears, so the load never started and the list never showed
 (the maintainer's run, `panel-client` 7.1). Start a load where the model is made
-(`OverviewPage`'s `.task(id:)`), not on the content it fills. Likewise, a modifier on multi-row
+(`PanelPage`'s `.task(id:)`, then `OverviewPage`), not on the content it fills. Likewise, a modifier on multi-row
 content in a `Form` is copied onto each row, so a row's confirmation dialog belongs on the row.
+
+## A MODIFIED requirement cannot drop or rename a scenario (2026-11-06)
+
+`openspec validate` refuses a MODIFIED block that leaves out a scenario name the main spec has, and
+there is no rename for scenarios (`discovery`). When a scenario's behaviour is gone, as
+"Connected and not paired" was, replace the requirement: REMOVED (with Reason and Migration naming
+the replacement) and ADDED under a new name. Do not keep the old scenario name over new behaviour.
+
+## `open` can bring up Xcode's preview host instead of the build (2026-11-06)
+
+Rendering a preview of the app target starts a copy of the app under Xcode's preview executor
+(`PreviewsInjection`, `XOJITExecutor` in a crash's frames). `open` on the built app then brings that
+copy to the front rather than launching the build, and it traps in AppKit once its menu bar comes
+up (`NSPopupMenuWindow`, `MenuBarClientCore`): two "crashes on launch" in the `discovery` run were
+this. Before a hand run, `pkill -x AudioVueConsole`, then `open` the build.
+
+## A toolbar menu sharing an item with text is drawn over the text (2026-11-06)
+
+In the macOS window toolbar, a `ToolbarItem` holding an `HStack` of a `Text` and a `Menu` gets one
+glass capsule, and the menu's button is drawn over the text beside it (the Panel picker's "Panel:").
+Previews did not show it; the running app did. Give the text its own `ToolbarItem` with
+`.sharedBackgroundVisibility(.hidden)`, and the menu its own item (`PanelPicker`).
+
+## A Local Network denial shows as the browser's waiting state (2026-11-06)
+
+`NetworkBrowser` reports a denial as `.waiting` with `kDNSServiceErr_PolicyDenied` (`discovery`
+design D6), and a browse restarted on `didBecomeActiveNotification` picks up access given in System
+Settings without a relaunch (maintainer's run). The Local Network prompt shows only to an app never
+asked before: one already allowed for a typed LAN address is not asked again for Bonjour.

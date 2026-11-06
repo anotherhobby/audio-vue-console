@@ -10,7 +10,8 @@ import Testing
         typing text: String = "audio-vue"
     ) -> HostConnection {
         let connection = HostConnection(
-            client: HostClient(transport: transport), store: store, tokens: InMemoryTokenStore())
+            client: HostClient(transport: transport), store: store, tokens: InMemoryTokenStore(),
+            discovery: PanelDiscovery(browser: ScriptedBrowser()))
         connection.addressText = text
         return connection
     }
@@ -93,7 +94,7 @@ import Testing
         #expect(store.saved == "audio-vue")
         let relaunched = HostConnection(
             client: HostClient(transport: FakeTransport.version()), store: store,
-            tokens: InMemoryTokenStore())
+            tokens: InMemoryTokenStore(), discovery: PanelDiscovery(browser: ScriptedBrowser()))
         #expect(relaunched.addressText == "audio-vue")
         #expect(relaunched.state == .idle)
     }
@@ -119,7 +120,7 @@ import Testing
         let transport = FakeTransport.version()
         let connection = HostConnection(
             client: HostClient(transport: transport), store: MemoryAddressStore(saved: "audio-vue"),
-            tokens: InMemoryTokenStore())
+            tokens: InMemoryTokenStore(), discovery: PanelDiscovery(browser: ScriptedBrowser()))
         #expect(connection.state == .idle)
         #expect(await transport.requests.isEmpty)
     }
@@ -128,7 +129,7 @@ import Testing
         let transport = FakeTransport.version()
         let connection = HostConnection(
             client: HostClient(transport: transport), store: MemoryAddressStore(saved: "audio-vue"),
-            tokens: InMemoryTokenStore())
+            tokens: InMemoryTokenStore(), discovery: PanelDiscovery(browser: ScriptedBrowser()))
         await connection.connectAtLaunch()
         #expect(connection.addressText == "audio-vue")
         #expect(connection.isPaired == false)
@@ -140,7 +141,7 @@ import Testing
         let transport = FakeTransport.version()
         let connection = HostConnection(
             client: HostClient(transport: transport), store: MemoryAddressStore(),
-            tokens: InMemoryTokenStore())
+            tokens: InMemoryTokenStore(), discovery: PanelDiscovery(browser: ScriptedBrowser()))
         await connection.connectAtLaunch()
         #expect(connection.state == .idle)
         #expect(await transport.requests.isEmpty)
@@ -151,19 +152,33 @@ import Testing
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         #expect(UserDefaultsAddressStore(defaults: defaults).load() == nil)
-        UserDefaultsAddressStore(defaults: defaults).save("audio-vue:8080")
-        #expect(UserDefaultsAddressStore(defaults: defaults).load() == "audio-vue:8080")
+        UserDefaultsAddressStore(defaults: defaults).save("audio-vue:8080", hostID: "89efe3f8")
+        #expect(
+            UserDefaultsAddressStore(defaults: defaults).load()
+                == RememberedHost(address: "audio-vue:8080", hostID: "89efe3f8"))
+        UserDefaultsAddressStore(defaults: defaults).save("elsewhere", hostID: nil)
+        #expect(
+            UserDefaultsAddressStore(defaults: defaults).load()
+                == RememberedHost(address: "elsewhere", hostID: nil))
     }
 }
 
 /// An address store held in memory.
 final class MemoryAddressStore: AddressStore {
     private(set) var saved: String?
+    private(set) var savedHostID: String?
 
-    init(saved: String? = nil) {
+    init(saved: String? = nil, hostID: String? = nil) {
         self.saved = saved
+        self.savedHostID = hostID
     }
 
-    func load() -> String? { saved }
-    func save(_ address: String) { saved = address }
+    func load() -> RememberedHost? {
+        saved.map { RememberedHost(address: $0, hostID: savedHostID) }
+    }
+
+    func save(_ address: String, hostID: String?) {
+        saved = address
+        savedHostID = hostID
+    }
 }

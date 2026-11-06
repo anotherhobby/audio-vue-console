@@ -1,10 +1,10 @@
 import Foundation
 
-/// What the Overview's Panel, Capture and Calibration sections say, as text, decided here so the
+/// What the Panel page's Status, Capture and Calibration sections say, as text, decided here so the
 /// dash rule is under test (`panel-window`, "A value not read shows a dash"; design D7). A value
 /// not read from the host is `dash`, every value is while the app is not paired, and nothing
 /// made up or remembered stands in for one.
-public struct OverviewRows: Sendable, Equatable {
+public struct PanelRows: Sendable, Equatable {
     public static let dash = "—"
 
     public struct Row: Sendable, Equatable, Identifiable {
@@ -20,7 +20,7 @@ public struct OverviewRows: Sendable, Equatable {
         public let note: String?
     }
 
-    public let panel: Section
+    public let status: Section
     public let capture: Section
     public let calibration: Section
 
@@ -33,8 +33,8 @@ public struct OverviewRows: Sendable, Equatable {
         let unavailable = state?.unavailable ?? [:]
         let width = state?.displayWidthPx ?? host?.widthPx
         let height = state?.displayHeightPx ?? host?.heightPx
-        panel = Section(
-            title: "Panel",
+        status = Section(
+            title: "Status",
             rows: [
                 Row(label: "Condition", value: Self.text(state.map { Self.condition($0, time) })),
                 Row(label: "Scene", value: Self.text(state?.sceneName)),
@@ -58,7 +58,7 @@ public struct OverviewRows: Sendable, Equatable {
             note: Self.note(unavailable, [.calibration]))
     }
 
-    public var sections: [Section] { [panel, capture, calibration] }
+    public var sections: [Section] { [status, capture, calibration] }
 
     private static func text(_ value: String?) -> String {
         value ?? dash
@@ -119,18 +119,5 @@ public struct OverviewRows: Sendable, Equatable {
     ) -> String? {
         let reasons = sections.compactMap { unavailable[$0] }
         return reasons.isEmpty ? nil : "Unavailable: " + reasons.joined(separator: "; ")
-    }
-}
-
-/// A display's shape as its aspect ratio reduced, such as `16:9` for 1920 × 1080.
-public enum DisplayShape {
-    public static func name(width: Int, height: Int) -> String? {
-        guard width > 0, height > 0 else { return nil }
-        let divisor = greatestCommonDivisor(width, height)
-        return "\(width / divisor):\(height / divisor)"
-    }
-
-    private static func greatestCommonDivisor(_ first: Int, _ second: Int) -> Int {
-        second == 0 ? first : greatestCommonDivisor(second, first % second)
     }
 }

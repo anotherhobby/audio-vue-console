@@ -34,6 +34,8 @@ actor FakeTransport: ClientTransport {
     }
 
     private var answers: [Route: Answer]
+    /// Answers for one host only, by its name, taken before `answers`.
+    private var hostAnswers: [String: [Route: Answer]] = [:]
     private(set) var requests: [URLRequest] = []
 
     init(_ answers: [Route: Answer]) {
@@ -77,6 +79,12 @@ actor FakeTransport: ClientTransport {
         answers[route] = answer
     }
 
+    /// Sets or replaces the answer to a route at one host only, such as a remembered address that
+    /// no longer answers.
+    func answer(_ route: Route, at host: String, with answer: Answer) {
+        hostAnswers[host, default: [:]][route] = answer
+    }
+
     /// The requests sent to a route, in order.
     func requests(to route: Route) -> [URLRequest] {
         requests.filter { Route($0.httpMethod ?? "", $0.url?.path() ?? "") == route }
@@ -88,7 +96,7 @@ actor FakeTransport: ClientTransport {
         let recorded = try await Self.urlRequest(request, body: body, baseURL: baseURL)
         requests.append(recorded)
         let route = Route(request.method.rawValue, recorded.url?.path() ?? "")
-        guard let answer = answers[route] else {
+        guard let answer = hostAnswers[baseURL.host() ?? ""]?[route] ?? answers[route] else {
             Issue.record("No answer for \(route.method) \(route.path)")
             throw URLError(.unsupportedURL)
         }

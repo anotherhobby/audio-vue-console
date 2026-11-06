@@ -1,7 +1,7 @@
 import ConsoleCore
 import SwiftUI
 
-/// The host's paired clients, in place in the Overview's Pairing section: this Mac marked, and
+/// The host's paired clients, in place in the Panel page's Pairing section: this Mac marked, and
 /// each revoked after the user confirms (`panel-window`, "The Pairing section lists the host's
 /// clients"). The model does the work, loaded by whoever makes it, since rows with nothing to show
 /// never appear and so never start a task of their own; this only shows it.

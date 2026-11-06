@@ -27,7 +27,8 @@ Done (2026-11-03): built, run against the proving host, and archived as
 1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike (archived 2026-11-04).
 3. Pairing (archived 2026-11-05), moved ahead of the client (maintainer, 2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
 a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (archived 2026-11-06; client generator decided first,
-from a saved contract; `/v1/events` hand-written). 5. Discovery (the host side is built). Scene editing
+from a saved contract; `/v1/events` hand-written). 5. Discovery (archived 2026-11-06 as `openspec/changes/archive/2026-11-06-discovery`, after the
+maintainer's run; its spec is `host-discovery`). Scene editing
 on a real host waits on audio-vue's settings documents and card tiles.
 
 ## Canvas rulings, pending `product.md` (maintainer, 2026-11-02)
@@ -51,6 +52,6 @@ Built and run against the proving host by the maintainer (2026-11-06): connected
 values, a scene switch followed at once, an agent restart shown not live then live, the inline
 clients list with revoke, Add Panel…. Verified and archived as
 `openspec/changes/archive/2026-11-06-panel-client` (2026-11-06); its specs are now `host-client` and
-`panel-window`, with `host-connection` updated. Next is discovery (change order item 5). Pages other than Overview still show sample values until their own changes (maintainer,
-2026-11-05). The panel window has no Access page; pairing and the clients list are in the
-Overview's Pairing section (maintainer, 2026-11-05).
+`panel-window`, with `host-connection` updated. Pages other than Panel (the Overview, renamed 2026-11-06) still show sample values until their own
+changes (maintainer, 2026-11-05). The panel window has no Access page; pairing and the clients list
+are in the Panel page's Pairing section (maintainer, 2026-11-05).

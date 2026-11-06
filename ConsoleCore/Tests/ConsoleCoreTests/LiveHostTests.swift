@@ -37,6 +37,33 @@ struct LiveHostTests {
         let state = try #require(live.state, "No state arrived")
         print("Live state: \(state)")
     }
+
+    /// `host-discovery`: the host is found on the LAN by the id it gives with the token, and the
+    /// address its announcement resolves to answers. `swift test` runs outside the app's sandbox,
+    /// so macOS asks the app that launched it for local network access.
+    @Test func theHostIsFoundByItsID() async throws {
+        let host = try #require(LiveHost.host)
+        let folder = try #require(LiveHost.pairings)
+        let address = try #require(HostAddress(parsing: host))
+        let tokens = FileTokenStore(directory: URL(filePath: folder))
+        let pairing = try #require(tokens.pairing(at: address), "No pairing for the host")
+        let identity = try await HostClient().host(at: address, token: pairing.token)
+        let discovery = PanelDiscovery()
+        let browsing = Task { await discovery.browse() }
+        let finding = Task { await discovery.panel(withID: identity.id) }
+        let deadline = Task {
+            try await Task.sleep(for: Self.patience)
+            finding.cancel()
+        }
+        let found = await finding.value
+        deadline.cancel()
+        let panel = try #require(found, "No panel announced with id \(identity.id)")
+        let resolved = try await discovery.address(of: panel)
+        browsing.cancel()
+        await browsing.value
+        let version = try await HostClient().version(at: resolved)
+        print("Found \(panel.name) at \(resolved), API \(version.api)")
+    }
 }
 
 /// The host the run asked for, by the environment.

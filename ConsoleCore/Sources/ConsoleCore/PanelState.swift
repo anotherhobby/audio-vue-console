@@ -3,7 +3,7 @@ import HostAPI
 import OpenAPIRuntime
 
 /// The panel's state as the app shows it: the condition the agent reports and the few values the
-/// Overview reads from the panel's sections (`panel-window`; design D7). Every value the host may
+/// Panel page reads from the panel's sections (`panel-window`; design D7). Every value the host may
 /// lack is optional, as the host reports it null and never as a placeholder (audio-vue
 /// `control-state`, "What is not known is null").
 public struct PanelState: Sendable, Equatable {
@@ -17,7 +17,7 @@ public struct PanelState: Sendable, Equatable {
         case noAudio
     }
 
-    /// A section of the state the Overview reads.
+    /// A section of the state the Panel page reads.
     public enum Section: String, Sendable, CaseIterable {
         case scene, capture, analysis, calibration, display
     }
