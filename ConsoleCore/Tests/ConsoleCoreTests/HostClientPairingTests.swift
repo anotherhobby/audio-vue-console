@@ -14,8 +14,8 @@ struct HostClientPairingTests {
         return (HostClient(transport: transport), transport)
     }
 
-    private static func body(of request: URLRequest) -> String? {
-        request.httpBody.flatMap { String(bytes: $0, encoding: .utf8) }
+    private static func body(of request: URLRequest) -> [String: String]? {
+        FakeTransport.json(of: request)
     }
 
     @Test func askingNamesTheClientAndCarriesNoToken() async throws {
@@ -25,7 +25,7 @@ struct HostClientPairingTests {
         let request = try #require(await transport.requests.first)
         #expect(request.httpMethod == "POST")
         #expect(request.url?.absoluteString == "http://audio-vue:19200/v1/pairing")
-        #expect(Self.body(of: request) == #"{"name":"hobbymac"}"#)
+        #expect(Self.body(of: request) == ["name": "hobbymac"])
         #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
         #expect(request.value(forHTTPHeaderField: "Origin") == nil)
     }
@@ -37,7 +37,7 @@ struct HostClientPairingTests {
         let grant = try await client.confirmPairing(at: try #require(address), code: "123456")
         #expect(grant == PairingGrant(token: HostToken("secret"), clientID: "c1"))
         let request = try #require(await transport.requests.first)
-        #expect(Self.body(of: request) == #"{"code":"123456"}"#)
+        #expect(Self.body(of: request) == ["code": "123456"])
         #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
         #expect(request.value(forHTTPHeaderField: "Origin") == nil)
     }
@@ -70,10 +70,12 @@ struct HostClientPairingTests {
         }
     }
 
-    @Test func aRefusalWithNoDetailHasAnEmptyOne() async throws {
+    /// The contract gives every refusal as `{"detail": …}`, so one that is not is an answer the
+    /// contract does not give.
+    @Test func aRefusalTheContractDoesNotGiveIsUnexpected() async throws {
         let (client, _) = client([.confirm: .status(403, "Forbidden")])
         let address = try #require(address)
-        await #expect(throws: HostFailure.pairingRefused(PairingRefusal(.wrongCode, detail: ""))) {
+        await #expect(throws: HostFailure.unexpectedAnswer) {
             try await client.confirmPairing(at: address, code: "123456")
         }
     }

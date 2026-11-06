@@ -26,7 +26,7 @@ import Testing
         HostPairing(
             address: try #require(address), client: HostClient(transport: transport), store: store,
             name: "hobbymac"
-        ) { paired.pairings.append($0) }
+        ) { pairing, _ in paired.pairings.append(pairing) }
     }
 
     private func refusal(_ status: Int, headers: [String: String] = [:]) -> FakeTransport.Answer {
@@ -181,8 +181,7 @@ import Testing
         let transport = FakeTransport([.ask: Self.shown])
         try await pairing(transport).ask()
         let ask = try #require(await transport.requests(to: .ask).first)
-        let body = ask.httpBody.flatMap { String(bytes: $0, encoding: .utf8) }
-        #expect(body == #"{"name":"hobbymac"}"#)
+        #expect(FakeTransport.json(of: ask) == ["name": "hobbymac"])
     }
 }
 

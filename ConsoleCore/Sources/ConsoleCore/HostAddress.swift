@@ -45,6 +45,9 @@ public struct HostAddress: Sendable, Hashable, CustomStringConvertible {
         base.appending(path: path)
     }
 
+    /// The host agent's root, which the generated client joins the contract's paths to.
+    var serverURL: URL { base }
+
     /// The address as it would be typed, leaving out the default port.
     public var description: String {
         port == Self.defaultPort ? host : "\(host):\(port)"

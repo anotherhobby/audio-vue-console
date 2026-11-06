@@ -23,8 +23,9 @@ public final class HostConnection {
     public private(set) var state = State.idle
     /// The pairing the app is showing, set by `pair()` and cleared when the user closes it.
     public var pairing: HostPairing?
-    /// The clients list the app is showing, set by `showClients()` and cleared when closed.
-    public var clients: PairedClients?
+    /// The connected host's identity, read when the app finds itself paired with it, and nil when
+    /// not paired.
+    public private(set) var host: HostIdentity?
 
     private let client: HostClient
     private let store: any AddressStore
@@ -65,6 +66,7 @@ public final class HostConnection {
             return
         }
         state = .connecting(address)
+        host = nil
         do {
             let version = try await client.version(at: address)
             store.save(address.description)
@@ -79,6 +81,16 @@ public final class HostConnection {
         }
     }
 
+    /// The address the connection is at, connected or not, or nil before one is given.
+    public var address: HostAddress? {
+        switch state {
+        case .idle, .invalidAddress: nil
+        case .connecting(let address), .connected(let address, _, _),
+            .incompatible(let address, _), .failed(let address, _):
+            address
+        }
+    }
+
     /// Whether the app is paired with the connected host, or nil when not connected to one.
     public var isPaired: Bool? {
         guard case .connected(_, _, let paired) = state else { return nil }
@@ -90,17 +102,14 @@ public final class HostConnection {
         pairing = makePairing(name: name)
     }
 
-    /// Starts showing the connected host's clients, if connected and paired.
-    public func showClients() {
-        clients = makeClients()
-    }
-
     /// A pairing with the connected host, which marks the connection paired once it keeps a
     /// token, or nil when not connected.
     public func makePairing(name: String = ClientName.current) -> HostPairing? {
         guard case .connected(let address, _, _) = state else { return nil }
         return HostPairing(address: address, client: client, store: tokens, name: name) {
-            [weak self] _ in self?.mark(paired: true, at: address)
+            [weak self] _, host in
+            self?.host = host
+            self?.mark(paired: true, at: address)
         }
     }
 
@@ -115,12 +124,23 @@ public final class HostConnection {
         }
     }
 
-    /// Whether the host at `address` takes the token kept for it (design D6). One it refuses is
-    /// forgotten; any other failure is the connect's.
+    /// The live state of the connected host, for the window to watch, or nil when not connected
+    /// and paired. A token the host refuses on it marks the connection not paired.
+    public func liveState() -> LiveState? {
+        guard case .connected(let address, _, paired: true) = state,
+            let pairing = tokens.pairing(at: address)
+        else { return nil }
+        return LiveState(address: address, pairing: pairing, tokens: tokens) { [weak self] in
+            self?.mark(paired: false, at: address)
+        }
+    }
+
+    /// Whether the host at `address` takes the token kept for it, keeping the host it reads (the
+    /// pairing change's design D6). One it refuses is forgotten; any other failure is the connect's.
     private func isPaired(at address: HostAddress) async throws(HostFailure) -> Bool {
         guard let pairing = tokens.pairing(at: address) else { return false }
         do {
-            _ = try await client.host(at: address, token: pairing.token)
+            host = try await client.host(at: address, token: pairing.token)
             return true
         } catch {
             guard error == .tokenRefused else { throw error }
@@ -131,6 +151,7 @@ public final class HostConnection {
 
     private func mark(paired: Bool, at address: HostAddress) {
         guard case .connected(address, let version, _) = state else { return }
+        if !paired { host = nil }
         state = .connected(address, version, paired: paired)
     }
 }

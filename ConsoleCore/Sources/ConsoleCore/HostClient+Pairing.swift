@@ -1,4 +1,5 @@
 import Foundation
+import HostAPI
 
 /// What a host said when asked for a code: how long the code on its panel stands, and how many
 /// wrong codes it takes before withdrawing it.
@@ -20,16 +21,17 @@ public struct PairingGrant: Sendable, Equatable {
 
 /// The host's `GET /v1/host`: its id, stable across addresses and restarts, its name, and the
 /// panel's display size, which is nil unless a running panel says it.
-public struct HostIdentity: Sendable, Equatable, Decodable {
+public struct HostIdentity: Sendable, Equatable {
     public let id: String
     public let name: String
     public let widthPx: Int?
     public let heightPx: Int?
 
-    enum CodingKeys: String, CodingKey {
-        case id, name
-        case widthPx = "width_px"
-        case heightPx = "height_px"
+    public init(id: String, name: String, widthPx: Int?, heightPx: Int?) {
+        self.id = id
+        self.name = name
+        self.widthPx = widthPx
+        self.heightPx = heightPx
     }
 }
 
@@ -59,33 +61,27 @@ public struct PairingRefusal: Sendable, Equatable {
 }
 
 /// Pairing: asking for a code, confirming it, and reading the host it gave a token for. The two
-/// pairing calls take no token, so none can be sent with them.
+/// pairing calls take no token, so `HostRules` sends none with them.
 extension HostClient {
     /// `POST /v1/pairing`: asks the host to show a code on its panel, naming this app `name`.
     public func askPairing(at address: HostAddress, name: String) async throws(HostFailure)
         -> PairingCode
     {
-        struct Asked: Encodable { let name: String }
-        struct Shown: Decodable {
-            let ttlS: Double
-            let tries: Int
-            enum CodingKeys: String, CodingKey {
-                case ttlS = "ttl_s"
-                case tries
-            }
+        let output = try await call(at: address) {
+            try await $0.askV1PairingPost(body: .json(.init(name: name)))
         }
-        let (data, response) = try await send(
-            .post, "v1/pairing", at: address, body: Asked(name: name))
-        switch response.statusCode {
-        case HTTPStatus.ok:
-            let shown = try Self.decode(Shown.self, from: data)
+        switch output {
+        case .ok(let ok):
+            let shown = try Self.body { try ok.body.json }
             return PairingCode(ttl: shown.ttlS, tries: shown.tries)
-        case HTTPStatus.conflict: throw Self.refusal(.busy, data)
-        case HTTPStatus.tooManyRequests:
-            let seconds = response.value(forHTTPHeaderField: "Retry-After").flatMap { Int($0) }
-            throw Self.refusal(.tooSoon(seconds: seconds), data)
-        case HTTPStatus.serviceUnavailable: throw Self.refusal(.noPanel, data)
-        default: throw .unexpectedAnswer
+        case .conflict(let refused):
+            throw .refusal(.busy, try Self.body { try refused.body.json })
+        case .tooManyRequests(let refused):
+            let seconds = refused.headers.retryAfter
+            throw .refusal(.tooSoon(seconds: seconds), try Self.body { try refused.body.json })
+        case .serviceUnavailable(let refused):
+            throw .refusal(.noPanel, try Self.body { try refused.body.json })
+        case .unprocessableContent, .undocumented: throw .unexpectedAnswer
         }
     }
 
@@ -93,24 +89,18 @@ extension HostClient {
     public func confirmPairing(at address: HostAddress, code: String) async throws(HostFailure)
         -> PairingGrant
     {
-        struct Confirmed: Encodable { let code: String }
-        struct Token: Decodable {
-            let token: String
-            let clientID: String
-            enum CodingKeys: String, CodingKey {
-                case token
-                case clientID = "client_id"
-            }
+        let output = try await call(at: address) {
+            try await $0.confirmV1PairingConfirmPost(body: .json(.init(code: code)))
         }
-        let (data, response) = try await send(
-            .post, "v1/pairing/confirm", at: address, body: Confirmed(code: code))
-        switch response.statusCode {
-        case HTTPStatus.ok:
-            let body = try Self.decode(Token.self, from: data)
-            return PairingGrant(token: HostToken(body.token), clientID: body.clientID)
-        case HTTPStatus.forbidden: throw Self.refusal(.wrongCode, data)
-        case HTTPStatus.conflict: throw Self.refusal(.noCode, data)
-        default: throw .unexpectedAnswer
+        switch output {
+        case .ok(let ok):
+            let body = try Self.body { try ok.body.json }
+            return PairingGrant(token: HostToken(body.token), clientID: body.clientId)
+        case .forbidden(let refused):
+            throw .refusal(.wrongCode, try Self.body { try refused.body.json })
+        case .conflict(let refused):
+            throw .refusal(.noCode, try Self.body { try refused.body.json })
+        case .unprocessableContent, .undocumented: throw .unexpectedAnswer
         }
     }
 
@@ -118,12 +108,19 @@ extension HostClient {
     public func host(at address: HostAddress, token: HostToken) async throws(HostFailure)
         -> HostIdentity
     {
-        let (data, response) = try await send(.get, "v1/host", at: address, token: token)
-        guard response.statusCode == HTTPStatus.ok else { throw .unexpectedAnswer }
-        return try Self.decode(HostIdentity.self, from: data)
+        let output = try await call(at: address, token: token) { try await $0.identityV1HostGet() }
+        guard case .ok(let ok) = output else { throw .unexpectedAnswer }
+        let host = try Self.body { try ok.body.json }
+        return HostIdentity(
+            id: host.id, name: host.name, widthPx: host.widthPx, heightPx: host.heightPx)
     }
+}
 
-    private static func refusal(_ kind: PairingRefusal.Kind, _ data: Data) -> HostFailure {
-        .pairingRefused(PairingRefusal(kind, detail: detail(in: data)))
+extension HostFailure {
+    /// A pairing refused, with the host's reason, worded for people.
+    fileprivate static func refusal(_ kind: PairingRefusal.Kind, _ body: Components.Schemas.Refusal)
+        -> HostFailure
+    {
+        .pairingRefused(PairingRefusal(kind, detail: body.detail))
     }
 }

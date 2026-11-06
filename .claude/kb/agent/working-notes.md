@@ -26,7 +26,7 @@ Done (2026-11-03): built, run against the proving host, and archived as
 
 1. `walking-skeleton` (archived 2026-11-03). 2. Canvas spike (archived 2026-11-04).
 3. Pairing (archived 2026-11-05), moved ahead of the client (maintainer, 2026-11-03): once audio-vue's `settings-store` lands, every route but pairing and the version takes
-a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (client generator decided first,
+a token, `/v1/host` and `/v1/openapi.json` included. 4. Panel client (built 2026-11-06; client generator decided first,
 from a saved contract; `/v1/events` hand-written). 5. Discovery (the host side is built). Scene editing
 on a real host waits on audio-vue's settings documents and card tiles.
 
@@ -45,15 +45,11 @@ maintainer for when the editor is built out, not recorded.
 - Grouping: select cards (click, shift-click, marquee), then Group (⌘G), enabled only when the
   selection tiles a rectangle, saying why when not; a group moves and is removed as one; Ungroup ⇧⌘G.
 
-## Pairing (2026-11-04)
+## Panel client (2026-11-06)
 
-Built, run against the proving host by the maintainer, and archived as
-`openspec/changes/archive/2026-11-05-pairing` (2026-11-05); its specs are now `host-pairing` and the
-updated `host-connection`. Tokens are in a container file, not the Keychain (`decisions-log.md`). Next is the panel
-client (change order item 4), started 2026-11-05 as `openspec/changes/panel-client`. For it: the
-panel window has no Access page; the connect window's details, pairing among them, move into a Pairing
-section of the Overview, so they are all in one spot (maintainer, 2026-11-05, replacing the 2026-11-04
-Access ruling). Also ruled 2026-11-05: the Host Connection window is retired, the panel window
-becomes the app's window, and an address is typed in the panel picker's Add Panel…; the clients list
-is inline in the Pairing section; Overview keeps its sketched sections in order (Panel, Capture,
-Calibration) with Pairing last, and shows `—` for any value not read from the host yet.
+Built and run against the proving host by the maintainer (2026-11-06): connected at launch, live
+values, a scene switch followed at once, an agent restart shown not live then live, the inline
+clients list with revoke, Add Panel…. Verify and archive are next, then discovery (change order
+item 5). Pages other than Overview still show sample values until their own changes (maintainer,
+2026-11-05). The panel window has no Access page; pairing and the clients list are in the
+Overview's Pairing section (maintainer, 2026-11-05).

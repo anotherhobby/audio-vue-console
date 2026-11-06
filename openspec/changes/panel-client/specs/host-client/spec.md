@@ -12,7 +12,7 @@ from the pushed events.
 
 The app's calls to a host SHALL be generated from a copy of the host's OpenAPI contract saved in this
 repository, and the saved copy SHALL be refreshed only from the contract audio-vue writes from its
-code, never edited by hand.
+code, by a script and never by hand.
 
 Source: Decision (maintainer, 2026-11-02): the client generator is decided first, from a saved
 contract. audio-vue `control-api`: the API publishes one machine-readable contract covering every
@@ -21,13 +21,31 @@ route.
 #### Scenario: Refreshing the contract
 
 - **WHEN** audio-vue's contract changes and the saved copy is refreshed from it
-- **THEN** the saved copy is byte for byte the contract audio-vue writes, and the app's calls are
+- **THEN** the saved copy is audio-vue's contract as the refresh writes it, and the app's calls are
   generated from it with no other source change
 
 #### Scenario: A route the contract does not have
 
 - **WHEN** the app needs a route that is not in the saved contract
 - **THEN** it cannot call it until the saved contract is refreshed with it
+
+### Requirement: The refresh writes nullable fields as optional
+
+The refresh SHALL write each field made nullable by an `anyOf` or `oneOf` with `null` as an optional
+field of its other types, change nothing else, and refuse a nullable field that is required.
+
+Source: Decision (maintainer, 2026-11-05): `anyOf [X, null]` is correct OpenAPI 3.1, which the
+generator drops; for a field not required it means an optional `X`, read or sent (design D9).
+
+#### Scenario: A nullable field
+
+- **WHEN** the contract gives a field that is not required as `anyOf` of `integer` and `null`
+- **THEN** the saved copy gives it as `integer`, and every other byte of the contract is the same
+
+#### Scenario: A nullable field that is required
+
+- **WHEN** audio-vue's contract has a field that is both required and nullable
+- **THEN** the refresh fails, naming the field, and the saved copy is left as it was
 
 ### Requirement: The supported API is the saved contract's
 

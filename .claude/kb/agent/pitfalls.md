@@ -118,3 +118,29 @@ since dropped after a lapse). Keep the user on the
 code field after a 403 and offer a new code only once the code lapses or the host says none is
 showing (`HostPairing.mayAsk(at:)`, `host-pairing`, "A mistyped code is typed again").
 
+
+## Xcode must trust the OpenAPI generator's plugin once (2026-11-05)
+
+Xcode refuses to build until its build plugin is trusted: "Plugin 'OpenAPIGenerator' from package
+'swift-openapi-generator' must be enabled before it can be used". The maintainer chose Trust & Enable
+once, from the build error, and the MCP `BuildProject` built clean after it (Measured). `swift build`
+and `swift test` need no trust. A new plugin, or perhaps a new version of this one, asks again: a
+plain next step for the maintainer.
+
+## Checking that the app's window opened (2026-11-05)
+
+`NSApp.windows` and `CGWindowListCopyWindowInfo` (owner name `AudioVueConsole`) tell whether a window
+opened; `screencapture -l` cannot capture it from the agent's shell ("could not create image from
+window"), so screenshots come from the maintainer or `RenderPreview`. Launching the app binary
+directly from a shell opens no window at all, `Window` or `WindowGroup`: SwiftUI opens the first
+window only for a LaunchServices launch (`open`, Xcode, Finder) (Measured). Several `open` and Xcode
+launches in a row also came up with no window, then later ones did with the same code; the cause was
+not found, and window restoration was ruled out. Check a launch more than once before blaming code.
+
+## A `.task` on a view with nothing to show never runs (2026-11-06)
+
+The Overview's clients list loaded in a `.task` on its rows, which are an empty `ForEach` until the
+load: a view with no content never appears, so the load never started and the list never showed
+(the maintainer's run, `panel-client` 7.1). Start a load where the model is made
+(`OverviewPage`'s `.task(id:)`), not on the content it fills. Likewise, a modifier on multi-row
+content in a `Form` is copied onto each row, so a row's confirmation dialog belongs on the row.

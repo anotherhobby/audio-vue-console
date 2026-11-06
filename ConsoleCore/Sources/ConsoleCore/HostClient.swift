@@ -1,4 +1,7 @@
 import Foundation
+import HostAPI
+import OpenAPIRuntime
+import OpenAPIURLSession
 
 /// What a host's `GET /v1/version` says: its API's version, and the state's schema, which is nil
 /// where the panel does not answer.
@@ -30,106 +33,88 @@ public enum HostFailure: Error, Sendable, Equatable {
     case unknownClient
 }
 
-/// Reads a host agent over its API. Every request it builds carries no `Origin` header, since the
-/// host refuses any that does. The calls are grouped by subject in extensions.
+/// Reads a host agent over its API, through the client generated from the saved contract (design
+/// D2). Each call builds a generated client for its address and token, with `HostRules` applying
+/// the host's rules to it, and turns the generated answer into this package's own values. The
+/// calls are grouped by subject in extensions.
 public struct HostClient: Sendable {
-    private let transport: any HostTransport
+    private let transport: any ClientTransport
 
-    public init(transport: any HostTransport = URLSessionTransport()) {
+    /// A client over the app's URLSession.
+    public init() {
+        self.init(transport: Self.sessionTransport())
+    }
+
+    init(transport: any ClientTransport) {
         self.transport = transport
     }
 
     /// The host's `GET /v1/version`, an open read.
     public func version(at address: HostAddress) async throws(HostFailure) -> HostVersion {
-        let (data, response) = try await send(.get, "v1/version", at: address)
-        switch response.statusCode {
-        case HTTPStatus.ok:
-            let body = try Self.decode(VersionBody.self, from: data)
+        let output = try await call(at: address) { try await $0.versionV1VersionGet() }
+        switch output {
+        case .ok(let ok):
+            let body = try Self.body { try ok.body.json }
             guard let api = APIVersion(parsing: body.api) else { throw .unexpectedAnswer }
             return HostVersion(api: api, schema: body.schema)
-        case HTTPStatus.forbidden: throw .refused
-        default: throw .unexpectedAnswer
+        case .undocumented(statusCode: Self.forbidden, _): throw .refused
+        case .undocumented: throw .unexpectedAnswer
         }
     }
 
-    enum Method: String {
-        case get = "GET"
-        case post = "POST"
-        case delete = "DELETE"
-    }
-
-    /// Sends one request and answers what came back, whatever its status, except that a 401 to a
-    /// request carrying a token is `tokenRefused`. A body goes as JSON, a token as `Authorization:
-    /// Bearer`, and no request has an `Origin`.
-    func send(
-        _ method: Method, _ path: String, at address: HostAddress, body: (any Encodable)? = nil,
-        token: HostToken? = nil
-    ) async throws(HostFailure) -> (Data, HTTPURLResponse) {
-        var request = URLRequest(url: address.url(path: path))
-        request.httpMethod = method.rawValue
-        request.setValue(Self.json, forHTTPHeaderField: "Accept")
-        if let body {
-            request.httpBody = try Self.encode(body)
-            request.setValue(Self.json, forHTTPHeaderField: "Content-Type")
-        }
-        if let token {
-            request.setValue("Bearer \(token.value)", forHTTPHeaderField: "Authorization")
-        }
-        let answer: (Data, HTTPURLResponse)
+    /// Runs one operation on a generated client for `address`, carrying `token` where the
+    /// operation takes one. A failure is told apart as `HostFailure` says: no host answering, a
+    /// token refused, or anything else the host did that the contract does not say.
+    func call<Output: Sendable>(
+        at address: HostAddress, token: HostToken? = nil,
+        _ operation: @Sendable (Client) async throws -> Output
+    ) async throws(HostFailure) -> Output {
+        let client = Client(
+            serverURL: address.serverURL, transport: transport,
+            middlewares: [HostRules(token: token)])
         do {
-            answer = try await transport.send(request)
-        } catch let error as URLError where Self.unanswered.contains(error.code) {
-            throw .unreachable
+            return try await operation(client)
+        } catch let error as ClientError {
+            throw Self.failure(error.underlyingError)
+        } catch {
+            throw Self.failure(error)
+        }
+    }
+
+    /// A response's body as the contract gives it. The generated client has already decoded it, so
+    /// this fails only where the host sent another content type.
+    static func body<Body>(_ read: () throws -> Body) throws(HostFailure) -> Body {
+        do {
+            return try read()
         } catch {
             throw .unexpectedAnswer
         }
-        if token != nil, answer.1.statusCode == HTTPStatus.unauthorized { throw .tokenRefused }
-        return answer
     }
 
-    private static let json = "application/json"
+    private static func failure(_ error: any Error) -> HostFailure {
+        if error is HostRules.TokenRefused { return .tokenRefused }
+        if let error = error as? URLError, unanswered.contains(error.code) { return .unreachable }
+        return .unexpectedAnswer
+    }
+
+    private static let forbidden = 403
+    /// How long a host has to answer before it counts as not there.
+    static let requestTimeout: TimeInterval = 5
+
+    /// An ephemeral session that keeps no cookies or cache between requests, and gives up on a host
+    /// that does not answer in `requestTimeout`.
+    private static func sessionTransport() -> URLSessionTransport {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = requestTimeout
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSessionTransport(
+            configuration: .init(session: URLSession(configuration: configuration)))
+    }
 
     /// The transport errors that mean no host answered, as against one answering badly. A denial of
-    /// local network access arrives as one of these too (`design.md`).
+    /// local network access arrives as one of these too.
     private static let unanswered: Set<URLError.Code> = [
         .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed,
         .networkConnectionLost, .notConnectedToInternet,
     ]
-
-    /// The version's fields; any others are ignored, since the contract leaves the object open.
-    private struct VersionBody: Decodable {
-        let api: String
-        let schema: Int?
-    }
-
-    /// A body the contract gives; one that is not is an unexpected answer.
-    static func decode<Body: Decodable>(_ type: Body.Type, from data: Data) throws(HostFailure)
-        -> Body
-    {
-        do {
-            return try JSONDecoder().decode(type, from: data)
-        } catch {
-            throw .unexpectedAnswer
-        }
-    }
-
-    /// The host's reason in a refusal's `{"detail": …}`, or nothing where the body has none.
-    static func detail(in data: Data) -> String {
-        struct Refusal: Decodable { let detail: String }
-        do {
-            return try JSONDecoder().decode(Refusal.self, from: data).detail
-        } catch {
-            return ""
-        }
-    }
-
-    /// The JSON of a request's body. The bodies are the contract's string fields, which always
-    /// encode; a failure is reported as the request going wrong.
-    private static func encode(_ body: any Encodable) throws(HostFailure) -> Data {
-        do {
-            return try JSONEncoder().encode(body)
-        } catch {
-            throw .unexpectedAnswer
-        }
-    }
 }

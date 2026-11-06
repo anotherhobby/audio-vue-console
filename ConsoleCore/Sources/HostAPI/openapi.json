@@ -1,0 +1,3936 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "audio-vue host agent",
+    "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
+    "version": "2.2.0"
+  },
+  "paths": {
+    "/v1/version": {
+      "get": {
+        "summary": "Version",
+        "description": "The API's version, and the state's schema where the panel answers. Open, as\npairing is: a client reached by address reads it before it pairs.",
+        "operationId": "version_v1_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/state": {
+      "get": {
+        "summary": "State",
+        "description": "The panel's state in its own sections, with its age and the panel's condition.\nA panel that does not answer is `down`, and the read succeeds. A read leaves the\ndisplay as it is.",
+        "operationId": "state_v1_state_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/State"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/switch": {
+      "post": {
+        "summary": "Switch",
+        "description": "Puts a scene from the roster up, and says whether capture was kept or rebuilt and what forced a rebuild. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "operationId": "switch_v1_commands_switch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Switch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/reload": {
+      "post": {
+        "summary": "Reload",
+        "description": "Re-reads the scene on screen from where it came from, the store or its file. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "operationId": "reload_v1_commands_reload_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/arm": {
+      "post": {
+        "summary": "Arm",
+        "description": "Arms a calibration: the panel listens for the file. A client playing one sets the output's rate and lets the chain settle before it arms, since a wait after the arm spends its deadline, and plays once the arm is done. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "operationId": "arm_v1_commands_arm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Arm",
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/cancel": {
+      "post": {
+        "summary": "Cancel",
+        "description": "Stops a calibration wherever it has reached. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "operationId": "cancel_v1_commands_cancel_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/saver": {
+      "post": {
+        "summary": "Saver",
+        "description": "Starts the screensaver now. It is the one command that wakes nothing: it does not end the screensaver or sleep.",
+        "operationId": "saver_v1_commands_saver_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/panel/service": {
+      "get": {
+        "summary": "Service",
+        "description": "Whether the panel's service runs. Runs `tools/panel.py`, and gives its exit status, what it printed, and the panel's condition after it: a start that lands on the audio-vue screen exits 1 with the panel up.",
+        "operationId": "service_v1_panel_service_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/panel/start": {
+      "post": {
+        "summary": "Start",
+        "description": "Starts the panel, recording `scene` first where one is given; with none, what is recorded. A scene that cannot load is refused by name before anything changes. Runs `tools/panel.py`, and gives its exit status, what it printed, and the panel's condition after it: a start that lands on the audio-vue screen exits 1 with the panel up.",
+        "operationId": "start_v1_panel_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Start",
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/panel/stop": {
+      "post": {
+        "summary": "Stop",
+        "description": "Stops the panel until a start or a boot. Runs `tools/panel.py`, and gives its exit status, what it printed, and the panel's condition after it: a start that lands on the audio-vue screen exits 1 with the panel up.",
+        "operationId": "stop_v1_panel_stop_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/panel/restart": {
+      "post": {
+        "summary": "Restart",
+        "description": "Starts what is recorded again. Runs `tools/panel.py`, and gives its exit status, what it printed, and the panel's condition after it: a start that lands on the audio-vue screen exits 1 with the panel up.",
+        "operationId": "restart_v1_panel_restart_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/panel/log": {
+      "get": {
+        "summary": "Log",
+        "description": "What the current run has printed, its last 2,000 lines. Runs `tools/panel.py`, and gives its exit status, what it printed, and the panel's condition after it: a start that lands on the audio-vue screen exits 1 with the panel up.",
+        "operationId": "log_v1_panel_log_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/runs": {
+      "get": {
+        "summary": "Listing",
+        "description": "Every calibration run with a record, newest first, read from the files, so it\nanswers with the panel down.",
+        "operationId": "listing_v1_runs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Runs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/runs/{run_id}": {
+      "get": {
+        "summary": "Record",
+        "description": "A run's record, as written. A run is named by its id, never by a path.",
+        "operationId": "record_v1_runs__run_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Record V1 Runs  Run Id  Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/report": {
+      "get": {
+        "summary": "Report",
+        "description": "A run's HTML report, once it is written.",
+        "operationId": "report_v1_runs__run_id__report_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/host": {
+      "get": {
+        "summary": "Identity",
+        "description": "What the host is: an id that stands across addresses, its name, its display's\nsize, null unless a running panel says it, and the OS update action running.",
+        "operationId": "identity_v1_host_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/devices": {
+      "get": {
+        "summary": "Devices",
+        "description": "The capture devices attached, as ALSA names them.",
+        "operationId": "devices_v1_host_devices_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Devices"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/updates": {
+      "get": {
+        "summary": "State",
+        "description": "The OS's updates on this host: whether the agent may run them, the one running,\nthe last check, what an upgrade would change and how the last action ended.",
+        "operationId": "state_v1_host_updates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Updates"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/updates/check": {
+      "post": {
+        "summary": "Check",
+        "description": "Fetches the OS's package lists, so the update state says what an upgrade would change. Answers at once, and the action runs on: `/v1/host`'s `updating` and the update state say how it goes. One update action runs at a time.",
+        "operationId": "check_v1_host_updates_check_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/updates/upgrade": {
+      "post": {
+        "summary": "Upgrade",
+        "description": "Upgrades every OS package that has an update, finishing an upgrade cut off before, and reboots the host when it succeeds. Refused while a calibration has the panel. Answers at once, and the action runs on: `/v1/host`'s `updating` and the update state say how it goes. One update action runs at a time.",
+        "operationId": "upgrade_v1_host_updates_upgrade_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/reboot": {
+      "post": {
+        "summary": "Reboot",
+        "description": "Reboots the host. Refused while a calibration has the panel. Answers at once, and the action runs on: `/v1/host`'s `updating` and the update state say how it goes. One update action runs at a time.",
+        "operationId": "reboot_v1_host_reboot_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/host/updates/log": {
+      "get": {
+        "summary": "Log",
+        "description": "The running or the last check's or upgrade's output, its last 2,000 lines. It survives the reboot an upgrade ends in.",
+        "operationId": "log_v1_host_updates_log_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateLog"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/pairing": {
+      "post": {
+        "summary": "Ask",
+        "description": "Show a pairing code on the panel, over a scene or on the audio-vue screen. One\npairing runs at a time.",
+        "operationId": "ask_v1_pairing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingAsked"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingShown"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Whole seconds until the next pairing can be asked for, at least 1.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pairing/confirm": {
+      "post": {
+        "summary": "Confirm",
+        "description": "Send back the code the panel shows, for a token of this client's own, given once.",
+        "operationId": "confirm_v1_pairing_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairingConfirmed"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clients": {
+      "get": {
+        "summary": "Clients",
+        "description": "The paired clients.",
+        "operationId": "clients_v1_clients_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Clients"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/clients/{client_id}": {
+      "delete": {
+        "summary": "Revoke",
+        "description": "Revoke a client, this one included. Its token stops working at once.",
+        "operationId": "revoke_v1_clients__client_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/schema": {
+      "get": {
+        "summary": "Schema",
+        "description": "Every setting a scene, a card and the install settings take, as JSON Schema, from\nthe declarations the panel validates with, so it answers with the panel down.",
+        "operationId": "schema_v1_schema_get",
+        "responses": {
+          "200": {
+            "description": "The settings' declarations as JSON Schema 2020-12, `x-schema-version` its version.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/cards/{card}/about": {
+      "get": {
+        "summary": "About",
+        "description": "A card's information page, as Markdown. A card is named as its manifest names it,\nand anything else is refused before a file is read.",
+        "operationId": "about_v1_cards__card__about_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "card",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Card"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/markdown": {}
+            }
+          },
+          "404": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scenes": {
+      "get": {
+        "summary": "Listing",
+        "description": "Every scene a switch may name: the built-ins, then the stored scenes by name.",
+        "operationId": "listing_v1_scenes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scenes"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create",
+        "description": "Stores a new scene at revision 1, under an id the host gives it. Duplicating a\nbuilt-in is reading it and creating a scene from its document.",
+        "operationId": "create_v1_scenes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewScene"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/scenes/{scene_id}": {
+      "get": {
+        "summary": "Read Scene",
+        "description": "A scene's document: a built-in's file as it ships, or a stored scene's current\nrevision. A scene is named by its id, never by a path.",
+        "operationId": "read_scene_v1_scenes__scene_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scene_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Write Scene",
+        "description": "Stores the scene's next revision. The screen is unchanged until a reload.",
+        "operationId": "write_scene_v1_scenes__scene_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scene_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Edit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Scene",
+        "description": "Deletes a stored scene with its revisions. Refused for the scene on screen and the\none the panel is recorded to start on.",
+        "operationId": "delete_scene_v1_scenes__scene_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scene_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scenes/{scene_id}/revisions": {
+      "get": {
+        "summary": "Scene Revisions",
+        "description": "A stored scene's kept earlier revisions, newest first. A built-in keeps none.",
+        "operationId": "scene_revisions_v1_scenes__scene_id__revisions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scene_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Revisions"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scenes/validate": {
+      "post": {
+        "summary": "Validate Scene",
+        "description": "Every failure a scene would be refused for, an image the host does not hold among\nthem, with nothing stored.",
+        "operationId": "validate_scene_v1_scenes_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Draft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/scenes/{scene_id}/revert": {
+      "post": {
+        "summary": "Revert Scene",
+        "description": "Stores a kept revision's content as the scene's next revision, checked as any\nwrite is.",
+        "operationId": "revert_scene_v1_scenes__scene_id__revert_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scene_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scene Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertTo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SceneWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/install": {
+      "get": {
+        "summary": "Read Install",
+        "description": "Every declared install block: as written, or revision 0 on its defaults.",
+        "operationId": "read_install_v1_install_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallBlocks"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/install/{block}/revisions": {
+      "get": {
+        "summary": "Install Revisions",
+        "description": "A block's kept earlier revisions, newest first.",
+        "operationId": "install_revisions_v1_install__block__revisions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Revisions"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/install/validate": {
+      "post": {
+        "summary": "Validate Install",
+        "description": "Every failure in install blocks, given as `{block: document}`, with nothing\nstored.",
+        "operationId": "validate_install_v1_install_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Draft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/install/{block}": {
+      "put": {
+        "summary": "Write Install",
+        "description": "Stores the block's next revision. A change to a chain setting restarts a running\npanel, and is refused while a calibration has it.",
+        "operationId": "write_install_v1_install__block__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Edit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/install/{block}/revert": {
+      "post": {
+        "summary": "Revert Install",
+        "description": "Stores a kept revision's content as the block's next revision, as a write is.",
+        "operationId": "revert_install_v1_install__block__revert_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Block"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertTo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/images": {
+      "get": {
+        "summary": "Images Listed",
+        "description": "Every image a scene may name: the uploads, then those that ship with audio-vue.",
+        "operationId": "images_listed_v1_images_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Images"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Upload",
+        "description": "Uploads a backdrop image as the request's body, a PNG or a JPEG, at most 16 MiB\nand 4,096 px a side. Its id is the SHA-256 of its bytes, so the same image twice is\none image. A scene names it by that id.",
+        "operationId": "upload_v1_images_post",
+        "requestBody": {
+          "content": {
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Uploaded"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Content Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/images/{image_id}": {
+      "get": {
+        "summary": "Image",
+        "description": "An image's bytes, an upload's or a shipped one's, by its id, never by a path.",
+        "operationId": "image_v1_images__image_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "image/png": {},
+              "image/jpeg": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete",
+        "description": "Deletes an upload. Refused while a stored scene's backdrop names it, naming those\nscenes.",
+        "operationId": "delete_v1_images__image_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Analysis": {
+        "properties": {
+          "p50_ms": {
+            "type": "number",
+            "title": "P50 Ms"
+          },
+          "p99_ms": {
+            "type": "number",
+            "title": "P99 Ms"
+          },
+          "max_ms": {
+            "type": "number",
+            "title": "Max Ms"
+          },
+          "budget_ms": {
+            "type": "number",
+            "title": "Budget Ms"
+          },
+          "backlog_ms": {
+            "type": "number",
+            "title": "Backlog Ms"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Analysis",
+        "description": "Analysis time per block, and the audio waiting for it."
+      },
+      "Arm": {
+        "properties": {
+          "stated": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Stated",
+            "description": "What the run cannot measure, by name, `kind` alone being a word."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Arm"
+      },
+      "Calibration": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "age_days": {
+            "type": "number",
+            "title": "Age Days"
+          },
+          "schedule_version": {
+            "type": "integer",
+            "title": "Schedule Version"
+          },
+          "detector_schedule_version": {
+            "type": "integer",
+            "title": "Detector Schedule Version"
+          },
+          "trim_db": {
+            "type": "number",
+            "title": "Trim Db"
+          },
+          "noise_floor_dbfs": {
+            "type": "number",
+            "title": "Noise Floor Dbfs"
+          },
+          "lifecycle": {
+            "type": "string",
+            "title": "Lifecycle"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Calibration",
+        "description": "Which reference frame the readings are in."
+      },
+      "Capture": {
+        "properties": {
+          "open": {
+            "type": "boolean",
+            "title": "Open"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live"
+          },
+          "device": {
+            "type": "string",
+            "title": "Device"
+          },
+          "clip": {
+            "type": "string",
+            "title": "Clip"
+          },
+          "rate_hz": {
+            "type": "integer",
+            "title": "Rate Hz"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "overruns": {
+            "type": "integer",
+            "title": "Overruns"
+          },
+          "blocks": {
+            "type": "integer",
+            "title": "Blocks"
+          },
+          "frame_age_s": {
+            "type": "number",
+            "title": "Frame Age S"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Capture",
+        "description": "The input, and how old the newest frame is: a growing age with no error is a capture\nor an analysis that has hung."
+      },
+      "Checked": {
+        "properties": {
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            },
+            "type": "array",
+            "title": "Failures"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "failures"
+        ],
+        "title": "Checked",
+        "description": "Every failure the document has, none where it passes."
+      },
+      "Client": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "paired_at": {
+            "type": "string",
+            "title": "Paired At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "paired_at"
+        ],
+        "title": "Client"
+      },
+      "Clients": {
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/Client"
+            },
+            "type": "array",
+            "title": "Clients"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "clients"
+        ],
+        "title": "Clients"
+      },
+      "Devices": {
+        "properties": {
+          "devices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Devices",
+            "description": "Capture devices, as ALSA names them."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why the list is empty, where it is."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "devices"
+        ],
+        "title": "Devices"
+      },
+      "Display": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "runs": {
+            "type": "boolean",
+            "title": "Runs"
+          },
+          "why_not": {
+            "type": "string",
+            "title": "Why Not"
+          },
+          "width_px": {
+            "type": "integer",
+            "title": "Width Px"
+          },
+          "height_px": {
+            "type": "integer",
+            "title": "Height Px"
+          },
+          "saver": {
+            "type": "string",
+            "title": "Saver"
+          },
+          "saver_after_min": {
+            "type": "number",
+            "title": "Saver After Min"
+          },
+          "sleep_after_min": {
+            "type": "number",
+            "title": "Sleep After Min"
+          },
+          "threshold_lufs": {
+            "type": "number",
+            "title": "Threshold Lufs"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Display",
+        "description": "Who has the display, its size, and the idle stages in force."
+      },
+      "Draft": {
+        "properties": {
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "doc"
+        ],
+        "title": "Draft",
+        "description": "A document to check, which nothing stores."
+      },
+      "Edit": {
+        "properties": {
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          },
+          "base_rev": {
+            "type": "integer",
+            "title": "Base Rev",
+            "description": "The revision this edit was made from; 0 for an install block never written."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "doc",
+          "base_rev"
+        ],
+        "title": "Edit"
+      },
+      "FailedBlock": {
+        "properties": {
+          "block": {
+            "type": "string",
+            "title": "Block"
+          },
+          "failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failures"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "FailedBlock"
+      },
+      "Failure": {
+        "properties": {
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "place",
+          "message"
+        ],
+        "title": "Failure",
+        "description": "One thing wrong with a document: where, the empty place being the document itself,\nand what."
+      },
+      "Fault": {
+        "properties": {
+          "severity": {
+            "type": "integer",
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Fault"
+      },
+      "Grid": {
+        "properties": {
+          "cols": {
+            "type": "integer",
+            "title": "Cols"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Grid"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "faults": {
+            "items": {
+              "$ref": "#/components/schemas/Fault"
+            },
+            "type": "array",
+            "title": "Faults"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Health",
+        "description": "What the health strip shows, highest severity first."
+      },
+      "Host": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Stable across addresses and restarts."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "width_px": {
+            "type": "integer",
+            "title": "Width Px",
+            "description": "Null unless a running panel says it."
+          },
+          "height_px": {
+            "type": "integer",
+            "title": "Height Px"
+          },
+          "updating": {
+            "type": "string",
+            "enum": [
+              "check",
+              "upgrade",
+              "reboot"
+            ],
+            "title": "Updating",
+            "description": "The OS update action running, null where none is or the host manages none."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Host"
+      },
+      "Image": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "shipped": {
+            "type": "boolean",
+            "title": "Shipped"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "bytes": {
+            "type": "integer",
+            "title": "Bytes"
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "added_at": {
+            "type": "string",
+            "title": "Added At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "shipped"
+        ],
+        "title": "Image",
+        "description": "An image a scene may name: an upload, with its format and size, or a shipped one."
+      },
+      "Images": {
+        "properties": {
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            },
+            "type": "array",
+            "title": "Images"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "images"
+        ],
+        "title": "Images"
+      },
+      "Install": {
+        "properties": {
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/FailedBlock"
+            },
+            "type": "array",
+            "title": "Failed"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Install",
+        "description": "Each install block that failed validation and runs on its defaults, with why."
+      },
+      "InstallBlock": {
+        "properties": {
+          "block": {
+            "type": "string",
+            "title": "Block"
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev"
+          },
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "block",
+          "rev",
+          "doc"
+        ],
+        "title": "InstallBlock",
+        "description": "An install block: revision 0 and an empty document where it is on its defaults."
+      },
+      "InstallBlocks": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/InstallBlock"
+            },
+            "type": "array",
+            "title": "Blocks"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "blocks"
+        ],
+        "title": "InstallBlocks"
+      },
+      "InstallWritten": {
+        "properties": {
+          "block": {
+            "type": "string",
+            "title": "Block"
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev"
+          },
+          "applies": {
+            "type": "string",
+            "enum": [
+              "on_restart",
+              "on_reload",
+              "restarted",
+              "on_start"
+            ],
+            "title": "Applies"
+          },
+          "chain_changed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Chain Changed",
+            "description": "The chain settings this write changed."
+          },
+          "calibration": {
+            "type": "string",
+            "title": "Calibration",
+            "description": "What a chain change does to calibration."
+          },
+          "exit_code": {
+            "type": "integer",
+            "title": "Exit Code",
+            "description": "The restart's exit status, where it ran."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "What the restart printed, where it ran."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "block",
+          "rev",
+          "applies"
+        ],
+        "title": "InstallWritten",
+        "description": "An install block stored. With no chain setting changed it applies when the panel next\nstarts, or for the type sizes (`fonts`) when it next builds a scene, by a reload or a switch.\nA chain change restarts a running panel and leaves a stopped one stopped."
+      },
+      "Invalid": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            },
+            "type": "array",
+            "title": "Failures"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "detail",
+          "failures"
+        ],
+        "title": "Invalid",
+        "description": "A document that fails validation, with every failure."
+      },
+      "LastAction": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "upgrade"
+            ],
+            "title": "Action"
+          },
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "description": "systemd's: `success`, else how it ended, such as `exit-code` or `timeout`."
+          },
+          "finished_at": {
+            "type": "string",
+            "title": "Finished At",
+            "description": "UTC, ISO 8601."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "action",
+          "result",
+          "finished_at"
+        ],
+        "title": "LastAction",
+        "description": "The last check or upgrade, which a host back from an upgrade's reboot still gives."
+      },
+      "NewScene": {
+        "properties": {
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "doc"
+        ],
+        "title": "NewScene"
+      },
+      "OffStandard": {
+        "properties": {
+          "place": {
+            "type": "string",
+            "title": "Place"
+          },
+          "card": {
+            "type": "string",
+            "title": "Card"
+          },
+          "setting": {
+            "type": "string",
+            "title": "Setting"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "OffStandard",
+        "description": "A measurement setting on screen whose value its standard does not define."
+      },
+      "Outcome": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "refused",
+              "expired",
+              "unknown",
+              "no panel"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Outcome",
+        "description": "What became of a command: its `reason` where it was not done, else its result."
+      },
+      "Package": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "installed": {
+            "type": "string",
+            "title": "Installed",
+            "description": "Null for a package an upgrade would add."
+          },
+          "candidate": {
+            "type": "string",
+            "title": "Candidate",
+            "description": "Null for one it would remove."
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "upgrade",
+              "install",
+              "remove"
+            ],
+            "title": "Change"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name",
+          "change"
+        ],
+        "title": "Package",
+        "description": "One package an upgrade would change."
+      },
+      "Pairing": {
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Pairing",
+        "description": "Whether a pairing code is showing. Never the code."
+      },
+      "PairingAsked": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "description": "What the client calls itself."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "PairingAsked"
+      },
+      "PairingConfirmed": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "The six digits the panel shows."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "PairingConfirmed"
+      },
+      "PairingShown": {
+        "properties": {
+          "ttl_s": {
+            "type": "number",
+            "title": "Ttl S",
+            "description": "How long the code on the panel stands."
+          },
+          "tries": {
+            "type": "integer",
+            "title": "Tries",
+            "description": "Wrong codes allowed before it is withdrawn."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "ttl_s",
+          "tries"
+        ],
+        "title": "PairingShown"
+      },
+      "Refusal": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "Refusal"
+      },
+      "RevertTo": {
+        "properties": {
+          "rev": {
+            "type": "integer",
+            "title": "Rev",
+            "description": "The kept revision whose content becomes the next revision."
+          },
+          "base_rev": {
+            "type": "integer",
+            "title": "Base Rev"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rev",
+          "base_rev"
+        ],
+        "title": "RevertTo"
+      },
+      "Revision": {
+        "properties": {
+          "rev": {
+            "type": "integer",
+            "title": "Rev"
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          },
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rev",
+          "saved_at",
+          "doc"
+        ],
+        "title": "Revision"
+      },
+      "Revisions": {
+        "properties": {
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/Revision"
+            },
+            "type": "array",
+            "title": "Revisions"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "revisions"
+        ],
+        "title": "Revisions",
+        "description": "A document's kept earlier revisions, newest first."
+      },
+      "Run": {
+        "properties": {
+          "pid": {
+            "type": "integer",
+            "title": "Pid"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "uptime_s": {
+            "type": "number",
+            "title": "Uptime S"
+          },
+          "phase": {
+            "type": "string",
+            "title": "Phase"
+          },
+          "screen_status": {
+            "type": "string",
+            "title": "Screen Status"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Run",
+        "description": "Where the run is: `phase` is `starting`, `waiting`, `holding` or `drawing`."
+      },
+      "RunEntry": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "has_report": {
+            "type": "boolean",
+            "title": "Has Report"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "run_id",
+          "has_report"
+        ],
+        "title": "RunEntry"
+      },
+      "Runs": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunEntry"
+            },
+            "type": "array",
+            "title": "Runs",
+            "description": "Newest first."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "runs"
+        ],
+        "title": "Runs"
+      },
+      "Scene": {
+        "properties": {
+          "spec": {
+            "type": "string",
+            "title": "Spec"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "grid": {
+            "$ref": "#/components/schemas/Grid"
+          },
+          "calibration_owns_panel": {
+            "type": "boolean",
+            "title": "Calibration Owns Panel"
+          },
+          "off_standard": {
+            "items": {
+              "$ref": "#/components/schemas/OffStandard"
+            },
+            "type": "array",
+            "title": "Off Standard"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Scene",
+        "description": "The scene on screen, by what a switch takes (`spec`): a built-in's name or a stored\nscene's id."
+      },
+      "SceneDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "built_in": {
+            "type": "boolean",
+            "title": "Built In"
+          },
+          "fixed": {
+            "type": "boolean",
+            "title": "Fixed",
+            "description": "A built-in for a process, the calibration scene: not offered to pick or duplicate, and refused as a copy.",
+            "default": false
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev",
+            "description": "A stored scene's current revision; null for a built-in."
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          },
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "built_in",
+          "doc"
+        ],
+        "title": "SceneDocument"
+      },
+      "SceneSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "built_in": {
+            "type": "boolean",
+            "title": "Built In"
+          },
+          "fixed": {
+            "type": "boolean",
+            "title": "Fixed",
+            "description": "A built-in for a process, the calibration scene: not offered to pick or duplicate, and refused as a copy.",
+            "default": false
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev",
+            "description": "A stored scene's current revision; null for a built-in."
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "built_in"
+        ],
+        "title": "SceneSummary",
+        "description": "A scene on the roster: a built-in by its name, or a stored scene by the id the host\ngave it. `name` is what a client shows."
+      },
+      "SceneWritten": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev"
+          },
+          "applies": {
+            "type": "string",
+            "const": "on_reload",
+            "title": "Applies"
+          },
+          "analysis_changed": {
+            "type": "boolean",
+            "title": "Analysis Changed",
+            "description": "Whether the `analysis` block changed, so putting it up may rebuild capture and restart history."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "rev",
+          "applies",
+          "analysis_changed"
+        ],
+        "title": "SceneWritten",
+        "description": "A scene stored. The scene on screen takes it on a reload or a switch, never before."
+      },
+      "Scenes": {
+        "properties": {
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/SceneSummary"
+            },
+            "type": "array",
+            "title": "Scenes"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "scenes"
+        ],
+        "title": "Scenes"
+      },
+      "Sections": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/Run"
+          },
+          "scene": {
+            "$ref": "#/components/schemas/Scene"
+          },
+          "capture": {
+            "$ref": "#/components/schemas/Capture"
+          },
+          "calibration": {
+            "$ref": "#/components/schemas/Calibration"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "display": {
+            "$ref": "#/components/schemas/Display"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/Analysis"
+          },
+          "pairing": {
+            "$ref": "#/components/schemas/Pairing"
+          },
+          "install": {
+            "$ref": "#/components/schemas/Install"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Sections"
+      },
+      "Service": {
+        "properties": {
+          "exit_code": {
+            "type": "integer",
+            "title": "Exit Code"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "stale",
+              "capture_stopped",
+              "no_audio"
+            ],
+            "title": "Condition"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "exit_code",
+          "text",
+          "condition"
+        ],
+        "title": "Service",
+        "description": "What `tools/panel.py` said, and the panel's condition after it."
+      },
+      "Stale": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "current_rev": {
+            "type": "integer",
+            "title": "Current Rev"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "detail",
+          "current_rev"
+        ],
+        "title": "Stale",
+        "description": "A write based on a revision the document has moved on from."
+      },
+      "Start": {
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "Scene",
+            "description": "A scene to record and start, a built-in's name or a stored scene's id; none restarts what is recorded."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Start"
+      },
+      "Started": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "started",
+              "refused"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Started",
+        "description": "Whether an update action started. It runs on after the answer."
+      },
+      "State": {
+        "properties": {
+          "schema": {
+            "type": "integer",
+            "title": "Schema",
+            "description": "The state's schema, null where nothing answers."
+          },
+          "age_s": {
+            "type": "number",
+            "title": "Age S",
+            "description": "How old the sections are."
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "stale",
+              "capture_stopped",
+              "no_audio"
+            ],
+            "title": "Condition"
+          },
+          "since": {
+            "type": "string",
+            "title": "Since",
+            "description": "When the panel last answered, UTC, ISO 8601."
+          },
+          "sections": {
+            "$ref": "#/components/schemas/Sections"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "condition",
+          "sections"
+        ],
+        "title": "State",
+        "description": "The panel's state with its condition. Down, the sections are empty and `since` is when\nthe panel last answered."
+      },
+      "Switch": {
+        "properties": {
+          "scene": {
+            "type": "string",
+            "title": "Scene",
+            "description": "A scene on the panel's roster: a built-in's name or a stored scene's id."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "scene"
+        ],
+        "title": "Switch"
+      },
+      "Token": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "Sent as `Authorization: Bearer`. Given once."
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "token",
+          "client_id"
+        ],
+        "title": "Token"
+      },
+      "UpdateLog": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "upgrade",
+              "reboot"
+            ],
+            "title": "Action",
+            "description": "The action running, or the last one."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Its output's last lines, the newest last."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "UpdateLog"
+      },
+      "Updates": {
+        "properties": {
+          "granted": {
+            "type": "boolean",
+            "title": "Granted",
+            "description": "Whether the agent may run them here."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why not, where it may not."
+          },
+          "running": {
+            "type": "string",
+            "enum": [
+              "check",
+              "upgrade",
+              "reboot"
+            ],
+            "title": "Running"
+          },
+          "checked_at": {
+            "type": "string",
+            "title": "Checked At",
+            "description": "When the last check that succeeded ended, UTC, ISO 8601."
+          },
+          "packages": {
+            "items": {
+              "$ref": "#/components/schemas/Package"
+            },
+            "type": "array",
+            "title": "Packages",
+            "description": "What an upgrade would do, by the package lists the last check fetched."
+          },
+          "last": {
+            "$ref": "#/components/schemas/LastAction"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "granted"
+        ],
+        "title": "Updates",
+        "description": "The OS's updates on this host. audio-vue's own are not among them."
+      },
+      "Uploaded": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The image's id: the SHA-256 of its bytes, then `.png` or `.jpg`."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "Uploaded"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Version": {
+        "properties": {
+          "api": {
+            "type": "string",
+            "title": "Api",
+            "description": "This API's version."
+          },
+          "schema": {
+            "type": "integer",
+            "title": "Schema",
+            "description": "The state's schema, null where the panel does not answer."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "api"
+        ],
+        "title": "Version"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "The token pairing gave.",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -5,29 +5,20 @@ import SwiftUI
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     /// The one host connection, the app's rather than the window's, so closing the window keeps it.
     @State private var connection = HostConnection(tokens: FileTokenStore.applicationSupport)
-
-    #if DEBUG
-        /// The sketch's scenes as edited, kept here so they outlive the sketch's window.
-        @State private var sceneStore = SceneStore()
-    #endif
+    /// The scenes as edited on the Scenes page's sample panel, kept here so they outlive the window.
+    @State private var sceneStore = SceneStore()
 
     var body: some Scene {
-        Window("Host Connection", id: ConnectView.windowID) {
-            ConnectView(connection: connection)
+        // The panel window, around the scene canvas. Its Arrange menu acts on the canvas, the one
+        // place it applies.
+        Window("audio-vue Console", id: PanelWindow.windowID) {
+            PanelWindow(connection: connection)
+                .environment(sceneStore)
         }
-        .commands { HostCommands(connection: connection) }
-        #if DEBUG
-            // The UI sketch, in the Window menu, around the scene canvas. Its Arrange menu acts on
-            // the canvas, the one place it applies.
-            Window("UI Sketch", id: "sketch") {
-                SketchShell()
-                    .environment(sceneStore)
-            }
-            .defaultSize(
-                width: SketchMetrics.windowDefaultWidth, height: SketchMetrics.windowDefaultHeight
-            )
-            .commands { ArrangeCommands() }
-        #endif
+        .defaultSize(
+            width: SketchMetrics.windowDefaultWidth, height: SketchMetrics.windowDefaultHeight
+        )
+        .commands { ArrangeCommands() }
     }
 }
 

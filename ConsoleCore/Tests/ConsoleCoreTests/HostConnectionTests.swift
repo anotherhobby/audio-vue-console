@@ -38,14 +38,14 @@ import Testing
     }
 
     @Test func aCompatibleHost() async throws {
-        let connection = connection(FakeTransport.version("2.0.0", schema: "3"))
+        let connection = connection(FakeTransport.version(schema: "3"))
         await connection.connect()
         guard case .connected(let address, let version, paired: false) = connection.state else {
             Issue.record("Not connected: \(connection.state)")
             return
         }
         #expect(address.description == "audio-vue")
-        #expect(version.api.description == "2.0.0")
+        #expect(version.api.description == FakeTransport.supportedAPI)
         #expect(version.schema == 3)
     }
 
@@ -60,8 +60,8 @@ import Testing
     }
 
     @Test(arguments: [
-        ("3.0.0", APIVersion.Compatibility.hostNewer),
-        ("1.0.0", .hostOlder),
+        (FakeTransport.newerAPI, APIVersion.Compatibility.hostNewer),
+        (FakeTransport.olderAPI, .hostOlder),
     ])
     func anIncompatibleHostIsNotConnected(api: String, verdict: APIVersion.Compatibility) async {
         let connection = connection(FakeTransport.version(api))
@@ -100,7 +100,7 @@ import Testing
 
     @Test func anIncompatibleHostsAddressIsSavedToo() async {
         let store = MemoryAddressStore()
-        await connection(FakeTransport.version("3.0.0"), store: store).connect()
+        await connection(FakeTransport.version(FakeTransport.newerAPI), store: store).connect()
         #expect(store.saved == "audio-vue")
     }
 

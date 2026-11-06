@@ -76,7 +76,9 @@ import Testing
     }
 
     @Test func revokingAClientAlreadyGone() async throws {
-        let transport = FakeTransport([.clients: Self.one, .revoke("old"): .status(404, "")])
+        let transport = FakeTransport([
+            .clients: Self.one, .revoke("old"): .status(404, #"{"detail": "no such client"}"#),
+        ])
         let clients = try clients(transport)
         await clients.revoke(PairedClient(id: "old", name: "Lost laptop", pairedAtText: ""))
         #expect(clients.state == .loaded)

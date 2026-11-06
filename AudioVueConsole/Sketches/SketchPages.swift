@@ -1,30 +1,6 @@
 import SwiftUI
 
-/// The settings-style pages, as grouped forms. Every value is made up.
-struct SketchOverviewPage: View {
-    let panel: SketchPanel
-
-    var body: some View {
-        Form {
-            Section("Panel") {
-                LabeledContent("Condition", value: panel.isUp ? "Up, drawing" : "Down")
-                LabeledContent("Scene", value: panel.scene)
-                LabeledContent("Display", value: "\(panel.widthPx) × \(panel.heightPx)")
-            }
-            Section("Capture") {
-                LabeledContent("Device", value: "m2x4HD")
-                LabeledContent("Rate", value: "96 kHz")
-                LabeledContent("Analysis", value: "0.9 ms of a 5.3 ms budget")
-            }
-            Section("Calibration") {
-                LabeledContent("Status", value: "Calibrated \(panel.calibratedDaysAgo) days ago")
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle(panel.name)
-    }
-}
-
+/// The settings-style pages still on sample values, as grouped forms. Every value is made up.
 struct SketchInputPage: View {
     @State private var device = "m2x4HD"
     @State private var pair = "Inputs 1–2"
@@ -97,7 +73,7 @@ struct SketchDisplayPage: View {
 }
 
 struct SketchLaterPage: View {
-    let section: SketchSection
+    let section: PanelSection
 
     var body: some View {
         ContentUnavailableView(
@@ -115,11 +91,5 @@ struct SketchChainWarning: View {
             systemImage: "exclamationmark.triangle.fill"
         )
         .foregroundStyle(.orange)
-    }
-}
-
-#Preview("Overview") {
-    if let panel = SketchData.shared.panels.first {
-        SketchOverviewPage(panel: panel)
     }
 }

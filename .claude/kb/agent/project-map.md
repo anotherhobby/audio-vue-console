@@ -34,14 +34,16 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   "build-phase": { "build-phase": "frameworks" } }]` (written by Xcode's Add Local, 2026-11-03).
   `INFOPLIST_FILE` is `AudioVueConsole-Info.plist` at the root, a partial plist Xcode merges with
   the generated one (ATS only); it sits outside the synchronized folder so it is not a resource.
-- `AudioVueConsole/`: the app target's sources. `AudioVueConsoleApp.swift` (the `App`: it owns the
-  one `HostConnection`, so closing the window keeps it; the single "Host Connection" window; an app
-  delegate that keeps the app running with no window; and in Debug builds a second "UI Sketch"
-  window from the Window menu), `ConnectView.swift` (binds the connection, connects at launch, and
-  opens the pairing and clients sheets; `ConnectForm` takes a state so previews show each),
-  `PairingSheet.swift` and `ClientsSheet.swift` (each a form taking plain values, for previews),
-  `HostCommands.swift` (the Host menu: Pair, Show Clients), assets, and `Sketches/`, the throwaway
-  clickable UI sketch, whose scene editor now hosts the kept canvas (`pairing`, 2026-11-04).
+- `AudioVueConsole/`: the app target's sources (`panel-client`, 2026-11-05). `AudioVueConsoleApp.swift`
+  (the `App`: it owns the one `HostConnection` and the `SceneStore`, so closing the window keeps
+  them; the single panel window; an app delegate that keeps the app running with no window),
+  `PanelWindow.swift` (the window: the sidebar's picker with Add Panel…, the pages, the connect at
+  launch, and the `LiveState` it watches while open; pages other than Overview still read
+  `SketchData`), `OverviewPage.swift` (Panel, Capture and Calibration from `OverviewRows`, then the
+  Pairing section; `OverviewForm` takes plain values for previews), `AddPanelSheet.swift`,
+  `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
+  `PairingSheet.swift`, assets, and `Sketches/`, the sample pages and their data, whose Scenes page
+  hosts the kept canvas.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
   marquee and keys into editor calls; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands`
@@ -54,14 +56,25 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Its scene layout (`SceneLayout`, `SceneLayoutEdits`, `LayoutRefusal`, `GridGeometry`,
   `SceneEditor`) holds every canvas rule: a layout value is always one the panel would load, each
   edit returns a new one or a refusal, and the editor owns selection and undo.
-  Its host side (`pairing`, 2026-11-04): `HostClient` builds every request in one `send` (method,
-  JSON body, optional Bearer token, never `Origin`) through `HostTransport.send`, with the calls by
-  subject in `HostClient+Pairing.swift` and `HostClient+Clients.swift` and statuses named in
-  `HTTPStatus`. `HostConnection` owns the client and the `TokenStore`, says whether the app is
-  paired, and makes and holds the `HostPairing` and `PairedClients` models the sheets show.
-  `TokenStore.swift` holds the protocol and `Pairings`, the rules every store follows;
-  `FileTokenStore` writes `pairings.json` in Application Support, owner-only. `ClientName` is the
-  name the app pairs under. Tests drive it all through `FakeTransport`, which answers by route.
+  Its host side (`panel-client`, 2026-11-05): the `HostAPI` target holds `openapi.json`, the host
+  contract as `tools/refresh-contract.sh` writes it, and `swift-openapi-generator`'s build plugin
+  generates the client from it at `package` access, so only `ConsoleCore` reaches it; its
+  `ContractFile` names the bundled copy. `SavedContract` reads that copy for the supported major and
+  the operations with no `security`. `HostClient` is the face: each call builds a generated `Client`
+  for its address with `HostRules`, the one middleware that strips `Origin`, adds the Bearer token to
+  every operation outside the open set and turns a 401 to it into `tokenRefused`, and maps the
+  generated answers to this package's values; the calls by subject are in `HostClient+Pairing.swift`
+  and `HostClient+Clients.swift`. `HostConnection` owns the client and the `TokenStore`, says
+  whether the app is paired, keeps the paired host's `HostIdentity`, and makes the `HostPairing`,
+  `PairedClients` and `LiveState` models. `LiveState` holds the pushed `PanelState` from an
+  `EventSource` (`WebSocketEventSource` in the app), reopening after a close; `OverviewRows` turns
+  it into the Overview's text. `TokenStore.swift` holds the protocol and `Pairings`, the rules every
+  store follows; `FileTokenStore` writes `pairings.json` in Application Support, owner-only.
+  `ClientName` is the name the app pairs under. Tests drive it through `FakeTransport`, a
+  `ClientTransport` that answers by method and path and records each request as a `URLRequest`, and
+  `ScriptedEvents`; `LiveHostTests` runs against a real host only when asked (`commands.md`).
+- `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable
+  fields as optional for the generator (`commands.md`).
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:
   no SwiftUI or AppKit import under `ConsoleCore/Sources`, and no `import Network` or `URLSession`
   under `AudioVueConsole/`. It finds the repository from `#filePath`, so moving the test file

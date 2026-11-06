@@ -34,12 +34,13 @@ public final class HostPairing: Identifiable {
     private let client: HostClient
     private let store: any TokenStore
     private let name: String
-    private let onPaired: @MainActor (Pairing) -> Void
+    private let onPaired: @MainActor (Pairing, HostIdentity) -> Void
 
-    /// A pairing that names this app `name` and calls `onPaired` once the token is kept.
+    /// A pairing that names this app `name` and calls `onPaired`, with the host it read, once the
+    /// token is kept.
     init(
         address: HostAddress, client: HostClient, store: any TokenStore, name: String,
-        onPaired: @escaping @MainActor (Pairing) -> Void
+        onPaired: @escaping @MainActor (Pairing, HostIdentity) -> Void
     ) {
         self.address = address
         self.client = client
@@ -104,7 +105,7 @@ public final class HostPairing: Identifiable {
             return
         }
         await revokeEarlierClient(of: host.id, with: grant)
-        keep(Pairing(hostID: host.id, token: grant.token, clientID: grant.clientID))
+        keep(Pairing(hostID: host.id, token: grant.token, clientID: grant.clientID), of: host)
     }
 
     static func isCode(_ text: String) -> Bool {
@@ -137,7 +138,7 @@ public final class HostPairing: Identifiable {
         }
     }
 
-    private func keep(_ pairing: Pairing) {
+    private func keep(_ pairing: Pairing, of host: HostIdentity) {
         do {
             try store.save(pairing, at: address)
         } catch {
@@ -145,6 +146,6 @@ public final class HostPairing: Identifiable {
             return
         }
         state = .paired
-        onPaired(pairing)
+        onPaired(pairing, host)
     }
 }

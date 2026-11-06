@@ -31,9 +31,11 @@ extension HostClient {
     public func clients(at address: HostAddress, token: HostToken) async throws(HostFailure)
         -> [PairedClient]
     {
-        let (data, response) = try await send(.get, "v1/clients", at: address, token: token)
-        guard response.statusCode == HTTPStatus.ok else { throw .unexpectedAnswer }
-        return try Self.decode(ListedClients.self, from: data).clients.map {
+        let output = try await call(at: address, token: token) {
+            try await $0.clientsV1ClientsGet()
+        }
+        guard case .ok(let ok) = output else { throw .unexpectedAnswer }
+        return try Self.body { try ok.body.json }.clients.map {
             PairedClient(id: $0.id, name: $0.name, pairedAtText: $0.pairedAt)
         }
     }
@@ -43,28 +45,13 @@ extension HostClient {
     public func revoke(_ clientID: String, at address: HostAddress, token: HostToken)
         async throws(HostFailure)
     {
-        let (_, response) = try await send(
-            .delete, "v1/clients/\(clientID)", at: address, token: token)
-        switch response.statusCode {
-        case HTTPStatus.noContent: return
-        case HTTPStatus.notFound: throw .unknownClient
-        default: throw .unexpectedAnswer
+        let output = try await call(at: address, token: token) {
+            try await $0.revokeV1ClientsClientIdDelete(path: .init(clientId: clientID))
+        }
+        switch output {
+        case .noContent: return
+        case .notFound: throw .unknownClient
+        case .unauthorized, .unprocessableContent, .undocumented: throw .unexpectedAnswer
         }
     }
-}
-
-/// The body of `GET /v1/clients`.
-private struct ListedClients: Decodable {
-    struct Client: Decodable {
-        let id: String
-        let name: String
-        let pairedAt: String
-
-        enum CodingKeys: String, CodingKey {
-            case id, name
-            case pairedAt = "paired_at"
-        }
-    }
-
-    let clients: [Client]
 }

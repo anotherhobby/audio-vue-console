@@ -1,4 +1,5 @@
 import Foundation
+import HostAPI
 import Testing
 
 @testable import ConsoleCore
@@ -68,9 +69,9 @@ struct HostClientTests {
     }
 
     @Test func aRequestWithATokenCarriesItAsBearer() async throws {
-        let transport = FakeTransport([.host: .status(200, "{}")])
+        let transport = FakeTransport([.host: .status(200, Self.host)])
         _ = try await HostClient(transport: transport)
-            .send(.get, "v1/host", at: try #require(address), token: HostToken("secret"))
+            .host(at: try #require(address), token: HostToken("secret"))
         let request = try #require(await transport.requests.first)
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer secret")
         #expect(request.value(forHTTPHeaderField: "Origin") == nil)
@@ -83,31 +84,44 @@ struct HostClientTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
     }
 
+    @Test func anOpenOperationCarriesNoTokenEvenWhenGivenOne() async throws {
+        let transport = FakeTransport.version()
+        let client = HostClient(transport: transport)
+        _ = try await client.call(at: try #require(address), token: HostToken("secret")) {
+            try await $0.versionV1VersionGet()
+        }
+        let request = try #require(await transport.requests.first)
+        #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    }
+
     @Test func aBodyGoesAsJSON() async throws {
-        struct Body: Encodable { let name: String }
-        let transport = FakeTransport([.ask: .status(200, "{}")])
-        _ = try await HostClient(transport: transport).send(
-            .post, "v1/pairing", at: try #require(address), body: Body(name: "hobbymac"))
+        let transport = FakeTransport([.ask: .status(200, #"{"ttl_s": 120, "tries": 5}"#)])
+        _ = try await HostClient(transport: transport)
+            .askPairing(at: try #require(address), name: "hobbymac")
         let request = try #require(await transport.requests.first)
         #expect(request.httpMethod == "POST")
-        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+        #expect(
+            request.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("application/json") == true
+        )
         #expect(request.value(forHTTPHeaderField: "Origin") == nil)
-        let body = try #require(request.httpBody)
-        #expect(String(bytes: body, encoding: .utf8) == #"{"name":"hobbymac"}"#)
+        let body = try JSONDecoder().decode(
+            [String: String].self, from: try #require(request.httpBody))
+        #expect(body == ["name": "hobbymac"])
     }
 
     @Test func aRefusedTokenIsToldApart() async throws {
         let transport = FakeTransport([.host: .status(401, #"{"detail": "pair first"}"#)])
         let address = try #require(address)
         await #expect(throws: HostFailure.tokenRefused) {
-            try await HostClient(transport: transport)
-                .send(.get, "v1/host", at: address, token: HostToken("stale"))
+            try await HostClient(transport: transport).host(at: address, token: HostToken("stale"))
         }
     }
 
     @Test func aTokenHidesItsValueWhenPrinted() {
         #expect(!"\(HostToken("secret"))".contains("secret"))
     }
+
+    private static let host = #"{"id": "h1", "name": "cabin", "width_px": null, "height_px": null}"#
 
     private func expectFailure(_ failure: HostFailure, from transport: FakeTransport) async {
         guard let address else {

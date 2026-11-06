@@ -1,8 +1,5 @@
 /// A host API's semantic version, read by its numeric core: `2.4.2-rc.1+abc` is 2.4.2.
 public struct APIVersion: Sendable, Hashable, CustomStringConvertible {
-    /// The one major version this app speaks. Minor releases are taken to be additive.
-    public static let supportedMajor = 2
-
     public let major: Int
     public let minor: Int
     public let patch: Int
@@ -38,9 +35,16 @@ public struct APIVersion: Sendable, Hashable, CustomStringConvertible {
         return Int(field)
     }
 
+    /// How this version stands against the API of the contract bundled with the app, the one major
+    /// version it speaks. Minor releases are taken to be additive.
     public var compatibility: Compatibility {
-        if major > Self.supportedMajor { return .hostNewer }
-        if major < Self.supportedMajor { return .hostOlder }
+        compatibility(with: .bundled)
+    }
+
+    /// How this version stands against `contract`'s major version.
+    public func compatibility(with contract: SavedContract) -> Compatibility {
+        if major > contract.major { return .hostNewer }
+        if major < contract.major { return .hostOlder }
         return .compatible
     }
 }

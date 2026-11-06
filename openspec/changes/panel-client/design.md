@@ -45,7 +45,18 @@ and `swift-openapi-urlsession`, pinned by exact version in `Package.swift`.
   writing. A build plugin's output lives in the build directory.
 - *Over a hand-written Codable client*: 40 routes and 59 schemas, changing as audio-vue changes, kept
   in step by hand.
-- The generator is set to generate types and the client, with idiomatic naming, internal access.
+- The generator is set to generate types and the client, with idiomatic naming and `package`
+  access, so `ConsoleCore` sees the generated code and the app, in another package, cannot.
+- The generator drops any property written as `anyOf` or `oneOf` with `{"type": "null"}`, which is
+  correct OpenAPI 3.1 and how FastAPI writes every nullable field (Measured, 1.14.4, 2026-11-05: 99
+  fields, every state section among them). It reads an optional property, so the refresh writes them
+  that way (D9).
+- `HostAPI` enables the upcoming feature `InternalImportsByDefault` (SE-0409). The generated code
+  imports Foundation as `package`, SwiftPM's resource accessor imports it plainly, and the two are an
+  ambiguity that warnings as errors refuse (Measured, 2026-11-05). Under the feature a plain import is
+  internal, the generated imports say their level, and nothing is ambiguous. The alternative, writing
+  the version and open routes to a generated Swift file in place of the bundled contract, is a second
+  record of what the contract says (maintainer, 2026-11-05).
 
 ### D2. A `HostAPI` target holds the contract and the generated code
 
@@ -157,9 +168,23 @@ not paired. The view only lays them out. Formatting:
 
 ### D9. Refreshing the contract
 
-`tools/refresh-contract.sh` runs `make openapi` in `../audio-vue` and copies `local/openapi.json` over
-`ConsoleCore/Sources/HostAPI/openapi.json`; with `--check` it copies nothing and exits non-zero on a
-difference, printing it. `commands.md` records both. This is the check `.claude/CLAUDE.md`'s "Host
+`tools/refresh-contract.sh` runs `make openapi` in `../audio-vue`, passes `local/openapi.json` through
+`tools/optional_nullables.py`, and writes the result over `ConsoleCore/Sources/HostAPI/openapi.json`;
+with `--check` it writes nothing and exits non-zero on a difference, printing it.
+
+The rewrite replaces each `anyOf` or `oneOf` whose branches are one or more schemas and
+`{"type": "null"}` with those schemas alone: a single schema in place of the union, or the union less
+its null. It refuses, and the refresh writes nothing, where the property is required, since a required
+nullable field written as optional would be sent as absent rather than null, and where the null branch
+sits anywhere but in a property's schema or a request body's. Every other byte of the contract is
+kept: keys in order, `info`, `security`, descriptions. No nullable field is required today (Measured,
+2026-11-05: 0 of 99), so the rewrite loses nothing. It goes once the generator reads `null` in a
+union.
+
+- *Over asking audio-vue to write nullables as optional*: its contract is correct, and would say a
+  field may be absent when it never is.
+- *Over keeping audio-vue's copy beside the rewrite*: `make openapi` makes it again at any time, and
+  `--check` compares like with like. `commands.md` records both. This is the check `.claude/CLAUDE.md`'s "Host
 Versions" runs at the start of project work.
 
 ## Risks / Trade-offs

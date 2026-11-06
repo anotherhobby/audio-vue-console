@@ -9,3 +9,6 @@ build/
 DerivedData/
 .build/
 .swiftpm/
+
+# Python bytecode from tools/
+__pycache__/

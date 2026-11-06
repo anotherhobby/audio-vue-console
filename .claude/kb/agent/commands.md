@@ -22,3 +22,21 @@ Format:
   suite, the boundary tests included. Runs from the package folder, not the root. Add
   `--filter BoundaryTests` to run only the boundaries. The runner prints `Target Platform:
   macos14.0`; that is the test host, not the package's platform.
+
+- 2026-11-05: `tools/refresh-contract.sh` - runs `make openapi` in `../audio-vue` (override with
+  `AUDIO_VUE=<path>`) and copies its `local/openapi.json` over
+  `ConsoleCore/Sources/HostAPI/openapi.json`, the contract the client is generated from, with each
+  nullable field written as optional by `tools/optional_nullables.py` (it refuses a required
+  nullable, and the saved copy is left as it was; design D9). With
+  `--check` it copies nothing, prints the diff and exits 1 on a difference: the start-of-work check in
+  `.claude/CLAUDE.md`, "Host Versions". Always regenerates, since audio-vue's `local/openapi.json`
+  can be older than its code. Never edit the saved copy by hand.
+
+- 2026-11-05: `python3 -I tools/test_optional_nullables.py` - the nullable rewrite's tests, plain
+  asserts with no pytest, since `tools/` has no environment for the gate to resolve imports in.
+
+- 2026-11-05: `AUDIO_VUE_LIVE_HOST=audio-vue.cabin.hobbysprawl.com AUDIO_VUE_PAIRINGS_DIR="$HOME/Library/Containers/com.hobbysprawl.AudioVueConsole/Data/Library/Application Support" xcrun swift test --filter LiveHostTests`
+  in `ConsoleCore/` - watches the real host's `/v1/events` with the app's own pairing, read but
+  never written, and prints the first state. Skipped without both variables. Passed on the proving
+  host (2026-11-05): states arrive and the handshake is not refused, so URLSession's WebSocket adds
+  no `Origin`.
