@@ -57,3 +57,15 @@ Format:
 - 2026-11-06: Connected means the panel can be used: green "Connected" only while paired (maintainer,
   `discovery` design D10). The picker sits in the Panel page's toolbar, titled "Panel:", naming the
   panel by address and "(discovered)" until paired (maintainer, D11).
+- 2026-11-06: The console renders scenes locally from audio-vue's real card code, bundled at build
+  and versioned by a SHA-256 checksum manifest (maintainer, three rulings, replacing host rendering
+  of 2026-11-01). Host rendering made every canvas edit a round trip. `product.md`, "The decision".
+- 2026-11-07: The render runtime is a bundled CPython plus the render path's wheels at `uv.lock`'s
+  versions, not a frozen binary (maintainer). Asks to audio-vue travel as handoff files in its root;
+  the first, `render-dependencies-handoff.md`, trims the render path's imports before the helper is
+  built.
+- 2026-11-07: The console makes each scene's frame itself, running the panel's analysis over 32 s of
+  music generated in code under the scene's analysis block and rate (maintainer, replacing a fixed
+  fixture frame): more card text will follow analysis settings. The bundle therefore holds the
+  analysis, numba and scipy; performance weighed above size. The first frame is made behind the
+  console's launch screen. audio-vue's `console-render` design D7; `working-notes.md`.

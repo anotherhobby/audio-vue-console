@@ -15,7 +15,7 @@ Update this section as new human-authored reference files appear.
   later. Each claim marked ruled, measured or inferred. Edited only with the maintainer's approval.
   Read before any product or design work.
 - `agent/host-contract.md`: What the app relies on from audio-vue's host agent, built or planned:
-  the API, pairing and tokens, scenes and commands, settings and their classes, card tiles. A view
+  the API, pairing and tokens, scenes and commands, settings and their classes, scene rendering. A view
   of audio-vue's specs, which win. Read before building against the API.
 - `agent/project-map.md`: Repository structure, main behavior locations, and concise architecture notes.
 - `agent/working-notes.md`: Current task notes and recent discoveries worth carrying forward.
@@ -34,7 +34,7 @@ Update this section as new human-authored reference files appear.
 
 - `../audio-vue` is the host this app controls (Python, runs on the panel's host). It owns the
   host platform: `../audio-vue/.claude/kb/agent/host-platform.md` (the agent, the store, the
-  settings schema, host rendering, meter mode), and its specs under `openspec/specs/`. Those win
+  settings schema, what the console's rendering needs, meter mode), and its specs under `openspec/specs/`. Those win
   over this KB on anything host-side. The API contract is the host agent's `/v1/openapi.json`
   (`src/control_service/` in audio-vue).
 

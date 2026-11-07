@@ -126,10 +126,21 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - A card unknown to the app still appears, with no app release, because the inspector comes from the
   schema.
 
-## Card tiles (Planned, no change yet)
+## Scene rendering (Ruled 2026-11-06; audio-vue's `console-render` change, in progress 2026-11-07)
 
-- Each tile is an image the host renders at its true pixel size, from the real card code, on fixture
-  data. The app deals in grid cells and the host owns pixels.
-- While a card is dragged the app scales its bitmap; on release a fresh render replaces it.
-- A render may report that text clipped, the fit check the host lacks today.
-- If the panel has to pause to render, it shows a "configuring" screen and the state says so.
+The console renders scenes itself, from audio-vue's card code and analysis bundled at build; the host
+renders nothing for it. The rulings are in `product.md`, "The decision"; what audio-vue builds is its
+`console-render` change and `.claude/kb/agent/host-platform.md`, "Cards are rendered by the console".
+From the host the app needs:
+
+- `cards: {digest, from}` in the version read, `from` naming whether the running panel or the host's
+  own files gave it, compared like the API version; and the manifest (`GET /v1/cards/manifest`, behind
+  the token), fetched only on a mismatch, to name each entry that differs;
+- each scene as the store holds it, the install's fonts block, the installed rate, the display's pixel
+  size, the `default` scene's backdrop block as the fallback, and each backdrop image fetched through
+  `/v1/images/{image_id}` into a directory the helper is given;
+- per card, `x-min-cells`, `x-sizing`, `x-aspect` and `x-placeable` from the exported schema, for
+  the resize stop and the library.
+
+The helper's protocol is agreed in audio-vue's change first; asks travel as handoff files in
+audio-vue's root (`working-notes.md`).

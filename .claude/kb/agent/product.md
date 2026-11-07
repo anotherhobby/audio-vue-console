@@ -2,7 +2,7 @@
 
 The product statement for audio-vue-console: what the app is, why it is native, and the rulings
 behind it. Worked through in audio-vue on 2026-11-01 and moved here on 2026-11-02. The host side, the
-agent, the store, the settings schema and host rendering, is `../audio-vue/.claude/kb/agent/host-platform.md`.
+agent, the store, the settings schema and what the console's rendering needs, is `../audio-vue/.claude/kb/agent/host-platform.md`.
 What the app relies on from the host is `host-contract.md`.
 
 **Edited only with the maintainer's approval.** Almost every line is a ruling. Propose the exact entry
@@ -28,9 +28,39 @@ Ruled, all (maintainer, 2026-11-01):
   or uploading in daily operation. Install, setup and initial configuration may still need them.
 - The app is SwiftUI, in its own repository.
 - Host-side settings live in a SQLite store on the host, under a versioned schema.
-- Cards are rendered by the host, and the app never runs a card.
+- Cards were rendered by the host (2026-11-01); replaced 2026-11-06 by the three rulings below.
 - Modern drag and drop is a hard requirement. A literal flip between panel and console is not: it
   was a mental picture, not a requirement.
+
+Ruled, all (maintainer, 2026-11-06), replacing the line on cards:
+
+- **The console renders the scene locally, from the real card code. The host renders nothing for
+  it.** Rendered on the host, every canvas edit was a round trip to the panel, and a scene-wide type
+  change re-rendered every card there before anything showed. The desktop app was chosen partly to
+  run audio-vue's Python locally, which a browser cannot.
+- **The card code is bundled into the app when it is built, never downloaded from a host.** The app
+  runs no code it received over the network.
+- **The card code's version is a checksum manifest**: a SHA-256 for each card's directory, each
+  shared module the render path imports, each font and each asset, plus one SHA-256 over the whole
+  manifest. The handshake compares that one digest with the host's, as it compares the API version;
+  only on a mismatch does the app fetch the host's manifest and name each entry that differs. A card
+  whose own entry differs is drawn as a plain box with its name, and the rest render. A shared entry
+  that differs renders no card. So the console never presents a picture the panel's code did not
+  produce, and even an edit to a comment counts as drift until the app is rebuilt. SHA-256, not MD5:
+  the host's store names images by it, audio-vue's Sonar gate flags `hashlib.md5`, and CryptoKit has
+  MD5 only as `Insecure.MD5`.
+
+Porting cards to Swift or Metal stays ruled out: two renderers drift, and the card carries the
+standard.
+
+Ruled (maintainer, 2026-11-07):
+
+- **The console makes each scene's frame itself.** The helper runs the panel's own analysis over 32 s
+  of music generated in code, under the scene's analysis block and rate, and keeps the frames for its
+  life. More card text will follow analysis settings, so no fixed frame would do. The bundle therefore
+  holds the analysis, performance weighed above its size.
+- **The first frame is made behind the console's launch screen**, the audio-vue screen with "console"
+  under it and a status line; launch time is not optimised.
 
 ## The model: an appliance and its companion
 
@@ -80,15 +110,16 @@ Everything right of the API is audio-vue's.
 
 Ruled: SwiftUI, the maintainer reviewing by behaviour and screenshots.
 
-Python in the app was only ever for running cards, and Qt only for the flip. Host rendering removes
-the first and the maintainer dropped the second. Tauri was the honest alternative, with one codebase
+Python in the app is for running cards, as a bundled runtime driving audio-vue's render helper
+(2026-11-06; host rendering had removed it for five days). Qt was only for the flip, and the
+maintainer dropped it. Tauri was the honest alternative, with one codebase
 and strong drag libraries, and was passed over for the native Mac feel. From memory: SwiftUI's canvas
 gestures will need custom work for snap, resize and groups, so a two-day canvas spike against a stub
 host comes first (Recommended).
 
-- **The app draws** the grid, the handles and the drag. Everything else comes from the host,
-  including each card's tile, its inspector (generated from the settings schema) and its
-  information page.
+- **The app draws** the grid, the handles and the drag, over layers audio-vue's card code renders
+  inside the app (2026-11-06). Each card's inspector (generated from the settings schema) and its
+  information page still come from the host.
 - **Structure** (Recommended): `project-map.md`.
 - **HTML reports** stay HTML, shown in a `WKWebView` (Recommended).
 - **Finding panels.** Type an address first, and add Bonjour later, since Bonjour is a new thing for

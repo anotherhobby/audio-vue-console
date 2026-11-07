@@ -55,3 +55,34 @@ clients list with revoke, Add Panel…. Verified and archived as
 `panel-window`, with `host-connection` updated. Pages other than Panel (the Overview, renamed 2026-11-06) still show sample values until their own
 changes (maintainer, 2026-11-05). The panel window has no Access page; pairing and the clients list
 are in the Panel page's Pairing section (maintainer, 2026-11-05).
+
+## Scene rendering, pivoted (maintainer, 2026-11-06)
+
+The console renders scenes locally from audio-vue's real card code; the host renders nothing for it.
+The three rulings are in `product.md`, "The decision". audio-vue builds the renderer as its
+`console-render` change (design read 2026-11-07); its reply handoff `render-dependencies-reply.md`
+answered this side's `render-dependencies-handoff.md`, and both can go. Agreed, 2026-11-07:
+
+- The runtime is a bundled CPython plus the render path's wheels, not a frozen binary.
+- **The console makes its frames itself** (maintainer, 2026-11-07): the helper runs the panel's own
+  analysis over 32 s of music generated in code, under each scene's analysis block and rate, and keeps
+  the frames for its life. So the bundle holds the analysis, numba and scipy included: about 445 MB
+  uncompressed, performance weighed above size. A frame costs about 3.7 s on the Mac with numba's cache
+  empty and 1.6 s warm, paid only when an analysis block or rate is new to the helper.
+- **The first frame is made behind the console's launch screen** (maintainer, 2026-11-07): the
+  audio-vue screen with "console" under it and a status line while the frame is made. Launch time is
+  not optimised.
+- **numba's cache must live outside the bundle.** The helper reads `NUMBA_CACHE_DIR`; the app sets it
+  to a directory of its own under Application Support, or every launch pays the empty-cache cost.
+- The console's first change is read-only: real scenes, the fonts block and the display size read from
+  the host, real layers on the existing canvas, with the helper run from `../audio-vue/.venv`. Editing
+  and Apply follow.
+- Backdrop images are fetched from the host (`/v1/images/{image_id}` serves shipped and uploaded
+  alike) into a directory the helper is given; the bundle carries none.
+- Asks to audio-vue travel as handoff files in its root. The helper's protocol (`hello`, `prepare`,
+  `render`, length-framed JSON with the layers' bytes after it, over the child's standard streams) gets
+  a handoff of its own once built; `make render-bundle` writes `local/render-bundle/` for the console
+  to mirror, with `manifest.json` and a `requirements.txt` at `uv.lock`'s versions.
+- The host reports only `width_px`/`height_px`, and a display's EDID can lie: the maintainer's panel
+  claims a 12.3-inch diagonal and is nearly 10 inches. A true-size view needs a diagonal the user enters
+  in the Panel window, with a mm/inch choice. Not yet planned.
