@@ -9,6 +9,8 @@ import SwiftUI
     @State private var discovery: PanelDiscovery
     /// The scenes as edited on the Scenes page's sample panel, kept here so they outlive the window.
     @State private var sceneStore = SceneStore()
+    /// The render helper the app carries, the app's so it outlives the window (`render-helper`).
+    @State private var renderer = Renderer.app()
 
     /// Makes the discovery and the connection given it, since one `@State` initialiser cannot read
     /// another, and starts browsing here rather than in a view's `.task`, which runs only while the
@@ -37,7 +39,7 @@ import SwiftUI
         // The panel window, around the scene canvas. Its Arrange menu acts on the canvas, the one
         // place it applies.
         Window("audio-vue Console", id: PanelWindow.windowID) {
-            PanelWindow(connection: connection, discovery: discovery)
+            PanelWindow(connection: connection, discovery: discovery, renderer: renderer)
                 .environment(sceneStore)
         }
         .defaultSize(

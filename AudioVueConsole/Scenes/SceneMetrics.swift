@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Sizes and colours for the sample pages; the window's own are `PanelMetrics`.
-enum SketchMetrics {
+/// Sizes for the Scenes page: the gallery, the card library and the editor's columns. The canvas's
+/// own are `CanvasMetrics`, and the window's `PanelMetrics`.
+enum SceneMetrics {
     static let libraryMinWidth: CGFloat = 180
     static let libraryIdealWidth: CGFloat = 230
     static let libraryMaxWidth: CGFloat = 320
@@ -13,16 +14,10 @@ enum SketchMetrics {
     static let stripPadding: CGFloat = 12
     static let tilePadding: CGFloat = 6
     static let tileCornerRadius: CGFloat = 8
-    static let selectedOpacity: Double = 0.35
     static let canvasMinWidth: CGFloat = 420
     static let inspectorMinWidth: CGFloat = 220
     static let inspectorIdealWidth: CGFloat = 260
     static let inspectorMaxWidth: CGFloat = 340
-    static let defaultBlur: Double = 24
-    static let blurRange: ClosedRange<Double> = 0...48
-    static let defaultGlassOpacity: Double = 0.6
-    static let unitRange: ClosedRange<Double> = 0...1
-
     static let canvasPadding: CGFloat = 24
     static let mismatchOpacity: Double = 0.45
 }

@@ -173,3 +173,41 @@ Previews did not show it; the running app did. Give the text its own `ToolbarIte
 design D6), and a browse restarted on `didBecomeActiveNotification` picks up access given in System
 Settings without a relaunch (maintainer's run). The Local Network prompt shows only to an app never
 asked before: one already allowed for a typed LAN address is not asked again for Bonjour.
+
+## The App Sandbox hides everything outside the app and its container, a child included (2026-11-07)
+
+A sandboxed app's child inherits its sandbox. Measured with ad-hoc signed probe apps: the app could
+not see `../audio-vue/.venv/bin/python` at all ("doesn't exist"). Read-only temporary exceptions made
+it run, but an exception path holding `..` was refused, so it must be canonical. A relocatable
+CPython copied into `Contents/Resources` runs with no exception, which is why the render runtime is
+bundled. Input that a probe reads must come through a pipe, not a path in the scratchpad.
+
+## Xcode's script sandbox refuses a phase that copies whole folders (2026-11-07)
+
+With `ENABLE_USER_SCRIPT_SANDBOXING = YES`, a Run Script phase may read only the files it declares;
+declaring a folder in `input-paths` does not let it read the folder's contents (`deny(1)
+file-read-data`). "Embed the render runtime" copies thousands of files, so the app target sets it to
+`NO` (pending the maintainer's ruling, `scene-render` task 2.3). In the readable project format
+(`project.xcproj`) a script phase is an object in `build-phases`: `"kind": "script"`, an `"id"`
+(24 hex digits, unique in the file), `"name"`, `"shell"`, `"script"`, `"input-paths"`,
+`"output-paths"`. Without the `"id"`, `xcodebuild` builds and runs the phase, but the Xcode app
+loads the project with no targets (measured 2026-11-07 through Xcode's MCP tools).
+
+## Foundation reports a decimal read as an integer with an error of its own (2026-11-07)
+
+`singleValueContainer().decode(Int.self)` on `0.6` throws Foundation's own
+`numberIsNotRepresentableInSwift`, not a `DecodingError`, so catching only `DecodingError` cases lets
+it escape. `JSONValue` treats any failed probe as "another type". `48.0` decodes as the integer 48.
+
+## The quality gate checks every committed Python file, a vendored copy included (2026-11-07)
+
+Committing audio-vue's render bundle made the gate report audio-vue's own findings as this
+repository's. The gate skips files git ignores, so the mirror lives in `local/`, which is ignored.
+
+
+## `xcodebuild -derivedDataPath` deletes `Package.resolved` (2026-11-07)
+
+A command-line build with `-derivedDataPath` deletes
+`AudioVueConsole.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`, the committed
+project as much as an edited one (measured). Restore it with `git checkout --` after such a build,
+and never commit its deletion.

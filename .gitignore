@@ -12,3 +12,6 @@ DerivedData/
 
 # Python bytecode from tools/
 __pycache__/
+
+# The bundled Python runtime and its downloads (tools/refresh-render-bundle.sh)
+local/

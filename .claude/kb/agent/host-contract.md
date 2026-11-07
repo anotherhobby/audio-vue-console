@@ -126,21 +126,40 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - A card unknown to the app still appears, with no app release, because the inspector comes from the
   schema.
 
-## Scene rendering (Ruled 2026-11-06; audio-vue's `console-render` change, in progress 2026-11-07)
+## Scene rendering (Built, `scene-render`, 2026-11-07)
 
-The console renders scenes itself, from audio-vue's card code and analysis bundled at build; the host
-renders nothing for it. The rulings are in `product.md`, "The decision"; what audio-vue builds is its
+The console renders scenes itself, from audio-vue's card code and analysis bundled into the app; the
+host renders nothing for it. The rulings are in `product.md`, "The decision"; audio-vue's side is its
 `console-render` change and `.claude/kb/agent/host-platform.md`, "Cards are rendered by the console".
-From the host the app needs:
+The routes are in the saved contract (`ConsoleCore/Sources/HostAPI/openapi.json`); `HostClient`
+calls them:
 
-- `cards: {digest, from}` in the version read, `from` naming whether the running panel or the host's
-  own files gave it, compared like the API version; and the manifest (`GET /v1/cards/manifest`, behind
-  the token), fetched only on a mismatch, to name each entry that differs;
-- each scene as the store holds it, the install's fonts block, the installed rate, the display's pixel
-  size, the `default` scene's backdrop block as the fallback, and each backdrop image fetched through
-  `/v1/images/{image_id}` into a directory the helper is given;
-- per card, `x-min-cells`, `x-sizing`, `x-aspect` and `x-placeable` from the exported schema, for
-  the resize stop and the library.
+- **The version read** gives `cards`, the code's digest, with `from`: `panel` where the running panel
+  answered, `host` where the agent read its own files, the code the panel runs at its next start.
+  `HostVersion.cards` holds it (`CardCode`). It is open, like the API version.
+- **`GET /v1/cards/manifest`** (token) gives `from`, `digest`, `entries` (repository paths: a card
+  family as its directory, `src/cards/peak_rms`, shared modules and fonts as files) and `cards`, each
+  card's name mapped to its family's key in `entries` (`peak_rms_vertical` to `src/cards/peak_rms`).
+  An entry no card maps to is shared. The digest is over `entries` alone. The bundle's
+  `manifest.json` has the same shape. Read only when the digests differ (`HostClient.cardManifest`).
+- The bundle's `requirements.txt` carries every hash `uv.lock` holds; the tool installs it with
+  `--require-hashes`.
+- **`GET /v1/scenes`** (token) lists each scene's `id`, `name`, `built_in` and `fixed`; a fixed scene
+  is a process's, not offered to pick or duplicate. **`GET /v1/scenes/{id}`** gives its `doc` as the
+  store holds it, passed to the helper whole (`SceneDocument`, `JSONValue`).
+- **`GET /v1/install`** (token) gives each block's `doc` by name; the helper takes the `fonts` block.
+- **`GET /v1/schema`** (token) is JSON Schema under `$defs`: `block.grid` with its declared defaults,
+  and `card.<name>` with `x-placeable`, `x-min-cells` (on a 36-row grid), `x-sizing`, `x-aspect`.
+- **`GET /v1/images/{id}`** (token) serves uploads and shipped images alike, PNG or JPEG; a 404 is
+  `HostFailure.notFound`. An id is a file name with no separator (audio-vue `images.FORM`).
+- The display's pixel size is `/v1/host`'s, null while the panel is down.
 
-The helper's protocol is agreed in audio-vue's change first; asks travel as handoff files in
-audio-vue's root (`working-notes.md`).
+Layers are 8-bit RGBA, premultiplied, rects in display pixels from the top left. The app stacks
+them with Core Graphics (`Thumbnail.flatten`), which matched audio-vue's stacking formula
+(`out = rgb + under * (1 - a / 255)`, its `scene_layers.stack`) at every pixel of the RTA scene at
+1920 x 720: 0 steps apart (measured 2026-11-07, `LiveHelperTests`). audio-vue holds its stacking to
+two steps of the panel's own render.
+
+The render helper's protocol is audio-vue's (`src/render_service.py`, its docstring): `hello`,
+`prepare`, `render`, each a 4-byte big-endian length and JSON, layers' bytes after a render's answer.
+Asks travel as handoff files in audio-vue's root (`working-notes.md`).

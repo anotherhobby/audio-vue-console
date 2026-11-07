@@ -36,6 +36,22 @@
         "compile-sources",
         "frameworks",
         "resources",
+        {
+          "kind": "script",
+          "id": "000000000000000100000010",
+          "name": "Embed the render runtime",
+          "shell": "/bin/sh",
+          "script": "\"$SRCROOT/tools/embed-render-runtime.sh\"\n",
+          "input-paths": [
+            "$(SRCROOT)/tools/embed-render-runtime.sh",
+            "$(SRCROOT)/local/python-runtime",
+            "$(SRCROOT)/local/render-bundle",
+          ],
+          "output-paths": [
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/python",
+            "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/render-bundle",
+          ],
+        },
       ],
       "package-product-members": [
         {
@@ -49,6 +65,7 @@
         "ENABLE_APP_SANDBOX": "YES",
         "ENABLE_OUTGOING_NETWORK_CONNECTIONS": "YES",
         "ENABLE_PREVIEWS": "YES",
+        "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
         "ENABLE_USER_SELECTED_FILES": "readonly",
         "GENERATE_INFOPLIST_FILE": "YES",
         "INFOPLIST_FILE": "AudioVueConsole-Info.plist",

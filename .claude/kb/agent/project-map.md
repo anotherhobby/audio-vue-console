@@ -47,15 +47,24 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Overview: a pairing prompt while unpaired, then Status, Capture and Calibration from `PanelRows`,
   then the Pairing section; `PanelForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
-  `PanelMetrics.swift` (the window's sizes; `Sketches/SketchMetrics` keeps the sample pages'),
-  `PairingSheet.swift`, assets, and `Sketches/`, the sample pages and their data, whose Scenes page
-  hosts the kept canvas.
+  `PanelMetrics.swift` (the window's sizes), `PairingSheet.swift`, assets, and `Sketches/`, the
+  sample pages (Input, Calibration, Display) and their panels (`SketchData`, `sketch.json`).
+  The App also makes the one `Renderer` (`scene-render`, 2026-11-07), which `PanelWindow` starts
+  once paired and the Panel page's Status shows as its Renderer row.
+- `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
+  `PanelScenes`, compares the card code once the renderer is ready, draws the thumbnails, and opens
+  scenes), `SceneGallery` and `SceneRow` (this panel's shape first, thumbnails or boxes, Duplicate),
+  `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
+  `SceneInspector` and `SceneSettingsPanel`, `CardLibrary` (the schema's placeable cards), and
+  `SceneMetrics`.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
-  marquee and keys into editor calls; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands`
-  (the Debug-only Arrange menu) are its parts. `SceneStore`, owned by the App, keeps each scene's
-  layout until quit; `LayoutPlates` draws any layout, thumbnails included; `CanvasMetrics` holds the
-  palette. It holds no layout rules.
+  marquee and keys into editor calls, asking its `SceneRendering` to draw again what the layout
+  changed; `LayerStack` draws the helper's layers there, sliding or stretching a plate from the cells
+  it was drawn at; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands` (the Debug-only
+  Arrange menu) are its parts. `SceneStore`, owned by the App, holds the `SceneDrafts` (edits and
+  copies until quit) and the `SceneThumbnails`; `LayoutPlates` draws any layout as boxes;
+  `CanvasMetrics` holds the palette. It holds no layout rules.
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
   Swift Testing suite (`Tests/ConsoleCoreTests`). Tools 6.2, Swift 6 mode, macOS 27.2, warnings as
   errors. It must not import SwiftUI or AppKit.
@@ -85,8 +94,23 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `ClientName` is the name the app pairs under. Tests drive it through `FakeTransport`, a
   `ClientTransport` that answers by method and path and records each request as a `URLRequest`, and
   `ScriptedEvents`; `LiveHostTests` runs against a real host only when asked (`commands.md`).
+  Scene rendering (`scene-render`, 2026-11-07): `HostClient+Scenes` and `HostClient+Cards` (scenes,
+  install, schema, images, the card manifest), `JSONValue` (documents passed through whole),
+  `SceneDocument` and `LaidOutScene` (a document as a layout and back), `SchemaFacts` (placeable
+  cards, minimums, the grid's defaults), `DisplayShape`, `PanelScenes` (made by
+  `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. The helper: `HelperLocation`,
+  `HelperProcess` (`FoundationHelperLauncher`, `ChunkChannel`, `LineSplitter`), `HelperFrame`,
+  `RenderHelper` (the actor), `RenderQueue` (two lanes), `Renderer` (phases). Drawing:
+  `RenderRequest`/`RenderContext`, `RenderedLayer`, `PlateChanges`, `SceneRendering` (+`Messages`),
+  `Thumbnail`, `SceneThumbnails`. The code check: `CardDrift`, `CardCodeCheck`. Tests script the
+  helper with `ScriptedLauncher`/`ScriptedHelper` and `FakeRender`; `LiveHelperTests` runs the real
+  one when asked.
 - `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable
-  fields as optional for the generator (`commands.md`).
+  fields as optional for the generator (`commands.md`); `refresh-render-bundle.sh`, which mirrors
+  audio-vue's render bundle and builds the Python runtime into `local/`, and `embed-render-runtime.sh`,
+  the app target's build phase that copies both into the app (`scene-render`, 2026-11-07).
+- `local/` (ignored by git): `render-bundle/`, the mirror of audio-vue's `local/render-bundle/`;
+  `python-runtime/`, the relocatable CPython with the bundle's libraries; `python-downloads/`.
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:
   no SwiftUI or AppKit import under `ConsoleCore/Sources`, and no `import Network` or `URLSession`
   under `AudioVueConsole/`. It finds the repository from `#filePath`, so moving the test file
@@ -98,4 +122,6 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   2026-11-03); `scene-layout` and `scene-canvas` (from `canvas-spike`, 2026-11-04); `host-pairing`
   (from `pairing`, 2026-11-05); `host-client` and `panel-window` (from `panel-client`, 2026-11-06);
   `host-discovery` (from `discovery`, 2026-11-06, which also updated `host-connection` and
-  `panel-window`). No change is open.
+  `panel-window`); `card-code`, `render-helper`, `render-runtime`, `scene-gallery` and
+  `scene-rendering` (from `scene-render`, 2026-11-07, which also updated `panel-window`,
+  `scene-canvas` and `scene-layout`). No change is open.

@@ -1,0 +1,42 @@
+{
+ "analysis": {
+  "rta_hold_s": 1,
+  "rta_peak_fall_db_s": 30.0,
+  "rta_weighting": "F"
+ },
+ "backdrop": {
+  "angle": 120,
+  "blur": 24,
+  "gradient": [
+   "#2a1a6e",
+   "#0e4a6a",
+   "#5a1a4a"
+  ]
+ },
+ "cards": [
+  {
+   "card": "rta_bars",
+   "col": 0,
+   "colspan": 48,
+   "params": {
+    "ceiling_db": 0.0,
+    "floor_db": -80.0,
+    "major_color": "#2a3550",
+    "major_weight_px": 4,
+    "minor_color": "#2a3550",
+    "minor_weight_px": 1
+   },
+   "row": 0,
+   "rowspan": 36
+  }
+ ],
+ "glass": {
+  "opacity": 0.6
+ },
+ "grid": {
+  "cols": 96,
+  "gap": 8,
+  "rows": 36
+ },
+ "name": "RTA"
+}

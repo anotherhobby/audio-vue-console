@@ -31,6 +31,12 @@ actor FakeTransport: ClientTransport {
         static let confirm = Route("POST", "/v1/pairing/confirm")
         static let clients = Route("GET", "/v1/clients")
         static func revoke(_ id: String) -> Route { Route("DELETE", "/v1/clients/\(id)") }
+        static let scenes = Route("GET", "/v1/scenes")
+        static func scene(_ id: String) -> Route { Route("GET", "/v1/scenes/\(id)") }
+        static let install = Route("GET", "/v1/install")
+        static let schema = Route("GET", "/v1/schema")
+        static func image(_ id: String) -> Route { Route("GET", "/v1/images/\(id)") }
+        static let cardManifest = Route("GET", "/v1/cards/manifest")
     }
 
     private var answers: [Route: Answer]
@@ -60,8 +66,11 @@ actor FakeTransport: ClientTransport {
     }
 
     static func versionAnswer(_ api: String = supportedAPI, schema: String = "1") -> Answer {
-        .status(ok, #"{"api": "\#(api)", "schema": \#(schema)}"#)
+        .status(ok, #"{"api": "\#(api)", "schema": \#(schema), \#(cards)}"#)
     }
+
+    /// The version's `cards`, which every version answer carries.
+    static let cards = #""cards": {"digest": "c0de", "from": "panel"}"#
 
     /// A request's JSON body as string fields, compared as JSON since the encoder picks its own
     /// spacing and key order.

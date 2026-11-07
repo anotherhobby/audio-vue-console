@@ -7,6 +7,8 @@ import SwiftUI
 struct PanelPage: View {
     @Bindable var connection: HostConnection
     let live: LiveState?
+    /// The app's renderer, whose phase Status shows while paired.
+    let renderer: Renderer?
     /// The panel's name as the picker shows it, so the prompt and the status say the same.
     let panelName: String?
     let addPanel: () -> Void
@@ -31,7 +33,9 @@ struct PanelPage: View {
     /// The panel's values while paired, and dashes otherwise.
     private var rows: PanelRows {
         let paired = connection.isPaired == true
-        return PanelRows(host: paired ? connection.host : nil, state: paired ? live?.state : nil)
+        return PanelRows(
+            host: paired ? connection.host : nil, state: paired ? live?.state : nil,
+            renderer: paired ? renderer?.phase : nil, cardCode: paired ? renderer?.verdict : nil)
     }
 
     private var liveNote: String? {
@@ -46,6 +50,25 @@ struct PanelPage: View {
     private struct ClientsKey: Hashable {
         let paired: Bool?
         let isPairing: Bool
+    }
+}
+
+/// One row of a Panel page section, with an indicator while what it reports is under way.
+struct PanelRowView: View {
+    let row: PanelRows.Row
+
+    var body: some View {
+        LabeledContent(row.label) {
+            HStack {
+                if row.working { ProgressView().controlSize(.small) }
+                if row.warning {
+                    Label(row.value, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                } else {
+                    Text(row.value)
+                }
+            }
+        }
     }
 }
 
@@ -73,7 +96,7 @@ struct PanelForm<Clients: View>: View {
             }
             ForEach(rows.sections, id: \.title) { section in
                 Section {
-                    ForEach(section.rows) { LabeledContent($0.label, value: $0.value) }
+                    ForEach(section.rows) { PanelRowView(row: $0) }
                 } header: {
                     Text(section.title)
                 } footer: {
@@ -146,7 +169,8 @@ struct PairingSection: View {
         PanelForm(
             rows: PanelRows(host: nil, state: nil), liveNote: nil, address: "audio-vue.local",
             name: "audio-vue",
-            state: .connected(address, HostVersion(api: api, schema: 3), paired: false)
+            state: .connected(
+                address, HostVersion(api: api, schema: 3, cards: .preview), paired: false)
         ) {}
     }
 }
@@ -154,9 +178,11 @@ struct PairingSection: View {
 #Preview("Paired, up") {
     if let address = HostAddress(parsing: "audio-vue"), let api = APIVersion(parsing: "2.1.0") {
         PanelForm(
-            rows: PanelRows(host: PanelPreviews.host, state: PanelPreviews.up),
+            rows: PanelRows(
+                host: PanelPreviews.host, state: PanelPreviews.up, renderer: .preparing),
             liveNote: nil, address: "audio-vue", name: "audio-vue",
-            state: .connected(address, HostVersion(api: api, schema: 3), paired: true)
+            state: .connected(
+                address, HostVersion(api: api, schema: 3, cards: .preview), paired: true)
         ) {
             ClientRows(
                 state: .loaded,
@@ -170,9 +196,12 @@ struct PairingSection: View {
     if let address = HostAddress(parsing: "audio-vue"), let api = APIVersion(parsing: "2.1.0") {
         PanelForm(
             rows: PanelRows(
-                host: PanelPreviews.host, state: PanelPreviews.down, time: { _ in "07:42" }),
+                host: PanelPreviews.host, state: PanelPreviews.down,
+                renderer: .failed("This build carries no Python to run the renderer."),
+                time: { _ in "07:42" }),
             liveNote: nil, address: "audio-vue", name: "audio-vue",
-            state: .connected(address, HostVersion(api: api, schema: nil), paired: true)
+            state: .connected(
+                address, HostVersion(api: api, schema: nil, cards: .preview), paired: true)
         ) {}
     }
 }
@@ -191,7 +220,7 @@ struct PairingSection: View {
     if let address = HostAddress(parsing: "audio-vue.local"),
         let unreachable = HostAddress(parsing: "192.0.2.1"), let api = APIVersion(parsing: "2.2.0")
     {
-        let version = HostVersion(api: api, schema: 1)
+        let version = HostVersion(api: api, schema: 1, cards: .preview)
         Form {
             Section("Lost contact") {
                 PairingSection(

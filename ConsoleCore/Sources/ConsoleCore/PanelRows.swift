@@ -10,6 +10,10 @@ public struct PanelRows: Sendable, Equatable {
     public struct Row: Sendable, Equatable, Identifiable {
         public let label: String
         public let value: String
+        /// Whether what the row reports is under way, shown with an indicator that it is working.
+        public var working = false
+        /// Whether the row reports something wrong, shown in a warning colour.
+        public var warning = false
         public var id: String { label }
     }
 
@@ -24,10 +28,11 @@ public struct PanelRows: Sendable, Equatable {
     public let capture: Section
     public let calibration: Section
 
-    /// The sections for a host and its panel's state, each nil where it has not been read, as
-    /// while not paired. `time` writes the time a down panel last answered.
+    /// The sections for a host, its panel's state and the app's renderer, each nil where it has not
+    /// been read, as while not paired. `time` writes the time a down panel last answered.
     public init(
-        host: HostIdentity?, state: PanelState?,
+        host: HostIdentity?, state: PanelState?, renderer: Renderer.Phase? = nil,
+        cardCode: CardCodeVerdict? = nil,
         time: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }
     ) {
         let unavailable = state?.unavailable ?? [:]
@@ -39,6 +44,7 @@ public struct PanelRows: Sendable, Equatable {
                 Row(label: "Condition", value: Self.text(state.map { Self.condition($0, time) })),
                 Row(label: "Scene", value: Self.text(state?.sceneName)),
                 Row(label: "Display", value: Self.text(Self.size(width, height))),
+                Self.renderer(renderer, cardCode),
             ],
             note: Self.note(unavailable, [.scene, .display]))
         capture = Section(
@@ -62,6 +68,48 @@ public struct PanelRows: Sendable, Equatable {
 
     private static func text(_ value: String?) -> String {
         value ?? dash
+    }
+
+    /// The renderer's row (`panel-window`, "Status says whether scenes can be drawn"): ready only
+    /// once the helper's code is the panel's, and a warning where it cannot draw as the panel does.
+    private static func renderer(_ phase: Renderer.Phase?, _ code: CardCodeVerdict?) -> Row {
+        let label = "Renderer"
+        switch phase {
+        case nil, .idle?: return Row(label: label, value: dash)
+        case .starting?: return Row(label: label, value: "Starting…", working: true)
+        case .preparing?: return Row(label: label, value: "Making the first frame…", working: true)
+        case .failed(let reason)?:
+            return Row(label: label, value: "Could not start: \(reason)", warning: true)
+        case .ready?: return codeRow(label, code)
+        }
+    }
+
+    /// A ready renderer's row, as the card code compares with the panel's.
+    private static func codeRow(_ label: String, _ code: CardCodeVerdict?) -> Row {
+        switch code {
+        case nil:
+            return Row(label: label, value: "Checking the card code…", working: true)
+        case .same?:
+            return Row(label: label, value: "Ready")
+        case .damagedBundle?:
+            return Row(
+                label: label, value: "Not drawing: this app's render bundle is damaged",
+                warning: true)
+        case .unreadable?:
+            return Row(
+                label: label, value: "Not drawing: the panel's card code can't be read",
+                warning: true)
+        case .differs(let drift)? where drift.sharesNothing:
+            return Row(
+                label: label,
+                value: "Not drawing: card code differs from the panel's. Scenes says which.",
+                warning: true)
+        case .differs?:
+            return Row(
+                label: label,
+                value: "Ready, but some cards differ from the panel's. Scenes says which.",
+                warning: true)
+        }
     }
 
     /// The condition in words; `stale` is drawing stopped, not measuring (audio-vue

@@ -2,15 +2,17 @@ import ConsoleCore
 import SwiftUI
 
 /// The app's one window for a panel, settings-style, with the panel picked at the top of the Panel
-/// page (`panel-window`). It connects at launch, and watches the paired host's live state while
-/// it is open. Opening a scene to edit collapses the sidebar so the editor gets the width. The pages
-/// other than Panel still show sample values, until their own changes build them.
+/// page (`panel-window`). It connects at launch, watches the paired host's live state while it is
+/// open, and starts the renderer once paired. Opening a scene to edit collapses the sidebar so the
+/// editor gets the width. The pages other than Panel and Scenes still show sample values, until
+/// their own changes build them.
 struct PanelWindow: View {
     /// The window's id, which the Window menu and the Dock bring it back by.
     static let windowID = "panel"
 
     @Bindable var connection: HostConnection
     let discovery: PanelDiscovery
+    let renderer: Renderer
     @State private var section: PanelSection? = .panel
     @State private var isEditingScene = false
     @State private var columns: NavigationSplitViewVisibility = .all
@@ -33,19 +35,31 @@ struct PanelWindow: View {
             live = connection.liveState()
             await live?.watch()
         }
+        // The helper starts once the app is paired, and its code is compared with the panel's
+        // (`render-helper`, `card-code`).
+        .task(id: WatchKey(connection)) {
+            renderer.forgetCode()
+            guard connection.isPaired == true else { return }
+            await renderer.start()
+            if let scenes = connection.makeScenes() { await renderer.checkCode(with: scenes) }
+        }
         .frame(minWidth: PanelMetrics.windowMinWidth, minHeight: PanelMetrics.windowMinHeight)
     }
 
     @ViewBuilder private var detail: some View {
         switch section ?? .panel {
         case .panel:
-            PanelPage(connection: connection, live: live, panelName: label?.name) {
+            PanelPage(
+                connection: connection, live: live, renderer: renderer, panelName: label?.name
+            ) {
                 isAddingPanel = true
             }
             .toolbar { picker }
             .toolbar(removing: .title)
-        case .scenes, .input, .calibration, .display, .history:
-            SamplePage(section: section ?? .panel, isEditingScene: $isEditingScene)
+        case .scenes:
+            ScenesPage(connection: connection, renderer: renderer, isEditing: $isEditingScene)
+        case .input, .calibration, .display, .history:
+            SamplePage(section: section ?? .panel)
         }
     }
 
@@ -127,18 +141,15 @@ struct PanelSidebar: View {
 /// A page still built on sample values, for the first sample panel.
 private struct SamplePage: View {
     let section: PanelSection
-    @Binding var isEditingScene: Bool
     private let data = SketchData.shared
 
     var body: some View {
         if let panel = data.panels.first {
             switch section {
-            case .scenes:
-                SketchScenesPage(panel: panel, scenes: data.scenes, isEditing: $isEditingScene)
             case .input: SketchInputPage()
             case .calibration: SketchCalibrationPage(panel: panel)
             case .display: SketchDisplayPage(panel: panel)
-            case .panel, .history: SketchLaterPage(section: section)
+            case .panel, .scenes, .history: SketchLaterPage(section: section)
             }
         } else {
             ContentUnavailableView("No Sample Data", systemImage: "tray")

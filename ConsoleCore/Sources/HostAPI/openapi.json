@@ -3,13 +3,13 @@
   "info": {
     "title": "audio-vue host agent",
     "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.2.0"
+    "version": "2.4.0"
   },
   "paths": {
     "/v1/version": {
       "get": {
         "summary": "Version",
-        "description": "The API's version, and the state's schema where the panel answers. Open, as\npairing is: a client reached by address reads it before it pairs.",
+        "description": "The API's version, the state's schema where the panel answers, and the digest of\nthe code the panel draws with: the running panel's, or where it does not answer the\nhost's files'. Open, as pairing is: a client reached by address reads it before it\npairs.",
         "operationId": "version_v1_version_get",
         "responses": {
           "200": {
@@ -23,6 +23,40 @@
             }
           }
         }
+      }
+    },
+    "/v1/cards/manifest": {
+      "get": {
+        "summary": "Card Manifest",
+        "description": "The checksum of every entry the code's digest is made from, and each card with the\nentry that declares it: the running panel's, or where it does not answer the host's\nfiles', so a client whose digest differs can name each entry and card that does.",
+        "operationId": "card_manifest_v1_cards_manifest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardManifest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/v1/state": {
@@ -2574,6 +2608,74 @@
         "title": "Capture",
         "description": "The input, and how old the newest frame is: a growing age with no error is a capture\nor an analysis that has hung."
       },
+      "CardCode": {
+        "properties": {
+          "digest": {
+            "type": "string",
+            "title": "Digest",
+            "description": "The SHA-256 of the code manifest: what the cards and the analysis draw with."
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "panel",
+              "host"
+            ],
+            "title": "From",
+            "description": "`panel`, the running panel's; or `host`, the host's files', where the panel does not answer."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "digest",
+          "from"
+        ],
+        "title": "CardCode"
+      },
+      "CardManifest": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "enum": [
+              "panel",
+              "host"
+            ],
+            "title": "From",
+            "description": "`panel`, the running panel's; or `host`, the host's files', where the panel does not answer."
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest",
+            "description": "The SHA-256 of `entries`, the version's `cards` digest."
+          },
+          "entries": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Entries",
+            "description": "Each card directory, module and font by its repository path, and its SHA-256."
+          },
+          "cards": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Cards",
+            "description": "Each card the roster declares, placeable or not, and the key in `entries` of the card directory that declares it."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "from",
+          "digest",
+          "entries",
+          "cards"
+        ],
+        "title": "CardManifest"
+      },
       "Checked": {
         "properties": {
           "failures": {
@@ -3915,12 +4017,17 @@
             "type": "integer",
             "title": "Schema",
             "description": "The state's schema, null where the panel does not answer."
+          },
+          "cards": {
+            "$ref": "#/components/schemas/CardCode",
+            "description": "The digest of the code the panel draws scenes with."
           }
         },
         "additionalProperties": true,
         "type": "object",
         "required": [
-          "api"
+          "api",
+          "cards"
         ],
         "title": "Version"
       }

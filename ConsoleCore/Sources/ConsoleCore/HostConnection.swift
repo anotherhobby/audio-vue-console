@@ -139,6 +139,18 @@ public final class HostConnection {
         }
     }
 
+    /// The connected host's scenes and what drawing them needs, which mark the connection not
+    /// paired once its token is forgotten, or nil when not connected and paired (design D7).
+    public func makeScenes(images: ImageStore = ImageStore()) -> PanelScenes? {
+        guard case .connected(let address, let version, paired: true) = state,
+            let pairing = keptPairing(at: address)
+        else { return nil }
+        return PanelScenes(
+            address: address, host: host, cards: version.cards, client: client,
+            access: (pairing, tokens), images: images
+        ) { [weak self] in self?.mark(paired: false, at: address) }
+    }
+
     /// The live state of the connected host, for the window to watch, or nil when not connected
     /// and paired. A token the host refuses on it marks the connection not paired.
     public func liveState() -> LiveState? {

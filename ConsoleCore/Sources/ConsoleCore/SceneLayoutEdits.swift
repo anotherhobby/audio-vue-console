@@ -75,19 +75,21 @@ extension SceneLayout {
     }
 
     /// The card `id` with `edges` dragged by `offset`: the horizontal edge first, then the
-    /// vertical, each stopping at the grid, at any card in its path, and at one cell.
-    public func resizing(_ id: UUID, edges: CardEdges, by offset: CellOffset) throws(LayoutRefusal)
-        -> SceneLayout
-    {
+    /// vertical, each stopping at the grid, at any card in its path, and at `minimum`, the card's
+    /// declared minimum, or at its size where it is already smaller (`scene-layout`).
+    public func resizing(
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize = .oneCell
+    ) throws(LayoutRefusal) -> SceneLayout {
         guard let index = cards.firstIndex(where: { $0.id == id }) else { return self }
         guard cards[index].group == nil else { throw .cardIsGrouped }
         let others = cards.filter { $0.id != id }.map(\.cells)
         let across = cards[index].cells.resizedAcross(
-            edges: edges, by: offset.cols, within: grid.cols, avoiding: others)
+            edges: edges, by: offset.cols, within: grid.cols, avoiding: others,
+            atLeast: minimum.cols)
         // The vertical edge is the horizontal one with rows and columns swapped.
         let down = across.transposed.resizedAcross(
             edges: edges.transposed, by: offset.rows, within: grid.rows,
-            avoiding: others.map(\.transposed))
+            avoiding: others.map(\.transposed), atLeast: minimum.rows)
         var resized = cards
         resized[index].cells = down.transposed
         return SceneLayout(checked: grid, cards: resized)
@@ -143,21 +145,22 @@ extension CellRect {
     }
 
     /// The block with its left or right edge, as `edges` says, moved by `delta` columns, stopping
-    /// at the grid's `width`, at any of `others` on its rows, and at one column.
+    /// at the grid's `width`, at any of `others` on its rows, and at `minimum` columns, or at its
+    /// own width where that is less, so a block never grows narrower than it is by being resized.
     func resizedAcross(
-        edges: CardEdges, by delta: Int, within width: Int, avoiding others: [CellRect]
-    )
-        -> CellRect
-    {
+        edges: CardEdges, by delta: Int, within width: Int, avoiding others: [CellRect],
+        atLeast minimum: Int
+    ) -> CellRect {
         var cells = self
+        let narrowest = Swift.max(1, Swift.min(minimum, cols))
         let inPath = others.filter { $0.sharesRows(with: self) }
         if edges.contains(.right) {
             let wall = inPath.filter { $0.col >= maxCol }.map(\.col).min() ?? width
-            cells.cols = (maxCol + delta).clamped(to: (col + 1)...wall) - col
+            cells.cols = (maxCol + delta).clamped(to: (col + narrowest)...wall) - col
         }
         if edges.contains(.left) {
             let wall = inPath.filter { $0.maxCol <= col }.map(\.maxCol).max() ?? 0
-            cells.col = (col + delta).clamped(to: wall...(maxCol - 1))
+            cells.col = (col + delta).clamped(to: wall...(maxCol - narrowest))
             cells.cols = maxCol - cells.col
         }
         return cells

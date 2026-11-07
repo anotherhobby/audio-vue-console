@@ -59,8 +59,12 @@ Ruled (maintainer, 2026-11-07):
   of music generated in code, under the scene's analysis block and rate, and keeps the frames for its
   life. More card text will follow analysis settings, so no fixed frame would do. The bundle therefore
   holds the analysis, performance weighed above its size.
-- **The first frame is made behind the console's launch screen**, the audio-vue screen with "console"
-  under it and a status line; launch time is not optimised.
+- **The render helper starts once the app is paired, and makes its first frame at a fixed preview
+  rate** (replacing, the same day, "the first frame is made behind the console's launch screen"; the
+  rate does not matter to a preview). A Renderer row under the Panel page's Status says it is
+  starting, with a working indicator, until its first frame is made. There is no launch screen.
+- **The app carries a portable CPython and audio-vue's render bundle**, and runs the helper as its
+  child process, out of the Dock. The helper keeps its compiled-code cache in the app's container.
 
 ## The model: an appliance and its companion
 

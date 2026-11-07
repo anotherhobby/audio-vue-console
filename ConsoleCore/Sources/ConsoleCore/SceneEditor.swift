@@ -12,6 +12,8 @@ public final class SceneEditor {
     public private(set) var refusal: LayoutRefusal?
     /// Why the scene cannot be edited here, or nil when it can.
     public let readOnly: ReadOnlyReason?
+    /// Each card's minimum on this scene's grid, by kind; a kind with none may go down to a cell.
+    public let minimums: [String: CellSize]
 
     @ObservationIgnored private let undoManager: UndoManager?
     @ObservationIgnored private let onCommit: (SceneLayout) -> Void
@@ -19,11 +21,12 @@ public final class SceneEditor {
     /// An editor for `layout`. Each committed layout goes to `onCommit`, so the app can keep it,
     /// and each edit is registered with `undoManager`.
     public init(
-        layout: SceneLayout, readOnly: ReadOnlyReason? = nil, undoManager: UndoManager? = nil,
-        onCommit: @escaping (SceneLayout) -> Void = { _ in }
+        layout: SceneLayout, readOnly: ReadOnlyReason? = nil, minimums: [String: CellSize] = [:],
+        undoManager: UndoManager? = nil, onCommit: @escaping (SceneLayout) -> Void = { _ in }
     ) {
         self.layout = layout
         self.readOnly = readOnly
+        self.minimums = minimums
         self.undoManager = undoManager
         self.onCommit = onCommit
     }
@@ -74,7 +77,9 @@ public final class SceneEditor {
     public func previewResize(_ id: UUID, edges: CardEdges, by offset: CellOffset)
         -> Result<SceneLayout, LayoutRefusal>
     {
-        preview { () throws(LayoutRefusal) in try layout.resizing(id, edges: edges, by: offset) }
+        preview { () throws(LayoutRefusal) in
+            try layout.resizing(id, edges: edges, by: offset, minimum: minimum(of: id))
+        }
     }
 
     public func previewDrop(kind: String, size: CellSize, at cell: Cell)
@@ -108,8 +113,13 @@ public final class SceneEditor {
 
     public func resize(_ id: UUID, edges: CardEdges, by offset: CellOffset) {
         commit("Resize") { () throws(LayoutRefusal) in
-            try layout.resizing(id, edges: edges, by: offset)
+            try layout.resizing(id, edges: edges, by: offset, minimum: minimum(of: id))
         }
+    }
+
+    /// The minimum of the card `id`, by its kind.
+    private func minimum(of id: UUID) -> CellSize {
+        layout.card(id).flatMap { minimums[$0.kind] } ?? .oneCell
     }
 
     /// A card of `kind` added centred on `cell`, and selected.

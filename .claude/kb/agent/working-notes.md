@@ -56,33 +56,29 @@ clients list with revoke, Add Panel…. Verified and archived as
 changes (maintainer, 2026-11-05). The panel window has no Access page; pairing and the clients list
 are in the Panel page's Pairing section (maintainer, 2026-11-05).
 
-## Scene rendering, pivoted (maintainer, 2026-11-06)
+## Scene rendering (maintainer, 2026-11-06 and 2026-11-07)
 
-The console renders scenes locally from audio-vue's real card code; the host renders nothing for it.
-The three rulings are in `product.md`, "The decision". audio-vue builds the renderer as its
-`console-render` change (design read 2026-11-07); its reply handoff `render-dependencies-reply.md`
-answered this side's `render-dependencies-handoff.md`, and both can go. Agreed, 2026-11-07:
+The console renders scenes locally from audio-vue's real card code and analysis; the host renders
+nothing for it. The rulings are in `product.md`, "The decision". Built and archived as
+`scene-render` (2026-11-07, `openspec/changes/archive/2026-11-07-scene-render`); the maintainer's
+run passed every item after deploying audio-vue to the panel.
 
-- The runtime is a bundled CPython plus the render path's wheels, not a frozen binary.
-- **The console makes its frames itself** (maintainer, 2026-11-07): the helper runs the panel's own
-  analysis over 32 s of music generated in code, under each scene's analysis block and rate, and keeps
-  the frames for its life. So the bundle holds the analysis, numba and scipy included: about 445 MB
-  uncompressed, performance weighed above size. A frame costs about 3.7 s on the Mac with numba's cache
-  empty and 1.6 s warm, paid only when an analysis block or rate is new to the helper.
-- **The first frame is made behind the console's launch screen** (maintainer, 2026-11-07): the
-  audio-vue screen with "console" under it and a status line while the frame is made. Launch time is
-  not optimised.
-- **numba's cache must live outside the bundle.** The helper reads `NUMBA_CACHE_DIR`; the app sets it
-  to a directory of its own under Application Support, or every launch pays the empty-cache cost.
-- The console's first change is read-only: real scenes, the fonts block and the display size read from
-  the host, real layers on the existing canvas, with the helper run from `../audio-vue/.venv`. Editing
-  and Apply follow.
-- Backdrop images are fetched from the host (`/v1/images/{image_id}` serves shipped and uploaded
-  alike) into a directory the helper is given; the bundle carries none.
-- Asks to audio-vue travel as handoff files in its root. The helper's protocol (`hello`, `prepare`,
-  `render`, length-framed JSON with the layers' bytes after it, over the child's standard streams) gets
-  a handoff of its own once built; `make render-bundle` writes `local/render-bundle/` for the console
-  to mirror, with `manifest.json` and a `requirements.txt` at `uv.lock`'s versions.
-- The host reports only `width_px`/`height_px`, and a display's EDID can lie: the maintainer's panel
-  claims a 12.3-inch diagonal and is nearly 10 inches. A true-size view needs a diagonal the user enters
-  in the Panel window, with a mm/inch choice. Not yet planned.
+- The app carries a relocatable CPython with the bundle's pinned, hash-checked libraries
+  (`local/python-runtime/`) and a mirror of audio-vue's `local/render-bundle/`
+  (`local/render-bundle/`), both ignored by git, built by `tools/refresh-render-bundle.sh` and copied
+  in by the build phase (`commands.md`).
+- The helper starts once paired, prepares its first run at a fixed preview rate, and keeps numba's
+  and Python's caches in the container. A first start after the code changes takes about 7 s, later
+  ones about 2 s. The Renderer row under Status says Ready only when the card code matches the
+  panel's, and otherwise warns in orange.
+- **Any difference in shared code, a comment included, draws no card.** The bundle and the panel
+  must come from the same audio-vue code: after audio-vue changes, deploy it to the panel and refresh
+  the bundle (2026-11-07: a comment edit to `src/frame.py` stopped all drawing until deployed).
+- The library's tiles are still coloured boxes; rendering them is a possible later change, not
+  planned.
+- Asks to audio-vue travel as handoff files in its root. Answered so far: the render dependencies,
+  the helper's protocol, and `card-entries` (each card's family in the manifest, hashes in the
+  requirements).
+- A true-size view needs a diagonal the user enters in the Panel window, with a mm/inch choice, since
+  a display's EDID can lie (the maintainer's panel claims 12.3 inches and is nearly 10). Not yet
+  planned.

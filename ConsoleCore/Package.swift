@@ -42,6 +42,8 @@ let package = Package(
                 .product(name: "HTTPTypes", package: "swift-http-types"),
                 .product(name: "HTTPTypesFoundation", package: "swift-http-types"),
             ],
+            // Read from their own path by the tests that use them, not bundled.
+            exclude: ["Fixtures"],
             swiftSettings: [.treatAllWarnings(as: .error)]),
     ],
     swiftLanguageModes: [.v6]

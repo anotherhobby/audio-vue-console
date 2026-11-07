@@ -3,15 +3,35 @@ import HostAPI
 import OpenAPIRuntime
 import OpenAPIURLSession
 
-/// What a host's `GET /v1/version` says: its API's version, and the state's schema, which is nil
-/// where the panel does not answer.
+/// What a host's `GET /v1/version` says: its API's version, the state's schema, which is nil
+/// where the panel does not answer, and the digest of the code the panel draws with.
 public struct HostVersion: Sendable, Equatable {
     public let api: APIVersion
     public let schema: Int?
+    public let cards: CardCode
 
-    public init(api: APIVersion, schema: Int?) {
+    public init(api: APIVersion, schema: Int?, cards: CardCode) {
         self.api = api
         self.schema = schema
+        self.cards = cards
+    }
+}
+
+/// The digest of the code a panel draws scenes with, and where the host read it: from the running
+/// panel, or from its own files where the panel does not answer, which is the code the panel will
+/// run at its next start (`card-code`).
+public struct CardCode: Sendable, Equatable {
+    public enum Source: Sendable, Equatable {
+        case panel
+        case host
+    }
+
+    public let digest: String
+    public let source: Source
+
+    public init(digest: String, source: Source) {
+        self.digest = digest
+        self.source = source
     }
 }
 
@@ -31,6 +51,8 @@ public enum HostFailure: Error, Sendable, Equatable {
     case pairingRefused(PairingRefusal)
     /// The host lists no client by the id the request named.
     case unknownClient
+    /// The host holds no scene or image by the id the request named.
+    case notFound
 }
 
 /// Reads a host agent over its API, through the client generated from the saved contract (design
@@ -56,7 +78,10 @@ public struct HostClient: Sendable {
         case .ok(let ok):
             let body = try Self.body { try ok.body.json }
             guard let api = APIVersion(parsing: body.api) else { throw .unexpectedAnswer }
-            return HostVersion(api: api, schema: body.schema)
+            let source: CardCode.Source = body.cards.from == .panel ? .panel : .host
+            return HostVersion(
+                api: api, schema: body.schema,
+                cards: CardCode(digest: body.cards.digest, source: source))
         case .undocumented(statusCode: Self.forbidden, _): throw .refused
         case .undocumented: throw .unexpectedAnswer
         }
@@ -117,4 +142,9 @@ public struct HostClient: Sendable {
         .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed,
         .networkConnectionLost, .notConnectedToInternet,
     ]
+}
+
+extension CardCode {
+    /// A stand-in for previews, which show a version but compare no code.
+    public static let preview = CardCode(digest: "preview", source: .panel)
 }

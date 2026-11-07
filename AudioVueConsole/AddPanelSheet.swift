@@ -84,7 +84,8 @@ struct AddPanelForm: View {
     if let address = HostAddress(parsing: "audio-vue"), let api = APIVersion(parsing: "2.1.0") {
         AddPanelForm(
             address: .constant("audio-vue"),
-            state: .connected(address, HostVersion(api: api, schema: 1), paired: false))
+            state: .connected(
+                address, HostVersion(api: api, schema: 1, cards: .preview), paired: false))
     }
 }
 

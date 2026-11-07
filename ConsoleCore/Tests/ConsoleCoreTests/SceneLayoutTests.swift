@@ -192,6 +192,34 @@ struct ResizingTests {
         #expect(resized.card(meter.id)?.cells == CellRect(col: 13, row: 0, cols: 1, rows: 4))
     }
 
+    @Test func shrinkingStopsAtTheDeclaredMinimum() throws {
+        let waveform = card("waveform", rect(10, 0, 20, 12))
+        let resized = try layout([waveform]).resizing(
+            waveform.id, edges: .left, by: CellOffset(cols: 6, rows: 0),
+            minimum: CellSize(cols: 17, rows: 10))
+        #expect(resized.card(waveform.id)?.cells == CellRect(col: 13, row: 0, cols: 17, rows: 12))
+    }
+
+    @Test func aCardBelowItsMinimumIsMadeNoSmaller() throws {
+        let waveform = card("waveform", rect(0, 0, 10, 12))
+        let minimum = CellSize(cols: 17, rows: 10)
+        let shrunk = try layout([waveform]).resizing(
+            waveform.id, edges: .right, by: CellOffset(cols: -2, rows: 0), minimum: minimum)
+        #expect(shrunk.card(waveform.id)?.cells.cols == 10)
+        let grown = try layout([waveform]).resizing(
+            waveform.id, edges: .right, by: CellOffset(cols: 3, rows: 0), minimum: minimum)
+        #expect(grown.card(waveform.id)?.cells.cols == 13)
+    }
+
+    @MainActor @Test func theEditorStopsACardAtItsKindsMinimum() throws {
+        let waveform = card("waveform", rect(0, 0, 20, 12))
+        let editor = SceneEditor(
+            layout: try layout([waveform]), minimums: ["waveform": CellSize(cols: 17, rows: 10)])
+        editor.resize(waveform.id, edges: [.right, .bottom], by: CellOffset(cols: -8, rows: -8))
+        #expect(
+            editor.layout.card(waveform.id)?.cells == CellRect(col: 0, row: 0, cols: 17, rows: 10))
+    }
+
     @Test func growingLeftAndUpStopsAtTheGrid() throws {
         let meter = card("meter", rect(2, 2, 4, 4))
         let resized = try layout([meter]).resizing(

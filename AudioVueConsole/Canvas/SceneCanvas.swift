@@ -20,6 +20,8 @@ struct SceneCanvas: View {
     let panelAspect: Double
     /// A library card's size, by kind.
     let sizeOf: (String) -> CellSize?
+    /// The scene's layers, or nil where the canvas draws boxes alone, as in previews.
+    var rendering: SceneRendering?
 
     @Environment(SceneStore.self) private var store
     @State private var gesture: CanvasGesture?
@@ -45,13 +47,32 @@ struct SceneCanvas: View {
         .onDeleteCommand { editor.deleteSelection() }
         .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { nudge($0) }
         .focusedSceneValue(\.sceneEditor, editor)
+        // A resize draws its plate again at each cell step; everything else once it is committed,
+        // and a refused gesture's plate as it was (`scene-rendering`).
+        .onChange(of: drawnLayout) { _, layout in
+            Task { await rendering?.show(layout) }
+        }
     }
+
+    /// The layout the layers are drawn for: as a resize would leave it while one is under way, and
+    /// as the editor holds it otherwise.
+    private var drawnLayout: SceneLayout {
+        if case .resizing = gesture { return shownLayout }
+        return editor.layout
+    }
+
+    /// Whether the scene is drawn by the helper rather than as boxes.
+    private var showsLayers: Bool { rendering.map { !$0.showsBoxes } ?? false }
 
     private var grid: CellSize { editor.layout.grid }
 
     private var display: some View {
         ZStack {
-            CanvasMetrics.backdrop
+            if let rendering, showsLayers {
+                LayerStack(rendering: rendering, grid: grid, shown: shownLayout)
+            } else {
+                CanvasMetrics.backdrop
+            }
             GeometryReader { proxy in
                 region(GridGeometry(grid: grid, size: proxy.size))
             }
@@ -67,7 +88,7 @@ struct SceneCanvas: View {
     private func region(_ geometry: GridGeometry) -> some View {
         ZStack(alignment: .topLeading) {
             marqueeSurface(geometry)
-            LayoutPlates(layout: shownLayout).allowsHitTesting(false)
+            if !showsLayers { LayoutPlates(layout: shownLayout).allowsHitTesting(false) }
             ForEach(editor.layout.cards) { target($0, geometry) }
             CanvasOutlines(rects: outlineRects(geometry), isRefused: isRefused, marquee: marquee)
             if let card = editor.resizableCard {
@@ -84,6 +105,16 @@ struct SceneCanvas: View {
     }
 
     private var footer: some View {
+        VStack {
+            footerLine
+            ForEach(rendering?.messages ?? [], id: \.self) { message in
+                Text(message).foregroundStyle(.secondary)
+            }
+        }
+        .font(.callout)
+    }
+
+    private var footerLine: some View {
         Group {
             if let message = (previewRefusal ?? editor.refusal)?.description
                 ?? editor.readOnly?.description

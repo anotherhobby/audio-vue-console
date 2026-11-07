@@ -18,6 +18,13 @@ struct HostClientTests {
         #expect(await transport.requests.count == 1)
     }
 
+    @Test func theCardCodeIsRead() async throws {
+        let body = #"{"api": "2.3.0", "schema": null, "cards": {"digest": "ab12", "from": "host"}}"#
+        let version = try await HostClient(transport: FakeTransport(.status(200, body)))
+            .version(at: try #require(address))
+        #expect(version.cards == CardCode(digest: "ab12", source: .host))
+    }
+
     @Test func thePanelAnswering() async throws {
         let version = try await HostClient(transport: FakeTransport.version("1.0.0", schema: "3"))
             .version(at: try #require(address))
@@ -26,9 +33,9 @@ struct HostClientTests {
     }
 
     @Test(arguments: [
-        #"{"api": "1.0.0", "schema": null}"#,
-        #"{"api": "1.0.0"}"#,
-        #"{"api": "1.0.0", "schema": null, "since": "2026-11-03"}"#,
+        #"{"api": "1.0.0", "schema": null, \#(FakeTransport.cards)}"#,
+        #"{"api": "1.0.0", \#(FakeTransport.cards)}"#,
+        #"{"api": "1.0.0", "schema": null, "since": "2026-11-03", \#(FakeTransport.cards)}"#,
     ])
     func thePanelNotAnswering(body: String) async throws {
         let version = try await HostClient(transport: FakeTransport(.status(200, body)))
@@ -55,9 +62,10 @@ struct HostClientTests {
         (401, #"{"detail": "token"}"#),
         (200, "<html>a web server</html>"),
         (200, #"{"version": "1.0.0"}"#),
-        (200, #"{"api": "one", "schema": 1}"#),
-        (200, #"{"api": 1, "schema": 1}"#),
-        (200, #"{"api": "1.0.0", "schema": "1"}"#),
+        (200, #"{"api": "one", "schema": 1, \#(FakeTransport.cards)}"#),
+        (200, #"{"api": 1, "schema": 1, \#(FakeTransport.cards)}"#),
+        (200, #"{"api": "1.0.0", "schema": "1", \#(FakeTransport.cards)}"#),
+        (200, #"{"api": "1.0.0", "schema": 1}"#),
     ])
     func somethingElseAnswers(status: Int, body: String) async throws {
         await expectFailure(.unexpectedAnswer, from: FakeTransport(.status(status, body)))

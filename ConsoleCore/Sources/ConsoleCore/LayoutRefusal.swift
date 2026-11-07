@@ -3,6 +3,8 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     /// A card would run off the grid. Only a layout read in can be refused this way; an edit
     /// keeps its cards on the grid.
     case offGrid
+    /// A card in a scene read in has no name, or a cell that is not a whole number.
+    case unreadableCard
     case spaceTaken
     case largerThanGrid
     case cardIsGrouped
@@ -15,6 +17,7 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .offGrid: "A card runs off the scene's grid."
+        case .unreadableCard: "A card in this scene can't be read."
         case .spaceTaken: "That space is taken."
         case .largerThanGrid: "That card is larger than this scene's grid."
         case .cardIsGrouped: "A grouped card can't be resized. Ungroup it first (⇧⌘G)."

@@ -117,7 +117,7 @@ struct ConnectionStatus: View {
                 "\(name) refused the request."
             case .unexpectedAnswer:
                 "Something answered at \(endpoint), but not an audio-vue host."
-            case .tokenRefused, .pairingRefused, .unknownClient:
+            case .tokenRefused, .pairingRefused, .unknownClient, .notFound:
                 "\(name) answered in a way this app didn't expect."
             }
         return Label(text, systemImage: "xmark.octagon.fill")

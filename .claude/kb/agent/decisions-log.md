@@ -69,3 +69,9 @@ Format:
   fixture frame): more card text will follow analysis settings. The bundle therefore holds the
   analysis, numba and scipy; performance weighed above size. The first frame is made behind the
   console's launch screen. audio-vue's `console-render` design D7; `working-notes.md`.
+- 2026-11-07: The render helper is bundled in the console's first rendering change, not after a
+  first round from audio-vue's checkout (maintainer): the App Sandbox hides the checkout, and a
+  relocatable CPython with the bundle's libraries ran sandboxed with no exception (measured). It
+  starts once paired with the host's rate, shown by a Renderer row under Status rather than a launch
+  screen, since every start costs about 2 s as one request with no steps; a resize stops at the card's
+  declared minimum; Duplicate and the library are in scope. `openspec/changes/scene-render`.

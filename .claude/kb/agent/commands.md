@@ -43,3 +43,25 @@ Format:
   checks the resolved address answers (`theHostIsFoundByItsID`); it passed, finding `audio-vue` at
   `audio-vue.local`. `swift test` runs outside the app's sandbox, so any Local Network prompt goes to
   the app that launched it (Terminal or the editor), and a denial there fails this test only.
+
+- 2026-11-07: `tools/refresh-render-bundle.sh` - runs `make render-bundle` in `../audio-vue` (override
+  with `AUDIO_VUE=<path>`), mirrors its `local/render-bundle/` into this checkout's
+  `local/render-bundle/` (deleting what audio-vue's no longer holds), then builds
+  `local/python-runtime/`: uv's relocatable CPython at the version the checkout's `.venv` runs, with
+  the bundle's `requirements.txt` installed, `__pycache__` removed. The runtime is rebuilt only when
+  that version or the requirements change (`local/python-runtime/.stamp`); downloads are kept in
+  `local/python-downloads/`. All of `local/` is ignored by git. `--check` lists how the mirror differs
+  and exits 1, copying nothing. Run it after cloning and after audio-vue's card code changes: a build
+  without the runtime fails, naming it. First run about 9 s; the runtime is about 358 MB.
+- 2026-11-07: the app target's build phase "Embed the render runtime" runs
+  `tools/embed-render-runtime.sh`, which rsyncs `local/python-runtime/` and `local/render-bundle/`
+  into `Contents/Resources/python/` and `render-bundle/`. The app is about 375 MB (Debug) and
+  `codesign --verify` passes on it.
+
+- 2026-11-07: `RENDER_HELPER_LIVE=1 xcrun swift test --filter LiveHelperTests` in `ConsoleCore/` -
+  runs the real render helper from `local/` (build it first with `tools/refresh-render-bundle.sh`):
+  `hello`, whose digest must equal `local/render-bundle/manifest.json`'s, then the RTA scene
+  (`Tests/ConsoleCoreTests/Fixtures/rta-scene.json`, audio-vue's `scenes/rta.yaml` as JSON) at
+  1920 x 720, then one plate. It prints its timings. Measured (2026-11-07, M4 Pro), caches empty then
+  filled: `hello` 0.44 s / 0.20 s, whole scene 9.7 s / 2.3 s, one plate 0.03 s / 0.03 s. Skipped
+  without the variable.

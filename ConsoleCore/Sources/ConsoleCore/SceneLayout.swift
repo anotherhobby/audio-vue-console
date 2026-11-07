@@ -9,6 +9,9 @@ public struct CellSize: Sendable, Hashable {
         self.cols = cols
         self.rows = rows
     }
+
+    /// The smallest a card can be: what a card that declares no minimum may be resized to.
+    public static let oneCell = CellSize(cols: 1, rows: 1)
 }
 
 /// One cell of the grid, counted from the top left, row 0 at the top as in audio-vue's scenes.

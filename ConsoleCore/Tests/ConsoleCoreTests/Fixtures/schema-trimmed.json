@@ -1,0 +1,80 @@
+{
+ "$defs": {
+  "block.grid": {
+   "additionalProperties": false,
+   "properties": {
+    "cols": {
+     "default": 64,
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "appearance",
+     "x-help": "Grid columns across the scene's region.",
+     "x-label": "Columns",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "gap": {
+     "default": 8.0,
+     "minimum": 0.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Space between cards, in pixels at a region 1,080 px tall.",
+     "x-label": "Gap",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": "px"
+    },
+    "rows": {
+     "default": 36,
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "appearance",
+     "x-help": "Grid rows down the scene's region.",
+     "x-label": "Rows",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    }
+   },
+   "type": "object"
+  },
+  "card.calibration": {
+   "type": "object",
+   "x-min-cells": [
+    29,
+    36
+   ],
+   "x-placeable": false,
+   "x-sizing": "free"
+  },
+  "card.logo": {
+   "type": "object",
+   "x-min-cells": [
+    6,
+    4
+   ],
+   "x-placeable": true,
+   "x-sizing": "free"
+  },
+  "card.peak_rms_vertical": {
+   "type": "object",
+   "x-min-cells": [
+    13,
+    15
+   ],
+   "x-placeable": true,
+   "x-sizing": "free"
+  },
+  "card.waveform": {
+   "type": "object",
+   "x-min-cells": [
+    12,
+    7
+   ],
+   "x-placeable": true,
+   "x-sizing": "free"
+  }
+ },
+ "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
