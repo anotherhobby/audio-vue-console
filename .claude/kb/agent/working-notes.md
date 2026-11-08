@@ -83,7 +83,16 @@ run passed every item after deploying audio-vue to the panel.
 
 ## Scene saving (2026-11-07)
 
-Planned and aligned as `openspec/changes/scene-save`, not built; build it after `library-render` is
-archived, since both change `SceneStore` and `SceneEditorView`. Ruled (maintainer, 2026-11-07): a
+Planned and aligned as `openspec/changes/scene-save`, not built; ready to build now that
+`library-render` is archived. Ruled (maintainer, 2026-11-07): a
 copy stays in the app until its first Save; Rename writes at once; a quit or panel switch with unsaved
-scenes asks Save All / Discard / Cancel. It also fixes kept edits losing card settings (alignment F1).
+scenes asks Save All / Discard / Cancel. Also ruled the same day: Save stores and Apply saves then
+switches (this panel's shape, built-ins included, no question first, capture kept or rebuilt reported
+after); Revert discards unsaved edits only; a Versions menu loads a kept revision as an edit under the
+current name; saving the scene on screen notes the panel is behind; Reset in the editor and on the
+Panel page; all one change. It also fixes kept edits losing card settings (alignment F1).
+- Asked of audio-vue by handoff (2026-11-07): the done switch's fields in the contract, and a `reset`
+  command (`Analyzer.reset()` has no route; reload is not a reset). The first is answered, decided
+  and not built: audio-vue's change `command-results-and-reset` gives switch its own done model with
+  `scene`, `capture`, `why` and `recorded`. Reset is answered separately through the same change.
+  Tasks 9.1 and 9.2 wait on that change's archive and a contract refresh.

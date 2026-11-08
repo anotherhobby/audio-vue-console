@@ -46,6 +46,31 @@ working tree:
   search).
 - Each task in groups 1 to 6 was read against the code above.
 
+Pass 2, 2026-11-07, for Apply, Revert, Versions, the panel-behind note and Reset:
+
+- Saved contract: `POST /v1/commands/switch` (`Switch` with `scene`; `Outcome` with `status` of
+  `done`, `refused`, `expired`, `unknown` or `no panel` and `reason`; 200, 409, 503, 504),
+  `POST /v1/commands/reload`, `GET /v1/scenes/{id}/revisions` (`Revision` with `rev`, `saved_at`,
+  `doc`, newest first, none for a built-in), `POST /v1/scenes/{id}/revert`, and the state's `Scene`
+  section declaring `spec`.
+- audio-vue `src/control_commands.py`: `Command.reply()` spreads a done result into the answer; the
+  bus registers `switch`, `reload`, `arm`, `cancel`, `saver`, `outcome` and no `reset`.
+  `src/control_service/app.py` `_commands`: the routes answer the reply with its status's code.
+- audio-vue `src/scene.py`: the switch result `{"scene", "capture", "why"}` (around line 1573),
+  `_why_rebuild` (the capture rate first), `CaptureStack.why_not` (every analysis `Config` field but
+  history depth, then a deeper history ring). `src/scene_model.py` `capture_rate_for`, `config`.
+  `src/analyzer.py` `Config`, `Analyzer.reset()` (line 372) and its docstring.
+- audio-vue `control-commands` ("A command says what happened", "Commands are refused unless a
+  scene is drawing", "A switch is refused during a calibration", "A switch names a scene on the
+  roster", "The last scene switched to comes back") and `scene-reload` ("A reload re-reads the scene
+  on screen", "A reload says what it cost"), in full.
+- `SceneEditor.swift`: `commit(_:_:)`, `registerUndo`, `detach()`.
+- `PanelState.swift` `init(_:)`: keeps `sections.scene?.name` only. `PanelWindow.swift`: `live` is
+  made in a `.task` and handed to `PanelPage` alone. `PanelPage.swift`: Status is built by
+  `ConnectionStatus` and the page's rows.
+- Tasks 6.1 to 10.2 were read against the code above. `SceneEditorUndoTests` and `PanelStateTests`
+  exist. `HostClientCommandsTests` is new.
+
 ## Findings
 
 - **F1. Kept edits drop every card's settings** (resolved)
@@ -102,16 +127,74 @@ working tree:
   - Goes to: design D6 and task 3.3.
   - Resolution: `SceneStore` forgets only when `HostConnection.host?.id` differs.
 
+- **F9. The switch's result is not in the contract** (answered by audio-vue, not yet built)
+  - Plan: Apply reports whether capture was kept or rebuilt, and why (maintainer, 2026-11-07).
+  - Code: audio-vue sends `scene`, `capture` and `why` in a done answer (`Command.reply()`,
+    `scene.py`), but `contract.Outcome` declares only `status` and `reason`. `control-commands` says
+    the caller hears them, and names no fields.
+  - Goes to: audio-vue (the console's handoff, ask 1), design D8 and task 9.1.
+  - Resolution: audio-vue answered on 2026-11-07, decided and not yet built, in its change
+    `command-results-and-reset`. `switch` and `reload` get answer models of their own (planned as
+    `SwitchOutcome` and `SceneOutcome`), not optional fields on `Outcome`. A done switch also carries
+    `recorded`. The report mentions `recorded` only when false (maintainer, 2026-11-07). D8, task 9.1
+    and the `scene-apply` spec are updated. The handoff was deleted after reading.
+- **F10. Apply needs no reload** (resolved)
+  - Plan: `product.md` describes Apply as saving and calling reload.
+  - Code: `control-commands`, "A switch names a scene on the roster": a switch to a stored scene's id
+    puts up its current revision. `scene.py` builds the scene on every switch, with no check for the
+    scene already on screen (read 2026-11-07).
+  - Goes to: design D8.
+  - Resolution: Apply is a save, then a switch. The app needs no on-screen state to choose a command.
+- **F11. `product.md`'s line on Apply** (resolved)
+  - Plan: Save stores, Apply saves and switches, Revert discards unsaved edits, Versions restores
+    kept revisions (maintainer, 2026-11-07).
+  - Code: `product.md`, "The app", said Apply saves a revision and calls reload, with revert one
+    click away (Recommended).
+  - Goes to: `product.md`, edited only with the maintainer's approval.
+  - Resolution: the maintainer approved the new wording on 2026-11-07, and the line was edited.
+- **F12. There is no reset command** (deferred to audio-vue)
+  - Plan: a Reset button in the editor and on the Panel page (maintainer, 2026-11-07).
+  - Code: `Analyzer.reset()` exists and its docstring names a future manual control, but no command
+    or route reaches it. Reload is not a reset: it keeps capture and history wherever a switch would
+    (`scene-reload`, "A reload says what it cost").
+  - Goes to: audio-vue, through the handoff (ask 2, with what a reset clears, whether a calibration
+    refuses it, and whether it wakes the display), and task 9.2.
+  - Resolution: asked 2026-11-07. Task 9.2 waits on the route. What a reset restarts is audio-vue's
+    to state. The maintainer expects history to be dumped as well, which the handoff passes on.
+- **F13. Undo across a change of parse would lose card settings** (resolved)
+  - Plan: Revert is undoable, and a version loads like an edit.
+  - Code: `SceneEditor` registers bare layouts for undo (`commit`, `registerUndo`). A layout only
+    turns back into a document through the parse it came from (F1), so undoing past a version load
+    would pair one version's cards with another version's document.
+  - Goes to: requirement (`scene-saving`: Revert is undoable unless it leaves an earlier version, and
+    choosing a version starts the undo history afresh), design D9, tasks 6.1 and 6.4.
+  - Resolution: written into the plan the maintainer asked for on 2026-11-07, and reported with it.
+
+- **F14. audio-vue's coming change touches specs this plan relies on** (open until group 9)
+  - Plan: Apply and Reset rely on `control-api`, "A command says what became of it",
+    `control-commands`, "A command says what happened" and "The last scene switched to comes back",
+    and `scene-reload`.
+  - Code: audio-vue's `command-results-and-reset` will add contract lines beside those requirements,
+    and the reset command. `openspec list --store audio-vue` showed no active change on 2026-11-07,
+    so there are no deltas to read yet.
+  - Goes to: tasks, group 9's opening line.
+  - Resolution: before group 9, read that change's deltas, or the archived specs, against D8, D11
+    and tasks 9.1 and 9.2.
+
 ## Questions for the maintainer
 
-None open. Three rulings were taken before the plan was drafted (2026-11-07): a copy stays in the app
-until its first Save, Rename writes at once, and a quit or switch with unsaved scenes asks. F1 changes
-behaviour the maintainer has seen (reopened scenes, thumbnails, Duplicate) and is reported with the
-plan for review, not as a question.
+None open. The rulings taken on 2026-11-07: a copy stays in the app until its first Save; Rename
+writes at once; a quit or switch with unsaved scenes asks; Save stores and Apply saves and switches;
+Apply covers this panel's shape, built-ins included, asks nothing first and reports after; Revert
+discards unsaved edits only; Versions loads a kept revision as an edit under the current name; saving
+the scene on screen notes that the panel is behind; Reset sits in the editor and on the Panel page;
+one change; the asks to audio-vue go as a handoff. F1 and F13 change or limit behaviour the maintainer
+has seen, and are reported with the plan for review, not as questions.
 
 The plan's own recommendations, open to correction in review rather than asked: a stale save offers
 Save Over It and Discard Mine (D5); a stale rename retries once without asking (D5); Delete is
-confirmed; an empty name is refused; Apply is out of scope.
+confirmed; an empty name is refused; Reset asks nothing first; the Reset button is hidden until the
+route exists (D11).
 
 ## Confirmed
 
@@ -136,5 +219,15 @@ confirmed; an empty name is refused; Apply is out of scope.
   id alone. `pitfalls.md`, "SwiftUI's undo manager is not there in `init`": `detach()` clears undo
   when the editor closes, so "undo back to saved" applies within one opening. This matches D3's
   note that undo does not survive a reopen. `open-questions.md` holds nothing on scenes.
+- A switch is refused during a calibration and on the audio-vue screen, each with a reason, and the
+  `Outcome`'s five statuses map to four codes (`control-commands`, `control-api`, the saved contract).
+- The last scene switched to becomes the panel's boot scene (`control-commands`), so an applied scene
+  is refused for delete until another is applied. The spec's delete refusal covers it.
+- The revisions route gives whole documents in one request, newest first, so the Versions menu
+  needs no read per entry.
+- The contract's `Scene` section declares `spec`, so `PanelState.sceneSpec` reads a declared field
+  (D10).
+- `SceneEditor` is 204 lines and `PanelScenes` 126. With D8 to D11 each stays under the gate's
+  300-line type limit, by the tasks' scope.
 - Card deletion on the canvas (`scene-canvas`, "Delete removes the selection") is a key in the
   editor. Scene deletion is a gallery menu item, so the two do not collide.

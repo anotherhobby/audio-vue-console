@@ -130,8 +130,10 @@ host comes first (Recommended).
   the host to run (Recommended).
 - **Saves are explicit.** Hosts boot from SD cards, so nothing writes per drag (Recommended).
 - **No live preview** (Ruled). Nothing follows edits on the panel. The app can have a preview button
-  that hands rendering back to the panel to show the scene running (Ruled); that button is Apply,
-  saving a revision and calling `reload`, with revert one click away (Recommended).
+  that hands rendering back to the panel to show the scene running (Ruled). That button is Apply: it
+  saves the open scene and puts it on the panel. Save stores without changing the panel, Revert
+  discards unsaved edits, and earlier versions are restored from the host's kept revisions (Ruled,
+  2026-11-07).
 - **Scenes are tied to a display shape** (Ruled), the grid's `cols:rows`. The app offers "duplicate
   for this panel" where a scene's shape does not match (Recommended).
 - **Built-in scenes are read-only**, shown with "duplicate to edit" (Ruled, 2026-11-02).

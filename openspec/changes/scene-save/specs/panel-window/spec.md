@@ -44,3 +44,20 @@ asks first.
 - **WHEN** the app holds `audio-vue` and the user chooses the found panel at `studio.local`
 - **THEN** the app connects to it, the picker shows it as the panel held, and the Panel page shows
   the connection to it
+
+### Requirement: The Panel page keeps its sections in order
+
+The Panel page SHALL show the sections Status, Capture, Calibration and Pairing, in that order.
+Status SHALL show the condition, the scene on screen and the display's size, and offer Reset as
+`scene-apply` says; Capture the device, the rate and the analysis time against its budget;
+Calibration its status and age.
+
+Source: Decision (maintainer, 2026-11-05): the sketched sections keep their order, Pairing last.
+Decision (maintainer, 2026-11-06): the Overview is the Panel page, opening on Status. Decision
+(maintainer, 2026-11-07): Reset in the editor and on the Panel page.
+
+#### Scenario: A paired host whose panel is up
+
+- **WHEN** the app is paired with a host whose panel is up and drawing
+- **THEN** the Panel page shows, from the host, its condition, scene, display size, capture device,
+  rate, analysis time and budget, and calibration status and age, and Status offers Reset

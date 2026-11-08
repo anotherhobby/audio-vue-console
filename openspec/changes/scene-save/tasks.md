@@ -1,6 +1,9 @@
 # Tasks
 
-Build after `library-render` is archived, since both change `SceneStore` and `SceneEditorView`.
+`library-render`, which also changed `SceneStore` and `SceneEditorView`, is archived (2026-11-07).
+Read both files as it left them before group 1.
+Group 9 waits on audio-vue's answer to `../audio-vue/console-commands-handoff.md`; every other group
+can be built first.
 
 ## 1. A draft keeps the parse it came from
 
@@ -111,16 +114,97 @@ Build after `library-render` is archived, since both change `SceneStore` and `Sc
   `reply(toApplicationShouldTerminate:)` after `settle`: as an `NSAlert` when no window is open, and
   as a sheet on the panel window when one is. Verify the app target builds.
 
-## 6. Run against the panel
+## 6. Revert and Versions
 
-- [ ] 6.1 With the proving host paired, the maintainer runs: duplicate RTA, move a card, ⌘S, and see
+- [ ] 6.1 Add `SceneEditor.revert(to:)`, committed as an undoable edit named Revert, and
+  `SceneEditor.replace(with:)`, which removes the editor's undo actions (as `detach()` does) and sets
+  the layout without registering one (`ConsoleCore/Sources/ConsoleCore/SceneEditor.swift`, design
+  D9). Verify `SceneEditorUndoTests` gains: Revert then undo restores the edited layout and the Edit
+  menu names Undo Revert; after `replace(with:)` the undo manager has no action from the editor.
+- [ ] 6.2 Give `Draft` the revision its parse came from (`source`), with `isUnsaved` also true when
+  `source != rev`, and add `SceneDrafts.load(_ revision:, for id:)`, which replaces the draft's
+  `laidOut` with a parse of the revision's document, `name` set to the draft's, keeping `rev`, and
+  `revert(_ id:)`, which returns the draft to a parse of the base document and says whether the parse
+  changed (`SceneDrafts.swift`, design D9). Verify `SceneDraftsTests`: a loaded version is unsaved
+  with an unchanged layout; its `doc` carries the old layout and the current name; saving writes on
+  the base revision; `revert` after a load reports a change of parse, and after a plain edit does not.
+- [ ] 6.3 Add `HostClient.sceneRevisions(_:at:token:)` (`GET /v1/scenes/{id}/revisions`, returning
+  each `rev`, `saved_at` as a `Date` and `doc`, newest first) and `PanelScenes.revisions(_:)`. Verify
+  `HostClientScenesTests` reads two revisions in order with their dates, and a built-in's empty list.
+- [ ] 6.4 In `SceneEditorView`, a Revert to Saved toolbar button and File ▸ Revert to Saved
+  (`SceneCommands`, `CommandGroup(after: .saveItem)`), enabled while the draft is unsaved and has a
+  base revision, calling `editor.revert(to:)` on the same parse or `editor.replace(with:)` when the
+  parse changes. A Versions toolbar `Menu` reading `PanelScenes.revisions` when opened, listing the
+  current version first and each revision by local date and time, disabled for a built-in, a copy and
+  a scene of another shape; choosing one calls `SceneDrafts.load` and `editor.replace(with:)`, and
+  choosing the current version reverts. Verify the app target builds and a `#Preview` of the Versions
+  menu's rows renders with three dated entries.
+
+## 7. Apply
+
+- [ ] 7.1 Add `CommandOutcome` (`.done`, `.refused(String)`, `.noPanel`, `.expired(String)`,
+  `.unknown(String)`) and `HostClient.switchScene(_:at:token:)` (`POST /v1/commands/switch`, mapping
+  200, 409, 503 and 504 by the `Outcome`'s `status`) in a new
+  `ConsoleCore/Sources/ConsoleCore/HostClient+Commands.swift` (design D8). Verify
+  `HostClientCommandsTests` (new) over `FakeTransport`: the body `{"scene": id}` with the token and no
+  `Origin`, and each status to its case with its reason.
+- [ ] 7.2 Add `PanelScenes.apply(_ draft:)`: save when unsaved (a copy created first), stop on a
+  failed save returning it, then `switchScene` by the scene's id and return the outcome. Verify
+  `PanelScenesTests`: an unsaved draft is written then switched, in that order; a clean draft is only
+  switched; a refused save sends no switch; a refused switch keeps the save.
+- [ ] 7.3 In `SceneEditorView`, an Apply toolbar button, enabled for any scene of the panel's shape and
+  disabled with a help tag for another shape, and the banner under the toolbar (design D7) showing the
+  outcome: done, the panel's reason, no panel answered, or that the panel may have switched. After a
+  copy's first save through Apply, the path is replaced as for Save (task 4.1). Verify the app target
+  builds and a `#Preview` of the banner renders each outcome.
+
+## 8. The panel-behind note
+
+- [ ] 8.1 Add `sceneSpec` to `PanelState` from the state's `Scene.spec`
+  (`ConsoleCore/Sources/ConsoleCore/PanelState.swift`). Verify `PanelStateTests` reads it, and nil
+  where the scene section is missing.
+- [ ] 8.2 Hand `PanelWindow`'s `live` to `ScenesPage` and on to `SceneEditorView`
+  (`AudioVueConsole/PanelWindow.swift`, `ScenesPage.swift`). In `SceneStore`, hold the ids saved while
+  on screen (design D10): add an id when its save succeeds while `live.state?.sceneSpec == id`, remove
+  it on a done Apply of that id, and drop every id other than the current `sceneSpec` when it changes.
+  The banner shows the note for a held id. Verify the app target builds and a `#Preview` of the
+  banner shows the note.
+
+## 9. Waiting on audio-vue
+
+Start once audio-vue's change `command-results-and-reset` is archived and `tools/refresh-contract.sh`
+has brought in the switch's own done model and the reset route. Before starting, recheck that change's
+deltas against the specs this plan relies on (alignment F14).
+
+- [ ] 9.1 Decode the switch's own done model (planned as `SwitchOutcome`; take the name from the
+  refreshed contract) into `CommandOutcome.done(capture:why:recorded:)`, and have the banner say the
+  scene is on the panel and capture was kept, or rebuilt with history restarted and `why` as given,
+  adding that the panel will not start on it only when `recorded` is false (design D8). Verify
+  `HostClientCommandsTests` decodes a kept and a rebuilt answer and one with `recorded` false, and the
+  banner's `#Preview` shows a rebuild with its reason and an unrecorded switch.
+- [ ] 9.2 Add `HostClient.resetPanel(at:token:)` on audio-vue's reset route, returning a
+  `CommandOutcome`, and a Reset button in the editor's toolbar and in `PanelPage`'s Status section
+  (`AudioVueConsole/PanelPage.swift`), asking nothing first, its outcome in the editor's banner or
+  beside the Panel page's button (design D11). Verify `HostClientCommandsTests` covers the route's
+  answers, and the app target builds.
+
+## 10. Run against the panel
+
+- [ ] 10.1 With the proving host paired, the maintainer runs: duplicate RTA, move a card, ⌘S, and see
   the host list "RTA copy" (`GET /v1/scenes`) with the card moved and its settings kept; rename it
   with an unsaved edit and see the host's name change while the edit stays marked; save again; open
   a second client's write (`curl` a PUT on the same base) and choose Save Over It; try to delete the
   scene on screen and read the host's refusal; delete the copy; quit with an unsaved scene, once
   with the window open and once closed, and choose Cancel, then Save All; switch panels with an
-  unsaved scene and choose Discard. A screenshot of the gallery with an unsaved mark.
-- [ ] 6.2 Record in `project-map.md` the drafts, `UnsavedScenes` and the scene writes. Record in
+  unsaved scene and choose Discard. Then: Revert two moves and undo the Revert; open Versions,
+  choose an earlier version and save it, and see its layout under the current name; Apply an edit
+  and see the panel switch and the banner; save the scene on screen and see the note, then Apply and
+  see it clear; Apply during a calibration and read the refusal; once group 9 is built, Apply a scene
+  with deeper history and read the rebuild's reason, and press Reset in the editor and on the Panel
+  page. A screenshot of the gallery with an unsaved mark, and of the banner after an Apply.
+- [ ] 10.2 Record in `project-map.md` the drafts, `UnsavedScenes`, the scene writes, the commands
+  and the banner, and in `host-contract.md` the switch outcome's fields and the reset route as
+  audio-vue built them. Record in
   `pitfalls.md` that a `LaidOutScene`'s card ids are per parse, so a layout is turned back into a
   document only through the parse it came from. Remove the drafts line from `working-notes.md`'s
   canvas notes if it says edits are never saved. Verify each changed entry is dated and names its

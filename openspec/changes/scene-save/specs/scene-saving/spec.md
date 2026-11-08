@@ -2,8 +2,9 @@
 
 ## Purpose
 
-How the app writes a paired panel's scenes to its host: Save, Rename and Delete, how unsaved scenes
-are marked, how a refused write is shown, and the prompt before unsaved scenes are lost.
+How the app writes a paired panel's scenes to its host: Save, Rename and Delete, Revert and
+Versions, how unsaved scenes are marked, how a refused write is shown, and the prompt before unsaved
+scenes are lost.
 
 ## ADDED Requirements
 
@@ -61,11 +62,12 @@ Source: `scene-canvas`, "A read-only scene can be looked at, not edited". audio-
 
 ### Requirement: Saving leaves the screen as it is
 
-Saving, renaming or deleting a scene SHALL NOT switch or reload the panel, and the app SHALL NOT
-say the panel now shows the saved scene.
+Saving, renaming, deleting, reverting or loading a version of a scene SHALL NOT switch or reload
+the panel, and the app SHALL NOT say the panel now shows the saved scene. Only Apply changes the
+panel (`scene-apply`).
 
 Source: audio-vue `settings-store`: writing a scene never changes the screen; a reload or a switch
-does. `product.md`: no live preview; Apply, which saves and reloads, is a separate button.
+does. `product.md`: no live preview; Apply is the button that puts a scene on the panel.
 
 #### Scenario: Saving the scene on screen
 
@@ -74,8 +76,9 @@ does. `product.md`: no live preview; Apply, which saves and reloads, is a separa
 
 ### Requirement: Unsaved scenes are marked
 
-The gallery and the editor's title SHALL mark a scene whose layout differs from the one the host
-holds, and every copy not yet saved. A layout undone back to the host's SHALL lose the mark.
+The gallery and the editor SHALL mark a scene whose layout differs from the one the host holds,
+every copy not yet saved, and a scene showing an earlier version not yet saved. A layout undone back
+to the host's SHALL lose the mark.
 
 Source: Inferred (this change): with explicit saves, the user must see what a quit or switch
 would lose.
@@ -83,12 +86,88 @@ would lose.
 #### Scenario: An edit marks the scene
 
 - **WHEN** the user moves a card in "My RTA"
-- **THEN** the editor's title and the gallery mark "My RTA" as unsaved
+- **THEN** the editor and the gallery mark "My RTA" as unsaved
 
 #### Scenario: Undoing to the saved layout
 
 - **WHEN** the user moves a card in a saved scene and then undoes the move
 - **THEN** the scene is no longer marked unsaved
+
+### Requirement: Revert discards unsaved edits
+
+Revert to Saved, in the editor and the File menu, SHALL put the open scene back as the host holds
+it, and SHALL be undoable unless it leaves an earlier version. It SHALL be enabled only while the
+scene is unsaved, so never right after a Save or an Apply, and SHALL be disabled for a copy never
+saved. It SHALL write nothing to the host.
+
+Source: Decision (maintainer, 2026-11-07): revert removes unsaved changes, becomes unavailable once
+saved or applied, and does not affect the host or the panel.
+
+#### Scenario: Reverting an edit
+
+- **WHEN** the user moves two cards in "Studio" and chooses Revert to Saved
+- **THEN** the canvas shows "Studio" as the host holds it, not marked unsaved, and nothing is
+  written
+
+#### Scenario: Undoing a revert
+
+- **WHEN** the user reverts and then presses ⌘Z
+- **THEN** the two moves are back, and the scene is marked unsaved
+
+#### Scenario: After a save
+
+- **WHEN** the user saves "Studio"
+- **THEN** Revert to Saved is disabled
+
+#### Scenario: An unsaved copy
+
+- **WHEN** the user opens a copy never saved
+- **THEN** Revert to Saved is disabled
+
+### Requirement: Versions lists the scene's kept revisions
+
+The editor's Versions menu SHALL list a stored scene's current version and each earlier revision
+the host keeps, newest first, each by its local date and time. It SHALL be disabled for a built-in,
+a copy never saved, and a scene shaped for another panel, which cannot be saved.
+
+Source: audio-vue `settings-store`: each document's earlier revisions are kept up to a designed
+count. Decision (maintainer, 2026-11-07): a menu of every dated version in the store.
+
+#### Scenario: A scene saved three times
+
+- **WHEN** the user opens Versions on a stored scene saved three times
+- **THEN** it lists the current version and the two earlier ones, each by date and time
+
+#### Scenario: A built-in
+
+- **WHEN** the user opens a built-in scene
+- **THEN** Versions is disabled
+
+### Requirement: Choosing a version loads it as an edit
+
+Choosing an earlier version SHALL show it on the canvas as an unsaved edit with the scene's current
+name, and saving it SHALL store it as the scene's next revision. It SHALL start the undo history
+afresh. Choosing the current version SHALL do what Revert to Saved does.
+
+Source: Decision (maintainer, 2026-11-07): a version loads like an edit, keeping the current name.
+audio-vue `settings-store`: earlier revisions are kept, and storing one is a new revision.
+
+#### Scenario: Restoring a version
+
+- **WHEN** "Studio" is at revision 5, the user chooses the version saved as revision 3 and saves
+- **THEN** the host stores revision 6 with revision 3's layout and the name "Studio", and keeps
+  revisions 3 to 5
+
+#### Scenario: A version under an old name
+
+- **WHEN** revision 2 was saved as "My RTA" before the scene was renamed "Studio", and the user
+  chooses it
+- **THEN** the canvas shows revision 2's layout, and the scene is still named "Studio"
+
+#### Scenario: Undo after choosing a version
+
+- **WHEN** the user moves a card, then chooses an earlier version
+- **THEN** ⌘Z does not bring back the move, and Revert to Saved returns to the current version
 
 ### Requirement: Rename stores the new name at once
 
