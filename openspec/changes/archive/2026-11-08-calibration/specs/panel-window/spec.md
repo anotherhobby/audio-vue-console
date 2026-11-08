@@ -10,8 +10,7 @@ and keep their sample values until their own changes build them.
 
 Source: Decision (maintainer, 2026-11-05): Access goes; the other pages can wait, and sample data is
 fine before the project's release. Decision (maintainer, 2026-11-06): Overview is renamed Panel, and
-the picker moves to the Panel page. Decision (maintainer, 2026-11-08): the Calibration page is built,
-as `calibration-run` and `calibration-history` say.
+the picker moves to the Panel page. Decision (maintainer, 2026-11-08): Calibration is built.
 
 #### Scenario: The sidebar
 
