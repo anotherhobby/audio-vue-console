@@ -1,11 +1,17 @@
-/// Feeds the render helper one request at a time, the canvas's before the thumbnails' (design D3).
-/// Within the canvas's lane a newer request with the same key replaces one not yet sent, so a
-/// resize sends the size it is at once the helper is free, never every step it passed through.
+/// Feeds the render helper one request at a time: the canvas's first, then the library's, then the
+/// thumbnails' (`scene-render` design D3, `library-render` design D2). Within the canvas's lane and
+/// the library's, a newer request with the same key replaces one of its own lane not yet sent, so a
+/// resize sends the size it is at once the helper is free, never every step it passed through, and
+/// a scene switch leaves no tile of the last scene waiting.
 @MainActor
 public final class RenderQueue {
     public enum Lane: Sendable {
         case canvas
+        case library
         case thumbnails
+
+        /// Whether a newer request replaces a waiting one with the same key.
+        var replaces: Bool { self != .thumbnails }
     }
 
     private struct Job {
@@ -32,7 +38,9 @@ public final class RenderQueue {
         -> Result<HelperAnswer, RenderFailure>?
     {
         await withCheckedContinuation { answer in
-            if lane == .canvas, let index = pending.firstIndex(where: { $0.key == key }) {
+            if lane.replaces,
+                let index = pending.firstIndex(where: { $0.lane == lane && $0.key == key })
+            {
                 pending[index].answer.resume(returning: nil)
                 pending.remove(at: index)
             }
@@ -58,8 +66,10 @@ public final class RenderQueue {
         }
     }
 
-    /// The first job of the canvas's lane, or else the first of the thumbnails'.
+    /// The first job of the canvas's lane, or else the first of the library's, or else the first.
     private func nextIndex() -> Int? {
-        pending.firstIndex { $0.lane == .canvas } ?? pending.indices.first
+        pending.firstIndex { $0.lane == .canvas }
+            ?? pending.firstIndex { $0.lane == .library }
+            ?? pending.indices.first
     }
 }

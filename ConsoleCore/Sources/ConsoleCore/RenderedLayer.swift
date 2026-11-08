@@ -18,6 +18,14 @@ public struct RenderedLayer: Sendable {
     public let unfit: [String]
     public let image: CGImage
 
+    public init(kind: Kind, cardIDs: [UUID], rect: CGRect, unfit: [String], image: CGImage) {
+        self.kind = kind
+        self.cardIDs = cardIDs
+        self.rect = rect
+        self.unfit = unfit
+        self.image = image
+    }
+
     /// The layers of `answer`, its placements read as the cards `cardIDs` lists in placement order.
     static func layers(of answer: HelperAnswer, cardIDs: [UUID]) throws(RenderFailure)
         -> [RenderedLayer]

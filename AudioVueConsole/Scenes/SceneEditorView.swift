@@ -20,11 +20,7 @@ struct SceneEditorView: View {
 
     var body: some View {
         HSplitView {
-            CardLibrary(cards: scenes.facts?.placeable ?? [], sizeOf: { editor?.minimums[$0] })
-                .frame(
-                    minWidth: SceneMetrics.libraryMinWidth,
-                    idealWidth: SceneMetrics.libraryIdealWidth,
-                    maxWidth: SceneMetrics.libraryMaxWidth)
+            library
             canvas.frame(minWidth: SceneMetrics.canvasMinWidth)
         }
         .inspector(isPresented: $showsInspector) {
@@ -38,12 +34,26 @@ struct SceneEditorView: View {
         .onAppear(perform: make)
         .onDisappear { editor?.detach() }
         .task(id: renderer.phase) { await follow(renderer.phase) }
-        .onChange(of: verdict) { _, verdict in verdict.map { rendering?.apply($0) } }
+        .onChange(of: verdict) { _, verdict in
+            verdict.map { rendering?.apply($0) }
+            if case .ready = renderer.phase { Task { await drawTiles() } }
+        }
         .onChange(of: rendering?.status) { _, status in
             if status == .drawn, let rendering {
                 store.thumbnails.update(document.id, from: rendering)
+                rendering.backdrop.map { store.tiles.show(backdrop: $0) }
             }
         }
+    }
+
+    private var library: some View {
+        CardLibrary(
+            cards: scenes.facts?.placeable ?? [], tiles: store.tiles.tiles,
+            sizeOf: { editor?.minimums[$0] }
+        )
+        .frame(
+            minWidth: SceneMetrics.libraryMinWidth, idealWidth: SceneMetrics.libraryIdealWidth,
+            maxWidth: SceneMetrics.libraryMaxWidth)
     }
 
     @ViewBuilder private var canvas: some View {
@@ -83,10 +93,34 @@ struct SceneEditorView: View {
         guard let rendering, let editor else { return }
         await rendering.show(editor.layout)
         switch phase {
-        case .ready: if let queue = renderer.queue { await rendering.attach(queue) }
+        case .ready:
+            if let queue = renderer.queue {
+                await rendering.attach(queue)
+                await drawTiles()
+            }
         case .failed(let reason): rendering.unavailable(reason)
         case .idle, .starting, .preparing: break
         }
+    }
+
+    /// Draws the library's tiles in this scene's settings once the canvas has asked for its own
+    /// drawing, where the panel's code lets cards be drawn, as the gallery's thumbnails are
+    /// (`library-render` design D4). Where no card can be drawn, the tiles are boxes.
+    private func drawTiles() async {
+        guard let rendering, let queue = renderer.queue, let cards = scenes.facts?.placeable
+        else { return }
+        let drift: CardDrift?
+        switch verdict {
+        case .same?: drift = nil
+        case .differs(let differs)? where !differs.sharesNothing: drift = differs
+        case nil: return
+        default:
+            store.tiles.forget()
+            return
+        }
+        await store.tiles.draw(
+            for: rendering.scene, cards: cards, drift: drift, context: scenes.context,
+            through: queue)
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {

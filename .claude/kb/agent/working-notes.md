@@ -74,8 +74,6 @@ run passed every item after deploying audio-vue to the panel.
 - **Any difference in shared code, a comment included, draws no card.** The bundle and the panel
   must come from the same audio-vue code: after audio-vue changes, deploy it to the panel and refresh
   the bundle (2026-11-07: a comment edit to `src/frame.py` stopped all drawing until deployed).
-- The library's tiles are still coloured boxes; rendering them is a possible later change, not
-  planned.
 - Asks to audio-vue travel as handoff files in its root. Answered so far: the render dependencies,
   the helper's protocol, and `card-entries` (each card's family in the manifest, hashes in the
   requirements).

@@ -63,7 +63,8 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   changed; `LayerStack` draws the helper's layers there, sliding or stretching a plate from the cells
   it was drawn at; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands` (the Debug-only
   Arrange menu) are its parts. `SceneStore`, owned by the App, holds the `SceneDrafts` (edits and
-  copies until quit) and the `SceneThumbnails`; `LayoutPlates` draws any layout as boxes;
+  copies until quit), the `SceneThumbnails` and the `LibraryTiles` (2026-11-07, `library-render`;
+  `CardLibrary` shows a tile's image in place of its box); `LayoutPlates` draws any layout as boxes;
   `CanvasMetrics` holds the palette. It holds no layout rules.
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
   Swift Testing suite (`Tests/ConsoleCoreTests`). Tools 6.2, Swift 6 mode, macOS 27.2, warnings as
@@ -100,11 +101,14 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   cards, minimums, the grid's defaults), `DisplayShape`, `PanelScenes` (made by
   `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. The helper: `HelperLocation`,
   `HelperProcess` (`FoundationHelperLauncher`, `ChunkChannel`, `LineSplitter`), `HelperFrame`,
-  `RenderHelper` (the actor), `RenderQueue` (two lanes), `Renderer` (phases). Drawing:
+  `RenderHelper` (the actor), `RenderQueue` (three lanes: canvas, library, thumbnails, in that
+  order; 2026-11-07, `library-render`), `Renderer` (phases). Drawing:
   `RenderRequest`/`RenderContext`, `RenderedLayer`, `PlateChanges`, `SceneRendering` (+`Messages`),
-  `Thumbnail`, `SceneThumbnails`. The code check: `CardDrift`, `CardCodeCheck`. Tests script the
-  helper with `ScriptedLauncher`/`ScriptedHelper` and `FakeRender`; `LiveHelperTests` runs the real
-  one when asked.
+  `Thumbnail` (`flatten`, and `tile`, a plate over its patch of the backdrop), `SceneThumbnails`,
+  `LibraryTiles` (one card's plate per tile, kept by the scene's settings without its cards and
+  name; `LibraryTiles.swift`, 2026-11-07). The code check: `CardDrift`, `CardCodeCheck`. Tests
+  script the helper with `ScriptedLauncher`/`ScriptedHelper` and `FakeRender`; `LiveHelperTests`
+  runs the real one when asked.
 - `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable
   fields as optional for the generator (`commands.md`); `refresh-render-bundle.sh`, which mirrors
   audio-vue's render bundle and builds the Python runtime into `local/`, and `embed-render-runtime.sh`,

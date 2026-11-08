@@ -29,5 +29,27 @@ public enum Thumbnail {
         return context.makeImage()
     }
 
+    /// A library tile (`library-render` design D6): `plate` stacked over the patch of `backdrop`
+    /// that lies under it, the plate's size, or nil where the patch or the image cannot be made.
+    public static func tile(plate: RenderedLayer, over backdrop: RenderedLayer) -> CGImage? {
+        let width = plate.image.width
+        let height = plate.image.height
+        // Both rects count from the display's top left, as `cropping(to:)` counts from the image's.
+        let patch = CGRect(
+            x: plate.rect.minX - backdrop.rect.minX, y: plate.rect.minY - backdrop.rect.minY,
+            width: Double(width), height: Double(height))
+        guard let under = backdrop.image.cropping(to: patch),
+            let space = CGColorSpace(name: CGColorSpace.sRGB),
+            let context = CGContext(
+                data: nil, width: width, height: height, bitsPerComponent: bitsPerComponent,
+                bytesPerRow: 0, space: space,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        let whole = CGRect(x: 0, y: 0, width: width, height: height)
+        context.draw(under, in: whole)
+        context.draw(plate.image, in: whole)
+        return context.makeImage()
+    }
+
     private static let bitsPerComponent = 8
 }
