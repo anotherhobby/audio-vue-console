@@ -112,8 +112,11 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   - **Measurement** changes the number shown for the same audio. The setting declares which values
     are its standard's, or that none governs it, and the state and the app say when a reading
     departs from them.
-  - **Chain** changes which audio is measured, such as `input.pair` or `rate`. The app warns that
-    calibration no longer applies.
+  - **Chain** changes which audio is measured, such as `input.pair` or `rate`. The app warns only
+    where no calibration holds for the chain and rate a scene measures at: audio-vue applies the
+    newest valid record for the device and rate in use (`record.active`), so a scene at another
+    calibrated rate is fine (maintainer, 2026-11-08). A card's own chain setting, such as
+    `vu_meter.channel`, carries no warning.
   - **Record** is what a run states about itself.
 - **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
   `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and

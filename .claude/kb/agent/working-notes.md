@@ -102,3 +102,33 @@ cards in the panel's order. Built 2026-11-08; `LiveGalleryTests` passed against 
 (Favorite under My Scenes, RTA built in, Default and both card checks under Other Shapes; every
 category but Calibration in the library). The maintainer's run passed every item (2026-11-08); a rule
 now divides the library's categories, at the maintainer's ask.
+
+## Card, scene and style settings (planned 2026-11-08)
+
+Three changes, built in this order (maintainer, 2026-11-08):
+
+1. `card-settings` (planned, valid): the inspector reads and sets the selected cards' settings from
+   `/v1/schema`. The per-setting button is Use Default, which removes the key; never call it Reset,
+   which is the panel's measurement reset. Cards selected together edit the settings they declare
+   alike, then each card has a collapsed section of its own. A card's own chain setting carries no
+   calibration warning. Colours use the system colour panel, stored as sRGB `#RRGGBB`. The
+   information page comes later.
+2. `scene-settings` (planned, valid): the scene's blocks in the inspector when nothing is selected;
+   backdrop as one source with gradient stops and image upload; grid gap and density at the scene's
+   aspect. Calibration warning only where no calibration holds at the scene's rate (maintainer:
+   users calibrate at several rates and switch scenes between them; audio-vue applies the newest
+   valid record for device and rate); needs a per-rate calibration read from audio-vue. Its `scene-canvas`/`scene-rendering` deltas carry card-settings' text, so card-settings
+   is archived first.
+3. `styles` (proposal and `handoff.md` only): à la carte styles holding any of palette, typeface,
+   type roles, backdrop and glass; a scene links several, each category from exactly one place (a
+   style or the scene), and a style edit that would set a category twice is refused, the console
+   offering to clear it from those scenes; built-in styles ship with audio-vue; typefaces
+   ship with audio-vue; a Styles sidebar section previewing on a picked scene. Specs, design and
+   tasks wait on audio-vue's answer.
+
+audio-vue asks, placed in its root 2026-11-08, awaiting replies: `card-settings-handoff.md`
+(`x-step`; `x-settings` on cards and blocks; a note on `settings-schema`'s chain wording),
+`scene-settings-handoff.md` (calibrated rates of the installed chain) and `styles-handoff.md` (a copy
+of `openspec/changes/styles/handoff.md`). audio-vue's open `loudness-scope` change renames
+`loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
+not placeable.

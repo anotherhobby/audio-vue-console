@@ -141,8 +141,9 @@ host comes first (Recommended).
   calibration records, since a user's scenes otherwise live only on an SD card. A backup leaves out
   paired clients' credentials (Recommended).
 - **A setting's class changes what the app says** (Ruled): a measurement setting off its standard's
-  values is flagged, and a chain setting warns that calibration no longer applies.
-  `host-contract.md`, "Settings".
+  values is flagged, and the app warns wherever no calibration holds for the chain and rate a scene
+  measures at. A scene at another rate the host is calibrated at is not warned about (maintainer,
+  2026-11-08). `host-contract.md`, "Settings".
 
 ## Calibration
 
