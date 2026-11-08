@@ -176,5 +176,38 @@ them with Core Graphics (`Thumbnail.flatten`), which matched audio-vue's stackin
 two steps of the panel's own render.
 
 The render helper's protocol is audio-vue's (`src/render_service.py`, its docstring): `hello`,
-`prepare`, `render`, each a 4-byte big-endian length and JSON, layers' bytes after a render's answer.
+`prepare`, `render` and `stimulus`, each a 4-byte big-endian length and JSON, layers' bytes after a
+render's answer.
 Asks travel as handoff files in audio-vue's root (`working-notes.md`).
+
+## Calibration (Built, audio-vue `calibration-from-the-app`, 2026-11-08)
+
+The console runs a calibration in `make calibrate`'s order: it renders the stimulus itself, sets the
+output's rate with the bundled `cal-play`, arms, and plays once the arm is done (the console's
+`calibration` change; rulings in its proposal). The routes and fields are in the saved contract:
+
+- **The stimulus** is written by the render helper, not served: `{"op": "stimulus", "kind",
+  "rate", "path"}` (optional `maximum_input_db` and `internal_folding_hz` exist; the console sends
+  neither, maintainer 2026-11-08), answering `ok` once
+  the file is whole at `path`, `refused` with `calibration.check_stated`'s words (a rate outside the
+  calibration's rates included), or `error`. The file is byte-identical to `tools/calibrate.py
+  --write`'s. The console offers Calibrate… only while its bundle's digest is the panel's.
+- **The rate** is the installed capture rate: `install.input.rate`, else its schema `default`. The
+  live `capture.rate_hz` is not it where a scene captures at its own rate.
+- **`POST /v1/commands/arm`** takes `{"stated": {"kind", "file_rate", ...}}` and answers
+  `ArmOutcome`; a done one gives `arm`, the arm's id. Refused while another arm listens, a run is
+  under way, an arm is landing, the panel replays a clip or capture has stopped, or an update runs.
+- **`POST /v1/commands/cancel`** answers `CancelOutcome`; a done one says `record_stands` where it
+  ended the hold after a completed run. Refused with `nothing to cancel` or `too late -- the record
+  is being written`.
+- **`state.sections.calibration.lifecycle`** is an enum: `off`, `waiting` (armed, listening),
+  `arming` (marker heard, one poll), `running`, `analysing`, `done`, `failed`, `expired`. The
+  ended words pass to `off`, an expiry possibly between two reads, so a client never ends a run on
+  them.
+- **`state.sections.calibration.ended`** names the calibration that last ended, until the next arm
+  lands: `arm`, `outcome` (`done`, `failed`, `expired`, `cancelled`), `kind`, `run_id`,
+  `applicable`, `reason`. A client matches its run by `arm`. Every `failed` run has no record; a
+  saved record ends `done`, its `reason` saying a stimulus was missing or its report failed.
+- **`GET /v1/runs`** lists `run_id`, `has_report`, `kind` and `applicable` (fit to apply when
+  written), newest first, with the panel down too; **`GET /v1/runs/{id}/report`** is the HTML, self
+  contained, with no links. No run's audio is served; `make cal-fetch-audio` fetches it.

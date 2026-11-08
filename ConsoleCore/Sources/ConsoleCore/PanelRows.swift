@@ -68,7 +68,7 @@ public struct PanelRows: Sendable, Equatable {
 
     public var sections: [Section] { [status, capture, calibration] }
 
-    private static func text(_ value: String?) -> String {
+    static func text(_ value: String?) -> String {
         value ?? dash
     }
 
@@ -147,7 +147,7 @@ public struct PanelRows: Sendable, Equatable {
 
     /// The words for the statuses audio-vue gives today, and the host's own text for any other,
     /// since the contract types it as a plain string.
-    private static func status(_ status: String) -> String {
+    static func status(_ status: String) -> String {
         switch status {
         case "calibrated": "Calibrated"
         case "stale": "Stale"
@@ -158,13 +158,13 @@ public struct PanelRows: Sendable, Equatable {
         }
     }
 
-    private static func age(_ days: Double) -> String {
+    static func age(_ days: Double) -> String {
         let whole = Int(days.rounded(.down))
         return whole == 1 ? "1 day" : "\(whole) days"
     }
 
     /// Why the state's `sections` read here could not be read, where the host said.
-    private static func note(
+    static func note(
         _ unavailable: [PanelState.Section: String], _ sections: [PanelState.Section]
     ) -> String? {
         let reasons = sections.compactMap { unavailable[$0] }

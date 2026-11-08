@@ -41,6 +41,33 @@ struct PanelStateTests {
         #expect(state.sceneSpec == nil)
     }
 
+    @Test func theWholeCalibrationSection() throws {
+        let json = #"""
+            {"condition": "up", "sections": {"calibration": {
+              "status": "calibrated", "run_id": "2026-10-25T23-16-08Z", "age_days": 14.2,
+              "trim_db": 0.01, "noise_floor_dbfs": -118.4, "lifecycle": "waiting"}}}
+            """#
+        let state = try PanelState(json: Data(json.utf8))
+        #expect(state.calibrationRunID == "2026-10-25T23-16-08Z")
+        #expect(state.calibrationTrimDB == 0.01)
+        #expect(state.calibrationNoiseFloorDBFS == -118.4)
+        #expect(state.calibrationLifecycle == .waiting)
+    }
+
+    @Test func aNullCalibrationSectionLeavesEachValueUnread() throws {
+        let json = #"""
+            {"condition": "up", "sections": {"calibration": {
+              "status": null, "run_id": null, "age_days": null, "trim_db": null,
+              "noise_floor_dbfs": null, "lifecycle": null}}}
+            """#
+        let state = try PanelState(json: Data(json.utf8))
+        #expect(state.calibrationRunID == nil)
+        #expect(state.calibrationTrimDB == nil)
+        #expect(state.calibrationNoiseFloorDBFS == nil)
+        #expect(state.calibrationLifecycle == nil)
+        #expect(try PanelState(json: Data(#"{"condition": "up", "sections": {}}"#.utf8)) == state)
+    }
+
     @Test func aFailedSectionGivesItsReason() throws {
         let json = #"""
             {"condition": "up", "sections": {

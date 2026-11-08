@@ -67,6 +67,12 @@ Format:
   `local/render-bundle/` into `Contents/Resources/python/` and `render-bundle/`. About a second when
   the runtime is current. The app is about 375 MB (Debug) and
   `codesign --verify` passes on it.
+- 2026-11-08: the app target's build phase "Build and embed cal-play" runs `tools/embed-cal-play.sh`
+  on every build: `cargo build --release` of `../audio-vue/cal-play` (`AUDIO_VUE` overrides) into
+  `local/cal-play-target/`, copied to `Contents/Helpers/cal-play`. It needs Rust: cargo is taken from
+  `CARGO`, else `~/.cargo/bin/cargo` (not on Xcode's `PATH`); a missing cargo or checkout fails the
+  build with an `error:` line saying how to fix it. Cargo's no-op rebuild is under a second. The
+  binary is linker-signed ad hoc, and `codesign --verify --deep --strict` passes on the app.
 
 - 2026-11-07: `RENDER_HELPER_LIVE=1 xcrun swift test --filter LiveHelperTests` in `ConsoleCore/` -
   runs the real render helper from `local/` (build it first with `tools/refresh-render-bundle.sh`):

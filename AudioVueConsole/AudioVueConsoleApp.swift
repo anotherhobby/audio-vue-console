@@ -42,8 +42,11 @@ import SwiftUI
         // The panel window, around the scene canvas. Its Arrange menu acts on the canvas, the one
         // place it applies.
         Window("audio-vue Console", id: PanelWindow.windowID) {
-            PanelWindow(connection: connection, discovery: discovery, renderer: renderer)
-                .environment(delegate.sceneStore)
+            PanelWindow(
+                connection: connection, discovery: discovery, renderer: renderer,
+                calibration: delegate.calibration(using: renderer)
+            )
+            .environment(delegate.sceneStore)
         }
         .defaultSize(
             width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight
@@ -66,14 +69,48 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The scenes as edited, kept here so they outlive the window and a quit can reach them.
     let sceneStore = SceneStore()
+    /// The bundled `cal-play`, the app's so a quit can stop it mid-play (`calibration-player`).
+    let player = CalibrationPlayer.app()
+    /// The calibration run, the app's so it outlives the window and a quit can reach it (design
+    /// D3). Made once the renderer that writes its stimulus is known.
+    private(set) var calibration: CalibrationSession?
+
+    /// The app's calibration session, made with `renderer`'s stimulus the first time, or nil where
+    /// the app carries no render helper.
+    func calibration(using renderer: Renderer) -> CalibrationSession? {
+        if calibration == nil, let stimulus = renderer.stimulus {
+            calibration = CalibrationSession(player: player, stimulus: stimulus)
+        }
+        return calibration
+    }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
 
+    /// Stops `cal-play` if it is playing: a child does not end with its parent, and would play on.
+    func applicationWillTerminate(_ notification: Notification) {
+        player.stop()
+    }
+
+    /// Asks before quitting while a calibration is under way, cancelling it at the panel before the
+    /// quit goes on; then settles unsaved scenes.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let calibration, calibration.isUnderWay else { return settleScenes(sender) }
+        guard RunUnderWay.confirm("Quit") else { return .terminateCancel }
+        calibration.cancel()
+        Task { @MainActor in
+            await RunUnderWay.waitForEnd(of: calibration)
+            if settleScenes(sender) == .terminateNow {
+                sender.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
+    }
+
     /// Asks before quitting while scenes are unsaved: in the panel window where it is open, and in
     /// an alert of its own where it is not. The quit goes on after Save All succeeds or Discard.
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+    private func settleScenes(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let writes = sceneStore.currentWrites
         guard let writes, !writes.drafts.unsaved(writes.scenes.scenes).isEmpty else {
             return .terminateNow

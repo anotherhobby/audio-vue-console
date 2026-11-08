@@ -191,16 +191,26 @@ it run, but an exception path holding `..` was refused, so it must be canonical.
 CPython copied into `Contents/Resources` runs with no exception, which is why the render runtime is
 bundled. Input that a probe reads must come through a pipe, not a path in the scratchpad.
 
+## cal-play works from inside the App Sandbox, as a helper in `Contents/Helpers` (2026-11-08)
+
+Measured from the sandboxed, ad-hoc signed app (`calibration` task 1.2): the bundled `cal-play`, linker-signed
+by cargo and run as a child, set the D10s 96000 -> 48000 -> 96000 Hz (12.2 s each with the settle) and played a
+WAV from the container's `tmp/` to its end, all exit 0. No entitlement beyond the sandbox was needed, and the
+app still passes `codesign --verify --deep --strict`. The child reads files only from the app and its
+container, so a stimulus must be written there. CoreAudio names the D10s `D10s ` (trailing space); `cal-play`
+matches a case-insensitive substring, so the full name works.
+
 ## Xcode's script sandbox refuses a phase that copies whole folders (2026-11-07)
 
 With `ENABLE_USER_SCRIPT_SANDBOXING = YES`, a Run Script phase may read only the files it declares;
 declaring a folder in `input-paths` does not let it read the folder's contents (`deny(1)
 file-read-data`). "Embed the render runtime" copies thousands of files, so the app target sets it to
 `NO` (pending the maintainer's ruling, `scene-render` task 2.3). In the readable project format
-(`project.xcproj`) a script phase is an object in `build-phases`: `"kind": "script"`, an `"id"`
-(24 hex digits, unique in the file), `"name"`, `"shell"`, `"script"`, `"input-paths"`,
-`"output-paths"`. Without the `"id"`, `xcodebuild` builds and runs the phase, but the Xcode app
-loads the project with no targets (measured 2026-11-07 through Xcode's MCP tools).
+(`project.xcproj`) a script phase is an object in `build-phases`: `"kind": "script"`, `"name"`,
+`"shell"`, `"script"`, `"input-paths"`, `"output-paths"` and `"run-on-every-build"`. On 2026-11-07 a
+phase without an `"id"` left the Xcode app with no targets; since then Xcode's own save dropped the
+`"id"`s, and on 2026-11-08 the project loaded and built with two phases and none (checked through
+Xcode's MCP tools). Mirror what Xcode last wrote.
 
 ## Foundation reports a decimal read as an integer with an error of its own (2026-11-07)
 

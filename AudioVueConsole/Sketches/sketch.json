@@ -6,8 +6,7 @@
       "condition": "up",
       "widthPx": 1920,
       "heightPx": 720,
-      "scene": "rta",
-      "calibratedDaysAgo": 1
+      "scene": "rta"
     },
     {
       "id": "5e0a12f7",
@@ -15,8 +14,7 @@
       "condition": "down",
       "widthPx": 1920,
       "heightPx": 1080,
-      "scene": "stereo",
-      "calibratedDaysAgo": 12
+      "scene": "stereo"
     }
   ]
 }

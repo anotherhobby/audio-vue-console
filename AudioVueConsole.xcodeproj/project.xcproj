@@ -48,9 +48,21 @@
             "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/python",
             "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/render-bundle",
           ],
-          "shell": "/bin/sh",
           "run-on-every-build": true,
+          "shell": "/bin/sh",
           "script": "\"$SRCROOT/tools/embed-render-runtime.sh\"\n",
+        }, {
+          "kind": "script",
+          "name": "Build and embed cal-play",
+          "input-paths": [
+            "$(SRCROOT)/tools/embed-cal-play.sh",
+          ],
+          "output-paths": [
+            "$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/cal-play",
+          ],
+          "run-on-every-build": true,
+          "shell": "/bin/sh",
+          "script": "\"$SRCROOT/tools/embed-cal-play.sh\"\n",
         },
       ],
       "package-product-members": [

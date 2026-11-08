@@ -43,6 +43,17 @@ public actor RenderHelper {
             .object(["op": .string("prepare"), "analysis": analysis, "rate": .integer(rate)]))
     }
 
+    /// Asks the helper to write `run`'s stimulus at `file`, answering once the file is whole there
+    /// (audio-vue `calibration-stimulus`, "The render helper writes the stimulus the panel listens
+    /// for"). What an arm would refuse is refused, with the panel's words.
+    public func stimulus(_ run: StatedRun, to file: URL) async throws(RenderFailure) {
+        _ = try await ask(
+            .object([
+                "op": .string("stimulus"), "kind": .string(run.kind.rawValue),
+                "rate": .integer(run.rate), "path": .string(file.path(percentEncoded: false)),
+            ]))
+    }
+
     /// Sends one request, `message` holding its `op`, and reads its whole answer.
     public func ask(_ message: JSONValue) async throws(RenderFailure) -> HelperAnswer {
         await acquire()

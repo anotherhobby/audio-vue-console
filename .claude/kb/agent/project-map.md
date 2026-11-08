@@ -42,15 +42,15 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   and a quit with unsaved scenes asks first, in the window or in an `NSAlert` when none is open;
   `scene-save`, 2026-11-07),
   `PanelWindow.swift` (the window: the sidebar of pages, the picker in the Panel page's toolbar,
-  the connect at launch, and the `LiveState` it watches while open; pages other than Panel still
-  read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
+  the connect at launch, and the `LiveState` it watches while open; Input, Display and History
+  still read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
   discovered until paired: the panel held, the other panels found by address, or the denial line,
   then Add Panel…; `PanelPickerItems` is the menu), `PanelPage.swift` (the page once called
   Overview: a pairing prompt while unpaired, then Status, Capture and Calibration from `PanelRows`,
   then the Pairing section; `PanelForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
   `PanelMetrics.swift` (the window's sizes), `PairingSheet.swift`, assets, and `Sketches/`, the
-  sample pages (Input, Calibration, Display) and their panels (`SketchData`, `sketch.json`).
+  sample pages (Input, Display) and their panels (`SketchData`, `sketch.json`).
   The App also makes the one `Renderer` (`scene-render`, 2026-11-07), which `PanelWindow` starts
   once paired and the Panel page's Status shows as its Renderer row.
 - `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
@@ -68,6 +68,21 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   note), and `UnsavedScenes` (Save All, Discard or Cancel before a quit or a switch of panel). The
   editor holds a `SceneSession`; the gallery's menu renames and deletes; the Panel page's Status
   offers Reset (`ResetRow`).
+- `AudioVueConsole/Calibration/` (`calibration`, 2026-11-08): `CalibrationPage` (the calibration
+  in force from `CalibrationRows`, `CalibrateSection` with Calibrate… or the run under way, and the
+  runs from `CalibrationRuns`; a run opens `RunReport`; once a run ends it reads the runs again and
+  opens a completed run's report), `CalibrateSheet` (output device, remembered per panel by
+  `PlaybackDeviceMemory`; Calibration or Calibration + Characterization, `RunKindText`), `RunProgress` (`CalibrateSection`, `EndingText`),
+  `ReportView` (the report in a `WKWebView` from a string, every load blocked, only the first
+  navigation allowed) and `RunUnderWay` (the question before a quit or a panel switch cuts off a
+  run). The `AppDelegate` owns the `CalibrationPlayer` and the `CalibrationSession`, made with the
+  renderer's stimulus; `PanelWindow` feeds the session each live state.
+  In `ConsoleCore`: `CalibrationSession` (+`Endings`: the run's steps, ending from the ended
+  calibration by arm id), `StatedRun`, `CalibrationReadiness`, `CalibrationRuns`, `CalibrationRows`,
+  `CalibrationLifecycle`, `EndedCalibration`, `StimulusSource`/`CalibrationHost`, `HelperStimulus`
+  (the helper's `stimulus` request), `WAVHeader`, `OutputDevices` (CoreAudio),
+  `PlaybackDeviceMemory`, `HostClient+Calibration` (runs, report) and the arm and cancel in
+  `HostClient+Commands`.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
   marquee and keys into editor calls, asking its `SceneRendering` to draw again what the layout
@@ -133,8 +148,14 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   audio-vue's render bundle and builds the Python runtime into `local/`, and `embed-render-runtime.sh`,
   the app target's build phase that refreshes the mirror and copies both into the app, on every
   build (`scene-render`, 2026-11-07; `track-audio-vue`, 2026-11-08).
+  `embed-cal-play.sh`, the build phase that builds audio-vue's `cal-play` with cargo and copies it to
+  the app's `Contents/Helpers/cal-play`, on every build (`calibration`, 2026-11-08). In `ConsoleCore`,
+  `CalibrationPlayer` runs it behind `PlayerLauncher`/`RunningPlayer`, one call at a time; the app's
+  is `AppDelegate.player`, stopped in `applicationWillTerminate`. Tests script it with
+  `ScriptedPlayerLauncher` (`CalibrationPlayerTests.swift`).
 - `local/` (ignored by git): `render-bundle/`, the mirror of audio-vue's `local/render-bundle/`;
-  `python-runtime/`, the relocatable CPython with the bundle's libraries; `python-downloads/`.
+  `python-runtime/`, the relocatable CPython with the bundle's libraries; `python-downloads/`;
+  `cal-play-target/`, cargo's build of `cal-play`.
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:
   no SwiftUI or AppKit import under `ConsoleCore/Sources`, and no `import Network` or `URLSession`
   under `AudioVueConsole/`. It finds the repository from `#filePath`, so moving the test file

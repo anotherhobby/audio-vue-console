@@ -5,6 +5,8 @@ import SwiftUI
 /// added by its address"). The app holds one panel, so a connect here replaces the one it held.
 struct AddPanelSheet: View {
     @Bindable var connection: HostConnection
+    /// The calibration under way, if any, settled before another panel replaces this one.
+    var calibration: CalibrationSession?
     @Environment(\.dismiss) private var dismiss
     @Environment(SceneStore.self) private var store
 
@@ -16,14 +18,17 @@ struct AddPanelSheet: View {
         .unsavedScenesAlerts(store.unsaved)
     }
 
-    /// Connects to the address typed, once any unsaved scenes are settled, unless it is the
-    /// panel held, whose scenes a reconnect keeps (`scene-saving`).
+    /// Connects to the address typed, once any calibration under way and any unsaved scenes are
+    /// settled, unless it is the panel held, whose scenes a reconnect keeps (`scene-saving`,
+    /// `calibration-run`).
     private func connect() {
         guard HostAddress(parsing: connection.addressText) != connection.address else {
             Task { await connection.connect() }
             return
         }
-        store.unsaved.settle(store.currentWrites) { Task { await connection.connect() } }
+        RunUnderWay.settle(calibration, before: "Switch Panels") {
+            store.unsaved.settle(store.currentWrites) { Task { await connection.connect() } }
+        }
     }
 }
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "audio-vue host agent",
     "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.5.0"
+    "version": "2.6.0"
   },
   "paths": {
     "/v1/version": {
@@ -262,7 +262,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Outcome"
+                  "$ref": "#/components/schemas/ArmOutcome"
                 }
               }
             }
@@ -336,7 +336,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Outcome"
+                  "$ref": "#/components/schemas/CancelOutcome"
                 }
               }
             }
@@ -2588,6 +2588,47 @@
         "type": "object",
         "title": "Arm"
       },
+      "ArmOutcome": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "refused",
+              "expired",
+              "unknown",
+              "no panel"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "listening": {
+            "type": "boolean",
+            "title": "Listening",
+            "description": "On a done answer, true: the panel is listening for the file's marker."
+          },
+          "deadline_s": {
+            "type": "number",
+            "title": "Deadline S",
+            "description": "On a done answer, how long the panel listens before the arm expires."
+          },
+          "arm": {
+            "type": "string",
+            "title": "Arm",
+            "description": "On a done answer, the arm's id. A repeated arm keeps it. `state.sections.calibration.ended` names the arm it ends, so a client tells its own arm's end from an earlier one's."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ArmOutcome",
+        "description": "What became of an arm, and on a done one that the panel is listening."
+      },
       "Calibration": {
         "properties": {
           "status": {
@@ -2620,13 +2661,58 @@
           },
           "lifecycle": {
             "type": "string",
-            "title": "Lifecycle"
+            "enum": [
+              "off",
+              "waiting",
+              "arming",
+              "running",
+              "analysing",
+              "done",
+              "failed",
+              "expired"
+            ],
+            "title": "Lifecycle",
+            "description": "Where a calibration has got to. `off`: not listening, the panel's resting state. `waiting`: armed, listening for the file's marker; an arm answers done once here. `arming`: the marker was heard, for one poll before the run starts. `running`: the run is being captured. `analysing`: the run is captured and being measured. `done`: the run completed and its record was written. `failed`: the run did not complete, and wrote no record. `expired`: the arm's deadline passed with no file heard. `done`, `failed` and `expired` pass once the panel is given back, which `expired` is at once."
+          },
+          "ended": {
+            "$ref": "#/components/schemas/Ended"
           }
         },
         "additionalProperties": true,
         "type": "object",
         "title": "Calibration",
         "description": "Which reference frame the readings are in."
+      },
+      "CancelOutcome": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "refused",
+              "expired",
+              "unknown",
+              "no panel"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "record_stands": {
+            "type": "boolean",
+            "title": "Record Stands",
+            "description": "On a done answer, true where the cancel ended the hold after a completed run, whose record stands; false where no record was written."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CancelOutcome",
+        "description": "What became of a cancel, and on a done one whether the run's record stands."
       },
       "Capture": {
         "properties": {
@@ -2902,6 +2988,50 @@
           "base_rev"
         ],
         "title": "Edit"
+      },
+      "Ended": {
+        "properties": {
+          "arm": {
+            "type": "string",
+            "title": "Arm",
+            "description": "The id the arm's done answer gave."
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "done",
+              "failed",
+              "expired",
+              "cancelled"
+            ],
+            "title": "Outcome",
+            "description": "`done`: the run completed and wrote its record. `failed`: it did not complete, and wrote no record. `expired`: no file was heard before the deadline. `cancelled`: a cancel stopped it before it ended."
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "The kind the arm stated."
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id",
+            "description": "The record's run id, or null where no record was written."
+          },
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable",
+            "description": "Whether the record could apply: false where its stimulus did not all arrive, so it is kept and never applied; null with no record."
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why, for a person: why a run failed or expired, which stimulus a record that cannot apply was missing, or why a done run's report was not written. Null where there is nothing to say."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Ended",
+        "description": "How the last arm ended. It stands after the panel is given back, until the next arm\nlands."
       },
       "FailedBlock": {
         "properties": {
@@ -3557,13 +3687,25 @@
           "has_report": {
             "type": "boolean",
             "title": "Has Report"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "The kind of run: `calibration` or `characterization`. A record that names none is a characterization."
+          },
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable",
+            "description": "Whether the run's record could apply when it was written: false where its stimulus did not all arrive, so it is kept and never applied. Whether it is in force now is `state.sections.calibration.run_id`."
           }
         },
         "additionalProperties": true,
         "type": "object",
         "required": [
           "run_id",
-          "has_report"
+          "has_report",
+          "kind",
+          "applicable"
         ],
         "title": "RunEntry"
       },

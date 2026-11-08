@@ -95,6 +95,12 @@ public final class Renderer {
             await scenes.cardCode(helperDigest: digest, bundled: bundledManifest) ?? .unreadable
     }
 
+    /// The stimulus a calibration plays, written by this renderer's helper, or nil where the app
+    /// carries no helper (design D4).
+    public var stimulus: (any StimulusSource)? {
+        helper.map { HelperStimulus(helper: $0) }
+    }
+
     /// Forgets the comparison, as when the app is no longer paired with that panel.
     public func forgetCode() {
         verdict = nil

@@ -43,6 +43,10 @@ actor FakeTransport: ClientTransport {
         static let schema = Route("GET", "/v1/schema")
         static func image(_ id: String) -> Route { Route("GET", "/v1/images/\(id)") }
         static let cardManifest = Route("GET", "/v1/cards/manifest")
+        static let runs = Route("GET", "/v1/runs")
+        static func report(_ id: String) -> Route { Route("GET", "/v1/runs/\(id)/report") }
+        static let arm = Route("POST", "/v1/commands/arm")
+        static let cancel = Route("POST", "/v1/commands/cancel")
     }
 
     private var answers: [Route: Answer]

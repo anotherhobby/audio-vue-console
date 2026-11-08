@@ -4,8 +4,8 @@ import SwiftUI
 /// The app's one window for a panel, settings-style, with the panel picked at the top of the Panel
 /// page (`panel-window`). It connects at launch, watches the paired host's live state while it is
 /// open, and starts the renderer once paired. Opening a scene to edit collapses the sidebar so the
-/// editor gets the width. The pages other than Panel and Scenes still show sample values, until
-/// their own changes build them.
+/// editor gets the width. The pages other than Panel, Scenes and Calibration still show sample
+/// values, until their own changes build them.
 struct PanelWindow: View {
     /// The window's id, which the Window menu and the Dock bring it back by.
     static let windowID = "panel"
@@ -13,6 +13,8 @@ struct PanelWindow: View {
     @Bindable var connection: HostConnection
     let discovery: PanelDiscovery
     let renderer: Renderer
+    /// The app's calibration run, fed the live state while the window watches it.
+    let calibration: CalibrationSession?
     @State private var section: PanelSection? = .panel
     @State private var isEditingScene = false
     @State private var columns: NavigationSplitViewVisibility = .all
@@ -30,9 +32,12 @@ struct PanelWindow: View {
         .onChange(of: isEditingScene) { _, editing in
             columns = editing ? .detailOnly : .all
         }
-        .sheet(isPresented: $isAddingPanel) { AddPanelSheet(connection: connection) }
+        .sheet(isPresented: $isAddingPanel) {
+            AddPanelSheet(connection: connection, calibration: calibration)
+        }
         .unsavedScenesAlerts(store.unsaved, shown: !isAddingPanel)
         .onChange(of: live?.state?.sceneSpec) { _, spec in store.follow(onScreen: spec) }
+        .onChange(of: live?.state) { _, state in if let state { calibration?.observe(state) } }
         .task { await connection.connectAtLaunch() }
         .task(id: WatchKey(connection)) {
             live = connection.liveState()
@@ -63,7 +68,10 @@ struct PanelWindow: View {
             ScenesPage(
                 connection: connection, renderer: renderer, live: live,
                 isEditing: $isEditingScene)
-        case .input, .calibration, .display, .history:
+        case .calibration:
+            CalibrationPage(
+                connection: connection, live: live, renderer: renderer, session: calibration)
+        case .input, .display, .history:
             SamplePage(section: section ?? .panel)
         }
     }
@@ -84,15 +92,18 @@ struct PanelWindow: View {
     }
 
     /// The picker: the panel held, and the other panels found, each connected to when chosen,
-    /// once any unsaved scenes are settled (`panel-window`).
+    /// once any calibration under way and any unsaved scenes are settled (`panel-window`,
+    /// `calibration-run`).
     private var picker: PanelPicker {
         PanelPicker(
             panel: label,
             others: discovery.others(heldID: heldID, heldAddress: connection.address),
             mayBrowse: discovery.mayBrowse,
             choose: { panel in
-                store.unsaved.settle(store.currentWrites) {
-                    Task { await connection.connect(to: panel) }
+                RunUnderWay.settle(calibration, before: "Switch Panels") {
+                    store.unsaved.settle(store.currentWrites) {
+                        Task { await connection.connect(to: panel) }
+                    }
                 }
             },
             addPanel: { isAddingPanel = true })
@@ -156,9 +167,8 @@ private struct SamplePage: View {
         if let panel = data.panels.first {
             switch section {
             case .input: SketchInputPage()
-            case .calibration: SketchCalibrationPage(panel: panel)
             case .display: SketchDisplayPage(panel: panel)
-            case .panel, .scenes, .history: SketchLaterPage(section: section)
+            case .panel, .scenes, .calibration, .history: SketchLaterPage(section: section)
             }
         } else {
             ContentUnavailableView("No Sample Data", systemImage: "tray")

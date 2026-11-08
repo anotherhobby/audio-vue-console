@@ -37,6 +37,14 @@ public struct PanelState: Sendable, Equatable {
     /// The calibration's status word as the host gives it, such as `calibrated`.
     public var calibrationStatus: String?
     public var calibrationAgeDays: Double?
+    /// The run the calibration in force comes from.
+    public var calibrationRunID: String?
+    public var calibrationTrimDB: Double?
+    public var calibrationNoiseFloorDBFS: Double?
+    /// Where a calibration has got to (design D3).
+    public var calibrationLifecycle: CalibrationLifecycle?
+    /// The calibration that last ended, until the next arm lands.
+    public var endedCalibration: EndedCalibration?
     public var displayWidthPx: Int?
     public var displayHeightPx: Int?
     /// Each section the host reports as failed, with its reason (audio-vue `control-state`, "A
@@ -70,6 +78,13 @@ public struct PanelState: Sendable, Equatable {
         analysisBudgetMs = sections.analysis?.budgetMs
         calibrationStatus = sections.calibration?.status
         calibrationAgeDays = sections.calibration?.ageDays
+        calibrationRunID = sections.calibration?.runId
+        calibrationTrimDB = sections.calibration?.trimDb
+        calibrationNoiseFloorDBFS = sections.calibration?.noiseFloorDbfs
+        calibrationLifecycle = sections.calibration?.lifecycle.flatMap {
+            CalibrationLifecycle(rawValue: $0.rawValue)
+        }
+        endedCalibration = sections.calibration?.ended.flatMap(Self.ended)
         displayWidthPx = sections.display?.widthPx
         displayHeightPx = sections.display?.heightPx
         let containers: [Section: OpenAPIObjectContainer?] = [
@@ -80,6 +95,16 @@ public struct PanelState: Sendable, Equatable {
             .display: sections.display?.additionalProperties,
         ]
         unavailable = containers.compactMapValues { $0?.value["unavailable"] as? String }
+    }
+
+    /// The ended calibration, where it names its arm and how it ended.
+    private static func ended(_ ended: Components.Schemas.Ended) -> EndedCalibration? {
+        guard let arm = ended.arm,
+            let outcome = ended.outcome.flatMap({ EndedCalibration.Outcome(rawValue: $0.rawValue) })
+        else { return nil }
+        return EndedCalibration(
+            arm: arm, outcome: outcome, kind: ended.kind, runID: ended.runId,
+            applicable: ended.applicable, reason: ended.reason)
     }
 
     private static func condition(_ payload: Components.Schemas.State.ConditionPayload)

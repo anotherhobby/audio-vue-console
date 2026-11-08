@@ -27,7 +27,6 @@ struct SketchPanel: Decodable, Identifiable, Hashable {
     let widthPx: Int
     let heightPx: Int
     let scene: String
-    let calibratedDaysAgo: Int
 
     var isUp: Bool { condition == "up" }
     var shapeName: String { DisplayShape(width: widthPx, height: heightPx).description }

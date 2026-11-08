@@ -151,6 +151,26 @@ public final class HostConnection {
         ) { [weak self] in self?.mark(paired: false, at: address) }
     }
 
+    /// Where a calibration on the connected host arms and cancels, or nil when not connected and
+    /// paired (`calibration-run`).
+    public func calibrationHost() -> CalibrationHost? {
+        guard case .connected(let address, _, paired: true) = state,
+            let pairing = keptPairing(at: address)
+        else { return nil }
+        return CalibrationHost(address: address, token: pairing.token)
+    }
+
+    /// The connected host's calibration runs, which mark the connection not paired once its token
+    /// is forgotten, or nil when not connected and paired (`calibration-history`).
+    public func makeCalibrationRuns() -> CalibrationRuns? {
+        guard case .connected(let address, _, paired: true) = state,
+            let pairing = keptPairing(at: address)
+        else { return nil }
+        return CalibrationRuns(address: address, client: client, pairing: pairing, store: tokens) {
+            [weak self] in self?.mark(paired: false, at: address)
+        }
+    }
+
     /// The live state of the connected host, for the window to watch, or nil when not connected
     /// and paired. A token the host refuses on it marks the connection not paired.
     public func liveState() -> LiveState? {

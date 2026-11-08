@@ -25,29 +25,6 @@ struct SketchInputPage: View {
     }
 }
 
-struct SketchCalibrationPage: View {
-    let panel: SketchPanel
-
-    var body: some View {
-        Form {
-            Section {
-                LabeledContent("Status", value: "Calibrated")
-                LabeledContent("Age", value: "\(panel.calibratedDaysAgo) days")
-                LabeledContent("Trim", value: "+0.01 dB")
-            } footer: {
-                Text(
-                    "Calibration plays from this Mac, so it runs only from the machine feeding "
-                        + "the panel.")
-            }
-            Section {
-                Button("Calibrate…") {}
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Calibration")
-    }
-}
-
 struct SketchDisplayPage: View {
     let panel: SketchPanel
     @State private var saver = "Bounce"
