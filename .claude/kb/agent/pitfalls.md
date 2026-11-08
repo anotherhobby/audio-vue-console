@@ -92,6 +92,15 @@ A drop delegate gets the dragged item only at `performDrop`, but the canvas prev
 while it hovers. The library's tile uses `onDrag` to set `SceneStore.draggedKind` as the drag
 starts, in place of `.draggable`, and the drop delegate reads the kind from there.
 
+## A refused drop leaves its library tile undraggable (2026-11-07)
+
+On macOS, once a card's drop on the canvas was refused, SwiftUI never called that tile's `onDrag`
+again: later drags of it still reached the canvas, with no kind named, so none could be previewed or
+dropped. Other tiles, and tiles whose drops were taken, kept working. Answering `true` from
+`performDrop` changed nothing (Measured, with a log of each drag step). Making the tile anew does: each
+tile's id carries `SceneStore.drops`, which `CanvasDropDelegate.performDrop` counts up. Ids inside a
+`LazyVStack` row must stay unique: one `.id(drops)` on every tile collapsed the library to one card.
+
 ## An ad-hoc signed app loses silent access to its Keychain items on every build (2026-11-04)
 
 Measured with a sandboxed, ad-hoc signed probe (the app's entitlements, its own bundle ID), macOS 27.2:

@@ -29,6 +29,7 @@ struct CanvasDropDelegate: DropDelegate {
         defer {
             gesture = nil
             store.draggedKind = nil
+            store.drops += 1
         }
         guard let (kind, size) = dragged else { return false }
         editor.drop(kind: kind, size: size, at: geometry.cell(at: info.location))

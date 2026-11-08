@@ -12,6 +12,9 @@ final class SceneStore {
     /// The card kind being dragged from the library, set as the drag starts, so the canvas can
     /// preview its size before the drop delivers it.
     var draggedKind: String?
+    /// How many drops the canvas has taken. The library's tiles are made again after each: once a
+    /// tile's drop is refused, SwiftUI never calls its `onDrag` again (measured, 2026-11-07).
+    var drops = 0
 
     /// Forgets the edits, copies, thumbnails and tiles, as when another panel is shown.
     func forget() {

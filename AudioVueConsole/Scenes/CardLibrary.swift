@@ -69,6 +69,8 @@ struct CardTile: View {
             store.draggedKind = card.name
             return NSItemProvider(object: card.name as NSString)
         }
+        // A fresh tile after each drop on the canvas, so a refused drop leaves no drag behind.
+        .id("\(card.name) \(store.drops)")
     }
 
     @ViewBuilder private var preview: some View {
