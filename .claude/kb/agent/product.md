@@ -171,7 +171,8 @@ fail open. A change to the plugin reaches every project, so it is asked for firs
 
 - **Limits:** cognitive complexity 10; cyclomatic 8, with `switch` cases not counted; function or
   closure body 40 lines; a view's `body` 30; 5 parameters; nesting 2 for types and 3 for functions; a
-  type 200 lines; a file 300.
+  type 300 lines; a file 400 (raised from 200 and 300, maintainer, 2026-11-07). Magic numbers are
+  allowed in tests and inside a `#Preview` block.
 - **Never, and not keepable:** force unwraps, `try!`, `as!`, implicitly unwrapped optionals, any
   `try?` (maintainer, 2026-11-02), `@unchecked Sendable`, `nonisolated(unsafe)`, magic numbers,
   commented-out code, any `swiftlint:disable`.

@@ -75,6 +75,11 @@ Format:
   starts once paired with the host's rate, shown by a Renderer row under Status rather than a launch
   screen, since every start costs about 2 s as one request with no steps; a resize stops at the card's
   declared minimum; Duplicate and the library are in scope. `openspec/changes/scene-render`.
+- 2026-11-07: The quality gate's Swift type limit is 300 lines and its file limit 400, and magic
+  numbers are allowed inside a `#Preview` block as in tests (maintainer). In `scene-render` the old
+  limits steered a design (the card-code check reused `PanelScenes` rather than grow
+  `HostConnection`) and pushed preview data into JSON strings. Edited in `../claude-qualty-gate`
+  (plugin 0.4.0); live once committed, updated and the session restarted.
 - 2026-11-07: A library tile follows the code check while the editor is open (agent, `library-render`
   build): `LibraryTiles.draw` drops the tile of a card its drift boxes, and the editor forgets the
   tiles when the verdict lets no card be drawn (`SceneEditorView.drawTiles`). The plan only drew on a
