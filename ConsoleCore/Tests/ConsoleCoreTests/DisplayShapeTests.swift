@@ -2,7 +2,7 @@ import Testing
 
 @testable import ConsoleCore
 
-/// `scene-gallery`, "This panel's shape comes first".
+/// `scene-gallery`, "My scenes, then the built-ins, then other shapes".
 struct DisplayShapeTests {
     private let panel = DisplayShape(width: 1920, height: 720)
 

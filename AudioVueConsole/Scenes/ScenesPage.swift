@@ -1,10 +1,10 @@
 import ConsoleCore
 import SwiftUI
 
-/// The Scenes page (`scene-gallery`): the paired panel's scenes in a gallery, this panel's shape
-/// first, each opened on the canvas. It reads the scenes when the app pairs, and draws the
-/// thumbnails once the renderer has compared the card code. `isEditing` tells the window to give
-/// the editor the width.
+/// The Scenes page (`scene-gallery`): the paired panel's scenes in a gallery, the user's first,
+/// then the built-ins, then other shapes, each opened on the canvas. It reads the scenes when the
+/// app pairs, and draws the thumbnails once the renderer has compared the card code. `isEditing`
+/// tells the window to give the editor the width.
 struct ScenesPage: View {
     let connection: HostConnection
     let renderer: Renderer

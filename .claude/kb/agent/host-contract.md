@@ -115,6 +115,10 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   - **Chain** changes which audio is measured, such as `input.pair` or `rate`. The app warns that
     calibration no longer applies.
   - **Record** is what a run states about itself.
+- **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
+  `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and
+  naming every card, placeable or not; each `card.<name>` also carries `x-category`. The app reads
+  only `x-categories` (`SchemaFacts`).
 - **Scenes** (`/v1/scenes`): every scene in audio-vue's `scenes/` ships as a read-only built-in, named
   by its stem, and `default` (one centred `rta_bars` on the `rta` gradient) is among them. A stored
   scene is named by a UUID the host assigns, which never changes. A delete is refused for the scene on

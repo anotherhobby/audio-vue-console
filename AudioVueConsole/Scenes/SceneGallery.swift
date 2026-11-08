@@ -1,9 +1,10 @@
 import ConsoleCore
 import SwiftUI
 
-/// The gallery of a panel's scenes: those of the panel's shape first, then the others, each
-/// pictured by its thumbnail, or its boxes until the helper draws it (`scene-gallery`). Its menu
-/// renames and deletes any scene but a built-in (`scene-saving`).
+/// The gallery of a panel's scenes: the user's of the panel's shape, then the built-ins, then
+/// every scene of another shape, each pictured by its thumbnail, or its boxes until the helper
+/// draws it (`scene-gallery`). Its menu renames and deletes any scene but a built-in
+/// (`scene-saving`).
 struct SceneGallery: View {
     let scenes: [SceneDocument]
     let facts: SchemaFacts
@@ -39,16 +40,24 @@ struct SceneGallery: View {
             .writeFailureAlert($failure)
     }
 
-    /// The scenes of the panel's shape, then the others.
+    /// My scenes, the built-ins, then the other shapes, the last only when it has a scene.
     private var sections: some View {
-        ScrollView {
+        let sections = GallerySections(rows, panel: panel, defaultGrid: facts.defaultGrid)
+        return ScrollView {
             VStack(alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 if let notice {
                     Label(notice, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
-                section("For this panel, \(panel)", rows.filter(\.fits), fits: true)
-                section("Other shapes", rows.filter { !$0.fits }, fits: false)
+                section(
+                    "My Scenes", sections.mine, fits: true,
+                    empty: "Duplicate a built-in scene to make one of your own.")
+                section(
+                    "Built-in Scenes", sections.builtIn, fits: true,
+                    empty: "No built-in scene has this panel's shape.")
+                if !sections.otherShapes.isEmpty {
+                    section("Other Shapes", sections.otherShapes, fits: false)
+                }
             }
             .padding(SceneMetrics.canvasPadding)
         }
@@ -73,40 +82,42 @@ struct SceneGallery: View {
     }
 
     /// One scene as the gallery shows it.
-    struct Item: Identifiable {
+    struct Item: Identifiable, GalleryEntry {
         let document: SceneDocument
         let laidOut: LaidOutScene?
-        let fits: Bool
         var id: String { document.id }
+        var builtIn: Bool { document.builtIn }
+        var grid: CellSize? { laidOut?.layout.grid }
     }
 
     private var rows: [Item] {
-        scenes.map { document in
-            let laidOut = ScenesPage.laidOut(document, facts: facts)
-            let grid = laidOut?.layout.grid ?? facts.defaultGrid
-            return Item(
-                document: document, laidOut: laidOut,
-                fits: panel.matches(DisplayShape(width: grid.cols, height: grid.rows)))
-        }
+        scenes.map { Item(document: $0, laidOut: ScenesPage.laidOut($0, facts: facts)) }
     }
 
-    private func section(_ title: String, _ items: [Item], fits: Bool) -> some View {
+    /// One section; `fits` says its scenes have the panel's shape, and `empty` what goes in it
+    /// when it has none.
+    private func section(_ title: String, _ items: [Item], fits: Bool, empty: String? = nil)
+        -> some View
+    {
         VStack(alignment: .leading) {
             Text(title).font(.headline)
+            if items.isEmpty, let empty {
+                Text(empty).foregroundStyle(.secondary)
+            }
             LazyVGrid(columns: columns, alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 ForEach(items) { item in
                     SceneRow(item: item, panel: panel)
                         .contentShape(Rectangle())
                         .onTapGesture { open(item.id) }
-                        .contextMenu { menu(item) }
+                        .contextMenu { menu(item, fits: fits) }
                 }
             }
         }
     }
 
-    @ViewBuilder private func menu(_ item: Item) -> some View {
+    @ViewBuilder private func menu(_ item: Item, fits: Bool) -> some View {
         Button("Edit") { open(item.id) }
-        if item.fits, item.laidOut != nil {
+        if fits, item.laidOut != nil {
             Button("Duplicate") { duplicate(item.document) }
         } else {
             Button("Duplicate for This Panel") {}.disabled(true)
@@ -157,7 +168,6 @@ struct SceneRow: View {
                 }
             }
         }
-        .opacity(item.fits ? 1.0 : SceneMetrics.mismatchOpacity)
     }
 
     @ViewBuilder private var thumbnail: some View {
@@ -187,6 +197,17 @@ struct SceneRow: View {
     }
 }
 
+#Preview("Gallery, only built-ins") {
+    if let preview = GalleryPreview.scenes, let facts = GalleryPreview.facts {
+        SceneGallery(
+            scenes: preview.filter { $0.builtIn && $0.id == "rta" }, facts: facts,
+            panel: DisplayShape(width: 1920, height: 720)
+        ) { _ in }
+        .environment(SceneStore())
+        .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
+    }
+}
+
 #Preview("Gallery, with an unsaved copy") {
     if let preview = GalleryPreview.scenes, let facts = GalleryPreview.facts,
         let store = GalleryPreview.storeWithCopy(of: preview, facts: facts)
@@ -200,11 +221,15 @@ struct SceneRow: View {
     }
 }
 
-/// Two scenes, one of each shape, read as the host gives scene documents.
+/// Two built-in scenes and two stored ones, one of each shape each, read as the host gives scene
+/// documents.
 private enum GalleryPreview {
+    static let wide = #"{"grid": {"cols": 96, "rows": 36}, "cards": [{"card": "rta_bars"}]}"#
     static let docs = [
-        ("rta", "RTA", #"{"grid": {"cols": 96, "rows": 36}, "cards": [{"card": "rta_bars"}]}"#),
-        ("default", "Default", #"{"cards": [{"card": "meter", "colspan": 32}]}"#),
+        ("rta", "RTA", true, wide),
+        ("default", "Default", true, #"{"cards": [{"card": "meter", "colspan": 32}]}"#),
+        ("s1", "My RTA", false, wide),
+        ("s2", "Wide", false, #"{"cards": [{"card": "waveform", "colspan": 32}]}"#),
     ]
 
     static let schema =
@@ -234,9 +259,9 @@ private enum GalleryPreview {
 
     static var scenes: [SceneDocument]? {
         do {
-            return try docs.map { id, name, doc in
+            return try docs.map { id, name, builtIn, doc in
                 SceneDocument(
-                    id: id, name: name, builtIn: true, fixed: false,
+                    id: id, name: name, builtIn: builtIn, fixed: false,
                     doc: try JSONDecoder().decode(JSONValue.self, from: Data(doc.utf8)))
             }
         } catch {

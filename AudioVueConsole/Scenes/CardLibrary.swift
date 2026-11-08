@@ -1,22 +1,45 @@
 import ConsoleCore
 import SwiftUI
 
-/// The card library beside the canvas: every card the host's schema marks placeable, dragged onto
-/// the canvas to add it at its declared minimum (`scene-canvas`), each drawn by the helper where
-/// it can be (`scene-rendering`, "A library tile is the card's plate as the helper draws it").
+/// The card library beside the canvas: every card the host's schema marks placeable, under the
+/// panel's categories in its order, dragged onto the canvas to add it at its declared minimum
+/// (`scene-canvas`), each drawn by the helper where it can be (`scene-rendering`, "A library tile
+/// is the card's plate as the helper draws it").
 struct CardLibrary: View {
-    let cards: [SchemaFacts.Card]
+    let shelves: [SchemaFacts.Shelf]
     /// The tiles drawn so far, by card name.
     let tiles: [String: LibraryTiles.Tile]
     /// A card's size on this scene's grid, by name.
     let sizeOf: (String) -> CellSize?
-    @State private var search = ""
+    @State private var search: String
+
+    init(
+        shelves: [SchemaFacts.Shelf], tiles: [String: LibraryTiles.Tile], search: String = "",
+        sizeOf: @escaping (String) -> CellSize?
+    ) {
+        self.shelves = shelves
+        self.tiles = tiles
+        self.sizeOf = sizeOf
+        _search = State(initialValue: search)
+    }
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: SceneMetrics.stripSpacing) {
-                ForEach(shown) {
-                    CardTile(card: $0, size: sizeOf($0.name), tile: tiles[$0.name])
+                ForEach(shown) { shelf in
+                    Section {
+                        // Each tile carries its own id; a card is on one shelf, so ids stay unique.
+                        ForEach(shelf.cards) {
+                            CardTile(card: $0, size: sizeOf($0.name), tile: tiles[$0.name])
+                        }
+                    } header: {
+                        VStack(alignment: .leading, spacing: SceneMetrics.stripSpacing) {
+                            if shelf.id != shown.first?.id {
+                                Divider()
+                            }
+                            Text(shelf.category.label).font(.headline)
+                        }
+                    }
                 }
             }
             .padding(SceneMetrics.stripPadding)
@@ -29,9 +52,15 @@ struct CardLibrary: View {
         .background(.background.secondary)
     }
 
-    private var shown: [SchemaFacts.Card] {
-        guard !search.isEmpty else { return cards }
-        return cards.filter { CardTile.title($0.name).localizedCaseInsensitiveContains(search) }
+    /// The shelves with the cards the search matches, leaving out a shelf with none.
+    private var shown: [SchemaFacts.Shelf] {
+        guard !search.isEmpty else { return shelves }
+        return shelves.compactMap { shelf in
+            let cards = shelf.cards.filter {
+                CardTile.title($0.name).localizedCaseInsensitiveContains(search)
+            }
+            return cards.isEmpty ? nil : SchemaFacts.Shelf(category: shelf.category, cards: cards)
+        }
     }
 }
 
@@ -98,12 +127,48 @@ struct CardTile: View {
 
 #Preview("Card library") {
     let cards = [
-        SchemaFacts.Card(name: "waveform", minimum: CellSize(cols: 12, rows: 7), placeable: true),
-        SchemaFacts.Card(name: "rta_bars", minimum: CellSize(cols: 17, rows: 10), placeable: true),
+        SchemaFacts.Card(name: "meter", minimum: CellSize(cols: 8, rows: 6), placeable: true),
+        SchemaFacts.Card(name: "readout", minimum: CellSize(cols: 8, rows: 4), placeable: true),
+        SchemaFacts.Card(name: "vu_meter", minimum: CellSize(cols: 12, rows: 10), placeable: true),
+        SchemaFacts.Card(name: "peak_rms", minimum: CellSize(cols: 15, rows: 10), placeable: true),
     ]
-    CardLibrary(cards: cards, tiles: [:]) { name in cards.first { $0.name == name }?.minimum }
-        .frame(width: SceneMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
-        .environment(SceneStore())
+    CardLibrary(shelves: LibraryPreview.shelves(cards), tiles: [:]) { name in
+        cards.first { $0.name == name }?.minimum
+    }
+    .frame(width: SceneMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
+    .environment(SceneStore())
+}
+
+#Preview("Card library, searched") {
+    let cards = [
+        SchemaFacts.Card(name: "meter", minimum: CellSize(cols: 8, rows: 6), placeable: true),
+        SchemaFacts.Card(name: "readout", minimum: CellSize(cols: 8, rows: 4), placeable: true),
+        SchemaFacts.Card(name: "vu_meter", minimum: CellSize(cols: 12, rows: 10), placeable: true),
+        SchemaFacts.Card(name: "peak_rms", minimum: CellSize(cols: 15, rows: 10), placeable: true),
+    ]
+    CardLibrary(shelves: LibraryPreview.shelves(cards), tiles: [:], search: "meter") { name in
+        cards.first { $0.name == name }?.minimum
+    }
+    .frame(width: SceneMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
+    .environment(SceneStore())
+}
+
+/// Readouts and Level, as the panel's schema gives them.
+private enum LibraryPreview {
+    static func shelves(_ cards: [SchemaFacts.Card]) -> [SchemaFacts.Shelf] {
+        [
+            shelf("readouts", "Readouts", ["meter", "readout"], from: cards),
+            shelf("level", "Level", ["vu_meter", "peak_rms"], from: cards),
+        ]
+    }
+
+    private static func shelf(
+        _ id: String, _ label: String, _ names: [String], from cards: [SchemaFacts.Card]
+    ) -> SchemaFacts.Shelf {
+        SchemaFacts.Shelf(
+            category: SchemaFacts.Category(id: id, label: label, cards: names),
+            cards: names.compactMap { name in cards.first { $0.name == name } })
+    }
 }
 
 #Preview("Card library, drawn") {
@@ -121,9 +186,15 @@ struct CardTile: View {
         "waveform": PreviewLayer.solid(.plate, glass, size: plate),
         "rta_bars": PreviewLayer.solid(.plate, glass, size: plate, unfit: ["rta_bars"]),
     ].compactMapValues { layer in layer.map { LibraryTiles.Tile(layer: $0, over: backdrop) } }
-    CardLibrary(cards: cards, tiles: tiles) { name in cards.first { $0.name == name }?.minimum }
-        .frame(width: SceneMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
-        .environment(SceneStore())
+    let shelf = SchemaFacts.Shelf(
+        category: SchemaFacts.Category(
+            id: "spectrum", label: "Spectrum", cards: cards.map(\.name)),
+        cards: cards)
+    CardLibrary(shelves: [shelf], tiles: tiles) { name in
+        cards.first { $0.name == name }?.minimum
+    }
+    .frame(width: SceneMetrics.libraryIdealWidth, height: PanelMetrics.windowDefaultHeight)
+    .environment(SceneStore())
 }
 
 /// Layers of one colour, for previews.

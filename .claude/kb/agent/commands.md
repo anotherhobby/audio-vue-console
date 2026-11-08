@@ -38,7 +38,7 @@ Format:
 - 2026-11-05: `python3 -I tools/test_optional_nullables.py` - the nullable rewrite's tests, plain
   asserts with no pytest, since `tools/` has no environment for the gate to resolve imports in.
 
-- 2026-11-05: `AUDIO_VUE_LIVE_HOST=audio-vue.cabin.hobbysprawl.com AUDIO_VUE_PAIRINGS_DIR="$HOME/Library/Containers/com.hobbysprawl.AudioVueConsole/Data/Library/Application Support" xcrun swift test --filter LiveHostTests`
+- 2026-11-05: `AUDIO_VUE_LIVE_HOST=audio-vue.local AUDIO_VUE_PAIRINGS_DIR="$HOME/Library/Containers/com.hobbysprawl.AudioVueConsole/Data/Library/Application Support" xcrun swift test --filter LiveHostTests`
   in `ConsoleCore/` - watches the real host's `/v1/events` with the app's own pairing, read but
   never written, and prints the first state. Skipped without both variables. Passed on the proving
   host (2026-11-05): states arrive and the handshake is not refused, so URLSession's WebSocket adds
@@ -46,6 +46,10 @@ Format:
   checks the resolved address answers (`theHostIsFoundByItsID`); it passed, finding `audio-vue` at
   `audio-vue.local`. `swift test` runs outside the app's sandbox, so any Local Network prompt goes to
   the app that launched it (Terminal or the editor), and a denial there fails this test only.
+  The host must be the address the app's `pairings.json` holds it under: since discovery that is
+  `audio-vue.local` (2026-11-08), and the FQDN finds no pairing. `--filter LiveGalleryTests`
+  (2026-11-08) prints the panel's gallery sections and its library's categories in order; passed
+  on the proving host.
 
 - 2026-11-07: `tools/refresh-render-bundle.sh` - runs `make render-bundle` in `../audio-vue` (override
   with `AUDIO_VUE=<path>`), mirrors its `local/render-bundle/` into this checkout's

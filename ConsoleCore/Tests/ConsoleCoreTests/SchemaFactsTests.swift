@@ -3,8 +3,8 @@ import Testing
 
 @testable import ConsoleCore
 
-/// `scene-canvas` and `scene-layout`: the cards and minimums the schema declares, and the grid's
-/// defaults, read from a trimmed copy of audio-vue's exported schema.
+/// `scene-canvas` and `scene-layout`: the cards and minimums the schema declares, their categories,
+/// and the grid's defaults, read from a trimmed copy of audio-vue's exported schema.
 struct SchemaFactsTests {
     private static func facts() throws -> SchemaFacts {
         let file = URL(filePath: #filePath).deletingLastPathComponent()
@@ -17,9 +17,23 @@ struct SchemaFactsTests {
         #expect(try Self.facts().defaultGrid == CellSize(cols: 64, rows: 36))
     }
 
-    @Test func onlyPlaceableCardsAreOffered() throws {
+    @Test func onlyPlaceableCardsAreOfferedInTheLibrarysOrder() throws {
         let names = try Self.facts().placeable.map(\.name)
-        #expect(names == ["logo", "peak_rms_vertical", "waveform"])
+        #expect(names == ["vu_meter", "peak_rms_vertical", "waveform", "logo"])
+    }
+
+    @Test func theCategoriesInThePanelsOrder() throws {
+        let categories = try Self.facts().categories
+        #expect(categories.map(\.id) == ["level", "waveform", "calibration", "audio-vue"])
+        #expect(categories.map(\.label) == ["Level", "Waveform", "Calibration", "audio-vue"])
+    }
+
+    /// `scene-canvas`, "The library offers the host's placeable cards", "Grouped as the panel
+    /// declares" and "A category with nothing to place".
+    @Test func theLibraryGroupsCardsInThePanelsOrder() throws {
+        let library = try Self.facts().library
+        #expect(library.map(\.category.label) == ["Level", "Waveform", "audio-vue"])
+        #expect(library.first?.cards.map(\.name) == ["vu_meter", "peak_rms_vertical"])
     }
 
     @Test func eachCardsMinimum() throws {

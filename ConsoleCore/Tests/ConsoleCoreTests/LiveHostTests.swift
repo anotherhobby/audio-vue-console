@@ -66,6 +66,50 @@ struct LiveHostTests {
     }
 }
 
+/// `scene-gallery` and `scene-canvas` against the real host: its scenes in the gallery's sections
+/// for its display's shape, and its schema's library in the panel's order, printed for a reader.
+@Suite(.enabled(if: LiveHost.isAsked))
+struct LiveGalleryTests {
+    private struct Entry: GalleryEntry {
+        let name: String
+        let builtIn: Bool
+        let grid: CellSize?
+    }
+
+    @Test func theGalleryAndTheLibrary() async throws {
+        let host = try #require(LiveHost.host)
+        let folder = try #require(LiveHost.pairings)
+        let address = try #require(HostAddress(parsing: host))
+        let tokens = FileTokenStore(directory: URL(filePath: folder))
+        let token = try #require(tokens.pairing(at: address), "No pairing for the host").token
+        let client = HostClient()
+        let identity = try await client.host(at: address, token: token)
+        let schema = try await client.schema(at: address, token: token)
+        let facts = try #require(SchemaFacts(schema: schema))
+        var entries: [Entry] = []
+        for summary in try await client.scenes(at: address, token: token) where !summary.fixed {
+            let document = try await client.scene(summary.id, at: address, token: token)
+            let laidOut = try LaidOutScene(document, defaultGrid: facts.defaultGrid)
+            entries.append(
+                Entry(
+                    name: document.name ?? document.id, builtIn: document.builtIn,
+                    grid: laidOut.layout.grid))
+        }
+        let panel = DisplayShape(
+            width: try #require(identity.widthPx), height: try #require(identity.heightPx))
+        let sections = GallerySections(entries, panel: panel, defaultGrid: facts.defaultGrid)
+        print("Panel \(panel)")
+        print("My Scenes: \(sections.mine.map(\.name))")
+        print("Built-in Scenes: \(sections.builtIn.map(\.name))")
+        print("Other Shapes: \(sections.otherShapes.map(\.name))")
+        for shelf in facts.library {
+            print("\(shelf.category.label): \(shelf.cards.map(\.name))")
+        }
+        #expect(!facts.library.isEmpty)
+        #expect(!facts.library.contains { $0.category.id == "calibration" })
+    }
+}
+
 /// The host the run asked for, by the environment.
 private enum LiveHost {
     static let host = ProcessInfo.processInfo.environment["AUDIO_VUE_LIVE_HOST"]

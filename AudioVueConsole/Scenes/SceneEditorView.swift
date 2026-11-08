@@ -69,7 +69,7 @@ struct SceneEditorView: View {
 
     private var library: some View {
         CardLibrary(
-            cards: scenes.facts?.placeable ?? [], tiles: store.tiles.tiles,
+            shelves: scenes.facts?.library ?? [], tiles: store.tiles.tiles,
             sizeOf: { editor?.minimums[$0] }
         )
         .frame(
@@ -176,8 +176,7 @@ struct SceneEditorView: View {
                 VersionsMenu(session: session)
             }
             Button("Apply", systemImage: "play.rectangle") { apply() }
-                .disabled(editor == nil || isOtherShape)
-                .help(isOtherShape ? "This scene is shaped for another panel." : "")
+                .disabled(editor == nil)
             Button("Duplicate", systemImage: "plus.square.on.square") { duplicate() }
                 .disabled(isOtherShape)
         }
@@ -202,7 +201,7 @@ struct SceneEditorView: View {
         open(store.drafts.duplicate(draft, among: scenes.scenes).id)
     }
 
-    /// Whether the scene is shaped for another panel, so it is neither duplicated nor applied here.
+    /// Whether the scene's shape is not the panel's, so it is not duplicated here.
     private var isOtherShape: Bool {
         editor?.readOnly.map { if case .shape = $0 { true } else { false } } ?? false
     }

@@ -19,7 +19,6 @@ enum SceneMetrics {
     static let inspectorIdealWidth: CGFloat = 260
     static let inspectorMaxWidth: CGFloat = 340
     static let canvasPadding: CGFloat = 24
-    static let mismatchOpacity: Double = 0.45
     static let renameSheetWidth: CGFloat = 320
     static let nameFieldWidth: CGFloat = 320
     /// The space before Reset in the editor's toolbar: wider than a named button.

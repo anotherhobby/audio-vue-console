@@ -10,7 +10,8 @@ struct PanelScenesTests {
 
     private static let schema =
         #"{"$defs": {"block.grid": {"properties": {"cols": {"default": 64}, "#
-        + #""rows": {"default": 36}}}, "card.meter": {"x-min-cells": [8, 6], "x-placeable": true}}}"#
+        + #""rows": {"default": 36}}}, "card.meter": {"x-min-cells": [8, 6], "x-placeable": true}}, "#
+        + #""x-categories": [{"id": "readouts", "label": "Readouts", "cards": ["meter"]}]}"#
 
     static func answers(sceneStatus: Int = 200) -> [FakeTransport.Route: FakeTransport
         .Answer]

@@ -36,17 +36,23 @@ revision.
 - **WHEN** the user chooses Apply and the host refuses the save as invalid
 - **THEN** the panel is not switched, and the failures are shown as for a Save
 
-### Requirement: Apply works on any scene of the panel's shape
+### Requirement: Apply works on any scene
 
-Apply SHALL be enabled for a scene of the panel's shape, built-in, stored or a copy, and SHALL be
-disabled, saying why, for a scene shaped for another panel.
+Apply SHALL be enabled for every scene the gallery lists, built-in, stored or a copy, of the panel's
+shape or another.
 
-Source: Decision (maintainer, 2026-11-07): Apply covers built-ins but not other shapes.
+Source: Decision (maintainer, 2026-11-07): Apply covers built-ins and other shapes. audio-vue
+`scene-grid`: a scene is fitted to the display at its own aspect, with backdrop outside it.
 
 #### Scenario: Another shape
 
-- **WHEN** the user opens a scene shaped for another panel
-- **THEN** Apply is disabled, saying the scene is shaped for another panel
+- **WHEN** the user opens the built-in Default, 16:9, on an 8:3 panel and chooses Apply
+- **THEN** the panel switches to it, fitted to the display with backdrop either side
+
+#### Scenario: A built-in scene
+
+- **WHEN** the user opens the built-in RTA
+- **THEN** Apply is enabled
 
 ### Requirement: Apply asks nothing first and says what it cost
 

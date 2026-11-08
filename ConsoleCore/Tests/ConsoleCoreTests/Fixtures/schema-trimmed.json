@@ -40,7 +40,10 @@
    "type": "object"
   },
   "card.calibration": {
+   "additionalProperties": false,
+   "properties": {},
    "type": "object",
+   "x-category": "calibration",
    "x-min-cells": [
     29,
     36
@@ -49,7 +52,10 @@
    "x-sizing": "free"
   },
   "card.logo": {
+   "additionalProperties": false,
+   "properties": {},
    "type": "object",
+   "x-category": "audio-vue",
    "x-min-cells": [
     6,
     4
@@ -58,7 +64,97 @@
    "x-sizing": "free"
   },
   "card.peak_rms_vertical": {
+   "additionalProperties": false,
+   "properties": {
+    "caution_db": {
+     "default": -6.0,
+     "maximum": 0.0,
+     "minimum": -24.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Bars above this show in the caution colour.",
+     "x-label": "Caution above",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "dBFS"
+    },
+    "floor_db": {
+     "default": -60.0,
+     "maximum": -20.0,
+     "minimum": -100.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The bottom of the dB scale.",
+     "x-label": "Floor",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "dBFS"
+    },
+    "hold_fall_db_s": {
+     "default": 15.0,
+     "maximum": 60.0,
+     "minimum": 1.0,
+     "type": "number",
+     "x-class": "measurement",
+     "x-help": "How fast the peak hold falls once its time is up.",
+     "x-label": "Hold fall",
+     "x-live": true,
+     "x-standard": {
+      "document": null,
+      "values": []
+     },
+     "x-unit": "dB/s"
+    },
+    "hold_s": {
+     "default": 1.5,
+     "maximum": 10.0,
+     "minimum": 0.0,
+     "type": "number",
+     "x-class": "measurement",
+     "x-help": "How long the peak hold keeps its maximum before it falls.",
+     "x-label": "Peak hold",
+     "x-live": true,
+     "x-standard": {
+      "document": null,
+      "values": []
+     },
+     "x-unit": "s"
+    },
+    "over_db": {
+     "default": -3.0,
+     "maximum": 0.0,
+     "minimum": -12.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Bars above this show in the over colour.",
+     "x-label": "Over above",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "dBFS"
+    },
+    "show_readout": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Print peak, RMS and crest as numbers.",
+     "x-label": "Numeric readout",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "show_scale": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Show the scale and its labels.",
+     "x-label": "Scale and labels",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    }
+   },
    "type": "object",
+   "x-category": "level",
    "x-min-cells": [
     13,
     15
@@ -66,8 +162,143 @@
    "x-placeable": true,
    "x-sizing": "free"
   },
-  "card.waveform": {
+  "card.vu_meter": {
+   "additionalProperties": false,
+   "properties": {
+    "alignment": {
+     "default": "smpte",
+     "enum": [
+      "ebu",
+      "smpte",
+      "custom"
+     ],
+     "x-class": "measurement",
+     "x-help": "Where 0 VU sits: EBU R 68 (-18 dBFS), SMPTE RP 155 (-20 dBFS), or custom.",
+     "x-label": "Alignment",
+     "x-live": true,
+     "x-standard": {
+      "document": "ITU-R BS.1726",
+      "values": [
+       "ebu",
+       "smpte"
+      ]
+     },
+     "x-unit": ""
+    },
+    "channel": {
+     "default": "left",
+     "enum": [
+      "left",
+      "right"
+     ],
+     "x-class": "chain",
+     "x-help": "Which channel the needle reads.",
+     "x-label": "Channel",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "lamp_hold_s": {
+     "default": 0.9,
+     "maximum": 5.0,
+     "minimum": 0.15,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "How long the over lamp stays lit after a true-peak over.",
+     "x-label": "Lamp hold",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "s"
+    },
+    "reference_dbfs": {
+     "default": -20.0,
+     "maximum": 0.0,
+     "minimum": -30.0,
+     "type": "number",
+     "x-class": "measurement",
+     "x-help": "0 VU in dBFS, used only when the alignment is custom.",
+     "x-label": "0 VU at (custom)",
+     "x-live": true,
+     "x-standard": {
+      "document": null,
+      "values": []
+     },
+     "x-unit": "dBFS"
+    },
+    "show_face": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Show the scale and its labels.",
+     "x-label": "Scale and labels",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    }
+   },
    "type": "object",
+   "x-aspect": 1.5,
+   "x-category": "level",
+   "x-min-cells": [
+    20,
+    14
+   ],
+   "x-placeable": true,
+   "x-sizing": "aspect"
+  },
+  "card.waveform": {
+   "additionalProperties": false,
+   "properties": {
+    "ceiling_db": {
+     "default": -6.0,
+     "maximum": 0.0,
+     "minimum": -40.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The level drawn at full lane height.",
+     "x-label": "Full height at",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "dBFS"
+    },
+    "show_grid": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Draw the level gridlines.",
+     "x-label": "Gridlines",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "show_labels": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Label the level and time axes.",
+     "x-label": "Axis labels",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "span_s": {
+     "default": 10,
+     "enum": [
+      5,
+      10,
+      20,
+      30
+     ],
+     "x-class": "display_range",
+     "x-help": "How many seconds of the waveform the card shows.",
+     "x-label": "Time span",
+     "x-live": true,
+     "x-standard": null,
+     "x-unit": "s"
+    }
+   },
+   "type": "object",
+   "x-category": "waveform",
    "x-min-cells": [
     12,
     7
@@ -76,5 +307,37 @@
    "x-sizing": "free"
   }
  },
- "$schema": "https://json-schema.org/draft/2020-12/schema"
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "x-categories": [
+  {
+   "cards": [
+    "vu_meter",
+    "peak_rms_vertical"
+   ],
+   "id": "level",
+   "label": "Level"
+  },
+  {
+   "cards": [
+    "waveform"
+   ],
+   "id": "waveform",
+   "label": "Waveform"
+  },
+  {
+   "cards": [
+    "calibration"
+   ],
+   "id": "calibration",
+   "label": "Calibration"
+  },
+  {
+   "cards": [
+    "logo"
+   ],
+   "id": "audio-vue",
+   "label": "audio-vue"
+  }
+ ],
+ "x-schema-version": 4
 }

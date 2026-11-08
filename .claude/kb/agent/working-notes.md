@@ -89,10 +89,16 @@ rulings are in `openspec/specs/scene-saving`, `scene-apply`, `host-connection` a
 - Untested outside the maintainer's run: the quit prompt with the window closed, and Save All during
   `.terminateLater`.
 
-## Gallery sections (2026-11-07)
+## Gallery sections (2026-11-07, 2026-11-08)
 
-Planned and aligned as `openspec/changes/gallery-sections`, not built. Ruled (maintainer,
+Built and archived as `openspec/changes/archive/2026-11-08-gallery-sections`. Ruled (maintainer,
 2026-11-07): "My Scenes", "Built-in Scenes", then "Other Shapes", none dimmed; Apply works on a
 scene of another shape (the panel fits it with backdrop either side, audio-vue `scene-grid`), and
-the canvas still refuses edits by shape. Built only after `scene-save` is archived; `scene-save` is
-not edited for it (maintainer: "if we have to wait, we wait").
+the canvas still refuses edits by shape. Ruled 2026-11-08: the editor's card library is grouped by
+audio-vue's card categories (its change `card-categories`), the categories and the card order both
+from the panel. The handoff `card-order-handoff.md` was answered and `card-categories` archived
+(2026-11-08): the schema's root `x-categories` lists `{id, label, cards}` in display order, the
+cards in the panel's order. Built 2026-11-08; `LiveGalleryTests` passed against the panel
+(Favorite under My Scenes, RTA built in, Default and both card checks under Other Shapes; every
+category but Calibration in the library). The maintainer's run passed every item (2026-11-08); a rule
+now divides the library's categories, at the maintainer's ask.

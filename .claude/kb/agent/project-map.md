@@ -55,9 +55,12 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   once paired and the Panel page's Status shows as its Renderer row.
 - `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
   `PanelScenes`, compares the card code once the renderer is ready, draws the thumbnails, and opens
-  scenes), `SceneGallery` and `SceneRow` (this panel's shape first, thumbnails or boxes, Duplicate),
+  scenes), `SceneGallery` and `SceneRow` (My Scenes, Built-in Scenes, then Other Shapes, none dimmed,
+  split by `ConsoleCore`'s `GallerySections`, `gallery-sections` 2026-11-08; thumbnails or boxes,
+  Duplicate),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
-  `SceneInspector` and `SceneSettingsPanel`, `CardLibrary` (the schema's placeable cards), and
+  `SceneInspector` and `SceneSettingsPanel`, `CardLibrary` (the schema's placeable cards under the
+  panel's categories, from `SchemaFacts.library`, `gallery-sections` 2026-11-08), and
   `SceneMetrics`. From `scene-save` (2026-11-07): `SceneCommands` (File ▸ Save and Revert to Saved
   through the `sceneFile` focused value), `WriteFailureAlert` (`WriteFailureText`: one alert per
   refused write, Save Over It and Discard Mine for a stale save), `RenameSceneSheet`,

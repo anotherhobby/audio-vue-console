@@ -26,18 +26,38 @@ fixed scene is not offered to pick or duplicate.
 - **WHEN** the app is not paired with the host it holds
 - **THEN** the Scenes page says to pair with the panel to see its scenes
 
-### Requirement: This panel's shape comes first
+### Requirement: My scenes, then the built-ins, then other shapes
 
-The gallery SHALL list the scenes whose grid has the panel's shape under "For this panel", and the
-others under "Other shapes", the panel's shape being its display's width over its height.
+The gallery SHALL list the scenes of the panel's shape under "My Scenes" when not built in, then
+under "Built-in Scenes" when built in, and every other scene last under "Other Shapes", none
+dimmed. An empty "My Scenes" or "Built-in Scenes" SHALL say what goes there; an empty "Other
+Shapes" SHALL be left out.
 
-Source: `product.md`: scenes are tied to a display shape, the grid's columns over its rows.
-audio-vue `scene-grid`: an unset grid is the declared default.
+Source: `product.md`: scenes are tied to a display shape. audio-vue `scene-grid`: a scene is fitted
+to the display at its own aspect. Decision (maintainer, 2026-11-07).
 
 #### Scenario: An 8:3 panel
 
-- **WHEN** the panel's display is 1920 by 720 and a scene's grid is 96 by 36
-- **THEN** the scene is listed under "For this panel"
+- **WHEN** the panel's display is 1920 by 720, and the host lists the built-in RTA (grid 96 by 36),
+  the built-in Default (no grid, so 64 by 36), and the stored "My RTA" (96 by 36) and "Wide" (64 by
+  36)
+- **THEN** "My Scenes" lists "My RTA", "Built-in Scenes" lists RTA, "Other Shapes" lists Default and
+  "Wide", and none is dimmed
+
+#### Scenario: An unsaved copy
+
+- **WHEN** the user duplicates the built-in RTA
+- **THEN** "RTA copy" is listed under "My Scenes"
+
+#### Scenario: No scenes of the user's
+
+- **WHEN** the host lists only built-in scenes and there is no copy
+- **THEN** "My Scenes" is shown, saying a built-in scene is duplicated to make one
+
+#### Scenario: Every scene fits
+
+- **WHEN** every scene the host lists has the panel's shape
+- **THEN** no "Other Shapes" section is shown
 
 ### Requirement: A thumbnail is the scene as the helper draws it
 
