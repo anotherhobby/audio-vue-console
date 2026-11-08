@@ -143,6 +143,20 @@ public final class SceneEditor {
         commit("Delete") { () throws(LayoutRefusal) in layout.removing(selection) }
     }
 
+    /// Puts the scene back at `layout`, as the host holds it, as one undoable step named Revert
+    /// (`scene-saving`, "Revert discards unsaved edits"). `layout` is of this editor's parse.
+    public func revert(to layout: SceneLayout) {
+        commit("Revert") { () throws(LayoutRefusal) in layout }
+    }
+
+    /// Shows `layout`, a layout of another parse, with no undo step and none left from before:
+    /// undoing across a change of parse would pair one version's cards with another's document
+    /// (design D9).
+    public func replace(with layout: SceneLayout) {
+        detach()
+        show(layout, selection: [])
+    }
+
     /// Removes this editor's undo actions, for when it leaves the screen and its window's
     /// manager outlives it.
     public func detach() {

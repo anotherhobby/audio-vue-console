@@ -81,18 +81,18 @@ run passed every item after deploying audio-vue to the panel.
   a display's EDID can lie (the maintainer's panel claims 12.3 inches and is nearly 10). Not yet
   planned.
 
-## Scene saving (2026-11-07)
+## Scene saving (archived 2026-11-08)
 
-Planned and aligned as `openspec/changes/scene-save`, not built; ready to build now that
-`library-render` is archived. Ruled (maintainer, 2026-11-07): a
-copy stays in the app until its first Save; Rename writes at once; a quit or panel switch with unsaved
-scenes asks Save All / Discard / Cancel. Also ruled the same day: Save stores and Apply saves then
-switches (this panel's shape, built-ins included, no question first, capture kept or rebuilt reported
-after); Revert discards unsaved edits only; a Versions menu loads a kept revision as an edit under the
-current name; saving the scene on screen notes the panel is behind; Reset in the editor and on the
-Panel page; all one change. It also fixes kept edits losing card settings (alignment F1).
-- Asked of audio-vue by handoff (2026-11-07): the done switch's fields in the contract, and a `reset`
-  command (`Analyzer.reset()` has no route; reload is not a reset). The first is answered, decided
-  and not built: audio-vue's change `command-results-and-reset` gives switch its own done model with
-  `scene`, `capture`, `why` and `recorded`. Reset is answered separately through the same change.
-  Tasks 9.1 and 9.2 wait on that change's archive and a contract refresh.
+`scene-save` and `track-audio-vue` were built, run by the maintainer and archived on 2026-11-08; their
+rulings are in `openspec/specs/scene-saving`, `scene-apply`, `host-connection` and `render-runtime`.
+`gallery-sections`, which waited on `scene-save`, may now be built.
+- Untested outside the maintainer's run: the quit prompt with the window closed, and Save All during
+  `.terminateLater`.
+
+## Gallery sections (2026-11-07)
+
+Planned and aligned as `openspec/changes/gallery-sections`, not built. Ruled (maintainer,
+2026-11-07): "My Scenes", "Built-in Scenes", then "Other Shapes", none dimmed; Apply works on a
+scene of another shape (the panel fits it with backdrop either side, audio-vue `scene-grid`), and
+the canvas still refuses edits by shape. Built only after `scene-save` is archived; `scene-save` is
+not edited for it (maintainer: "if we have to wait, we wait").

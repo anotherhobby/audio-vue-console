@@ -35,16 +35,20 @@ public struct APIVersion: Sendable, Hashable, CustomStringConvertible {
         return Int(field)
     }
 
-    /// How this version stands against the API of the contract bundled with the app, the one major
-    /// version it speaks. Minor releases are taken to be additive.
+    /// How this version stands against the API of the contract bundled with the app, the one
+    /// version it speaks (`host-connection`).
     public var compatibility: Compatibility {
         compatibility(with: .bundled)
     }
 
-    /// How this version stands against `contract`'s major version.
+    /// How this version stands against `contract`'s, by the numeric core: any part that differs
+    /// makes the host newer or older.
     public func compatibility(with contract: SavedContract) -> Compatibility {
-        if major > contract.major { return .hostNewer }
-        if major < contract.major { return .hostOlder }
-        return .compatible
+        let theirs = contract.version.core
+        if core == theirs { return .compatible }
+        return core.lexicographicallyPrecedes(theirs) ? .hostOlder : .hostNewer
     }
+
+    /// Major, minor and patch, in the order they rank.
+    private var core: [Int] { [major, minor, patch] }
 }

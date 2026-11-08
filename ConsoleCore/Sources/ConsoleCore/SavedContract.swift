@@ -1,8 +1,8 @@
 import Foundation
 import HostAPI
 
-/// What the host contract saved in this repository says about itself: the API's major version, the
-/// one this app supports, and the operations that take no token (`host-client`; design D3). The
+/// What the host contract saved in this repository says about itself: the API's version, the one
+/// this app supports, and the operations that take no token (`host-client`; design D3). The
 /// saved contract is the only record of either.
 public struct SavedContract: Sendable, Equatable {
     /// Why a contract could not be read.
@@ -13,13 +13,13 @@ public struct SavedContract: Sendable, Equatable {
         case versionNotSemantic(String)
     }
 
-    /// The major version of the API the contract describes.
-    public let major: Int
+    /// The version of the API the contract describes.
+    public let version: APIVersion
     /// The ids of the operations that declare no `security`, and so take no token.
     public let openOperations: Set<String>
 
-    public init(major: Int, openOperations: Set<String>) {
-        self.major = major
+    public init(version: APIVersion, openOperations: Set<String>) {
+        self.version = version
         self.openOperations = openOperations
     }
 
@@ -34,7 +34,7 @@ public struct SavedContract: Sendable, Equatable {
         guard let version = APIVersion(parsing: document.info.version) else {
             throw .versionNotSemantic(document.info.version)
         }
-        major = version.major
+        self.version = version
         openOperations = Set(
             document.paths.values.flatMap(\.operations).filter { $0.security == nil }.map(\.id))
     }

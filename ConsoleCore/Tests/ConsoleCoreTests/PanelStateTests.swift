@@ -21,6 +21,7 @@ struct PanelStateTests {
         #expect(state.condition == .up)
         #expect(state.since == Date(timeIntervalSince1970: 1_793_887_331))
         #expect(state.sceneName == "RTA")
+        #expect(state.sceneSpec == "rta")
         #expect(state.captureDevice == "m2x4HD")
         #expect(state.rateHz == 96_000)
         #expect(state.analysisP99Ms == 0.9)
@@ -37,6 +38,7 @@ struct PanelStateTests {
             #"{"schema": null, "age_s": null, "condition": "down", "since": null, "sections": {}}"#
         let state = try PanelState(json: Data(json.utf8))
         #expect(state == PanelState(condition: .down))
+        #expect(state.sceneSpec == nil)
     }
 
     @Test func aFailedSectionGivesItsReason() throws {

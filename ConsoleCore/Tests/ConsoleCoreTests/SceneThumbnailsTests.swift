@@ -31,6 +31,16 @@ struct SceneThumbnailsTests {
         #expect(thumbnails.images.isEmpty)
     }
 
+    @Test func aSavedCopysThumbnailMovesToItsNewID() async throws {
+        let fixture = try RenderingFixture()
+        await fixture.rendering.attach(fixture.queue)
+        let thumbnails = SceneThumbnails()
+        thumbnails.update("copy-1", from: fixture.rendering)
+        thumbnails.move(from: "copy-1", to: "u2")
+        #expect(thumbnails.images["copy-1"] == nil)
+        #expect(thumbnails.images["u2"] != nil)
+    }
+
     @Test func theOpenScenesThumbnailFollowsItsLayers() async throws {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)

@@ -7,7 +7,7 @@ import Testing
 struct SavedContractTests {
     @Test func theBundledContractReads() {
         let contract = SavedContract.bundled
-        #expect(contract.major > 0)
+        #expect(contract.version.major > 0)
         #expect(
             contract.openOperations == [
                 "version_v1_version_get", "ask_v1_pairing_post", "confirm_v1_pairing_confirm_post",
@@ -16,7 +16,7 @@ struct SavedContractTests {
 
     @Test func anOperationWithSecurityIsNotOpen() throws {
         let contract = try SavedContract(json: Self.contract(version: "3.1.0"))
-        #expect(contract.major == 3)
+        #expect(contract.version.description == "3.1.0")
         #expect(contract.openOperations == ["open_get"])
     }
 

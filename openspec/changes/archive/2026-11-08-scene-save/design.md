@@ -149,22 +149,27 @@ Save All saves in gallery order and stops at the first failure.
 - **Save:** a toolbar button in `SceneEditorView` and a File ▸ Save command
   (`CommandGroup(replacing: .saveItem)`), reaching the open editor through a `FocusedValue`. Both
   are disabled unless the scene is editable and unsaved.
-- **Unsaved mark:** a dot after the name in `SceneRow`, and the editor's subtitle
-  (`navigationSubtitle`) reads "Edited". The title cannot carry the mark, since it is bound to the
-  name.
-- **Rename:** the gallery's context menu Rename… opens a sheet with a text field. The editor's
-  title is an editable navigation title (`navigationTitle(_ title: Binding<String>)`). SwiftUI puts
-  Rename in the title's menu on macOS, and the binding's setter commits through the same path as the
-  sheet. Apple's documentation says the binding follows the field "as the user types" (stated for
-  iOS). If macOS sets it on each keystroke too, the setter keeps a local title and commits only when
-  the field ends editing, so a rename is one write (alignment F3).
+- **Unsaved mark:** a dot after the name in `SceneRow`, and "Edited" beside the editor's name.
+- **Rename:** the gallery's context menu Rename… opens a sheet with a text field. In the editor the
+  scene's name sits above the canvas after "Scene:", as the grid's size sits below it, and a double-click edits it
+  in place. Return or leaving the field commits through the same path as the sheet, once, so a
+  rename is one write (alignment F3); Escape puts the name back. The window's toolbar shows no
+  title (maintainer, 2026-11-08: a navigation title sat crowded against the back button, and was
+  not found as a way to rename).
+- **Toolbar:** the scene's tools are centered (`.principal`): Save, Revert, Versions, Apply and
+  Duplicate, then Reset after a gap wider than a button (maintainer, 2026-11-08), as it acts on the
+  panel's measurement, not the scene. Only the inspector's toggle sits at the trailing end. Buttons show their names by default; View ▸ Show Button Names turns them off, and
+  the choice is kept across launches (an `@AppStorage` flag setting
+  `windowToolbarLabelStyle(fixed:)`; the binding form took the toolbar's icon-only default instead,
+  measured 2026-11-08).
 - **Delete:** the gallery's context menu Delete… shows a `confirmationDialog`, its destructive
   button named Delete. If the deleted scene is open, the editor is popped first.
-- **Revert to Saved:** a toolbar button and File ▸ Revert to Saved (`CommandGroup(after:
+- **Revert to Saved:** a toolbar button named Revert (maintainer, 2026-11-08) and File ▸ Revert to
+  Saved (`CommandGroup(after:
   .saveItem)`), enabled while the draft is unsaved and has a base revision.
 - **Versions:** a toolbar `Menu` listing the current version and each kept revision by
-  `saved_at`, read when the menu opens (D9).
-- **Apply** and **Reset:** toolbar buttons beside Save (D8, D11). Reset also sits in the Panel page's
+  `saved_at`, read when the editor opens and after each new revision (D9).
+- **Apply** and **Reset:** toolbar buttons (D8, D11), placed as **Toolbar** says. Reset also sits in the Panel page's
   Status section.
 - **Banner:** one line under the editor's toolbar holding the last Apply or Reset result, or the
   panel-behind note (D10), replaced by the next and cleared on the next edit.
@@ -199,7 +204,8 @@ live state's `spec` to be current at the moment of the click, and the switch alr
 
 ### D9. Versions load into the draft as a new parse, and Revert is an editor edit
 
-`PanelScenes.revisions(id)` reads `GET /v1/scenes/{id}/revisions` when the menu opens. Choosing one
+`PanelScenes.revisions(id)` reads `GET /v1/scenes/{id}/revisions` when the editor opens and after each
+new revision, since SwiftUI's `Menu` gives no reliable hook for its opening (found when building). Choosing one
 replaces the draft's `laidOut` with a parse of that revision's document, `name` set to the draft's
 current name, and records the revision it came from. The draft keeps its base revision, the
 current one, so a later Save writes on the current revision and is not refused as stale.

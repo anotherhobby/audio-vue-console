@@ -8,6 +8,8 @@ import SwiftUI
 struct ScenesPage: View {
     let connection: HostConnection
     let renderer: Renderer
+    /// The panel's live state, for the editor's panel-behind note.
+    let live: LiveState?
     @Binding var isEditing: Bool
     @Environment(SceneStore.self) private var store
     @State private var scenes: PanelScenes?
@@ -34,8 +36,15 @@ struct ScenesPage: View {
         } else if let scenes, scenes.state == .loaded, let facts = scenes.facts {
             SceneGallery(
                 scenes: store.drafts.listing(scenes.scenes), facts: facts,
-                panel: Self.shape(of: scenes), notice: renderer.verdict?.noCardsReason
-            ) { path.append($0) }
+                panel: Self.shape(of: scenes), notice: renderer.verdict?.noCardsReason,
+                open: { path.append($0) },
+                rename: { id, name throws(HostFailure) in
+                    try await store.writes(to: scenes).rename(id, to: name)
+                },
+                delete: { id throws(HostFailure) in
+                    path.removeAll { $0 == id }
+                    try await store.writes(to: scenes).delete(id)
+                })
         } else if case .failed(let failure)? = scenes?.state {
             ContentUnavailableView(
                 "Can't Read the Panel's Scenes", systemImage: "exclamationmark.triangle",
@@ -52,8 +61,8 @@ struct ScenesPage: View {
         {
             SceneEditorView(
                 document: document, scenes: scenes, renderer: renderer, verdict: renderer.verdict,
-                panel: Self.shape(of: scenes)
-            ) { path.append($0) }
+                panel: Self.shape(of: scenes), live: live, open: { path.append($0) },
+                reopen: { path[path.count - 1] = $0 })
         }
     }
 
@@ -63,11 +72,13 @@ struct ScenesPage: View {
         return DisplayShape(width: display.width, height: display.height)
     }
 
-    /// Reads the scenes of the panel now paired, forgetting the last panel's edits and copies.
+    /// Reads the scenes of the panel now paired, forgetting the last panel's edits and copies
+    /// where it is another host.
     private func load() async {
-        store.forget()
+        store.follow(host: connection.isPaired == true ? connection.host?.id : nil)
         path = []
         scenes = connection.makeScenes()
+        store.scenes = scenes
         await scenes?.load()
     }
 
@@ -83,9 +94,8 @@ struct ScenesPage: View {
         default: return
         }
         let laidOut = store.drafts.listing(scenes.scenes).compactMap { document in
-            Self.laidOut(document, facts: facts).map {
-                ($0, store.drafts.layout(for: document.id) ?? $0.layout)
-            }
+            if let draft = store.drafts.draft(document.id) { return (draft.laidOut, draft.layout) }
+            return Self.laidOut(document, facts: facts).map { ($0, $0.layout) }
         }
         await store.thumbnails.draw(laidOut, context: scenes.context, through: queue)
     }
@@ -93,6 +103,17 @@ struct ScenesPage: View {
     static func laidOut(_ document: SceneDocument, facts: SchemaFacts) -> LaidOutScene? {
         do {
             return try LaidOutScene(document, defaultGrid: facts.defaultGrid)
+        } catch {
+            return nil
+        }
+    }
+
+    /// `document`'s draft, made the first time it is asked for, or nil where it cannot be read.
+    static func draft(_ document: SceneDocument, in drafts: SceneDrafts, facts: SchemaFacts)
+        -> Draft?
+    {
+        do {
+            return try drafts.draft(for: document, defaultGrid: facts.defaultGrid)
         } catch {
             return nil
         }

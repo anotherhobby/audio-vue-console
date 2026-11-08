@@ -6,6 +6,8 @@ import Foundation
 /// made up or remembered stands in for one.
 public struct PanelRows: Sendable, Equatable {
     public static let dash = "—"
+    /// The Status section's title, which the page also offers Reset under.
+    public static let statusTitle = "Status"
 
     public struct Row: Sendable, Equatable, Identifiable {
         public let label: String
@@ -39,7 +41,7 @@ public struct PanelRows: Sendable, Equatable {
         let width = state?.displayWidthPx ?? host?.widthPx
         let height = state?.displayHeightPx ?? host?.heightPx
         status = Section(
-            title: "Status",
+            title: Self.statusTitle,
             rows: [
                 Row(label: "Condition", value: Self.text(state.map { Self.condition($0, time) })),
                 Row(label: "Scene", value: Self.text(state?.sceneName)),

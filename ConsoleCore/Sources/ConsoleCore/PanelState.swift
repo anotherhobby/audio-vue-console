@@ -27,6 +27,9 @@ public struct PanelState: Sendable, Equatable {
     public var since: Date?
     /// The scene on screen, by its label; never handed back to the host as its identity.
     public var sceneName: String?
+    /// The scene on screen by its id, what a switch names: a built-in's name or a stored scene's
+    /// id. The panel-behind note follows it (design D10).
+    public var sceneSpec: String?
     public var captureDevice: String?
     public var rateHz: Int?
     public var analysisP99Ms: Double?
@@ -60,6 +63,7 @@ public struct PanelState: Sendable, Equatable {
         since = state.since.flatMap(Self.date)
         let sections = state.sections
         sceneName = sections.scene?.name
+        sceneSpec = sections.scene?.spec
         captureDevice = sections.capture?.device
         rateHz = sections.capture?.rateHz
         analysisP99Ms = sections.analysis?.p99Ms

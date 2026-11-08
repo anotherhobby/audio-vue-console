@@ -33,6 +33,12 @@ actor FakeTransport: ClientTransport {
         static func revoke(_ id: String) -> Route { Route("DELETE", "/v1/clients/\(id)") }
         static let scenes = Route("GET", "/v1/scenes")
         static func scene(_ id: String) -> Route { Route("GET", "/v1/scenes/\(id)") }
+        static let createScene = Route("POST", "/v1/scenes")
+        static func writeScene(_ id: String) -> Route { Route("PUT", "/v1/scenes/\(id)") }
+        static func deleteScene(_ id: String) -> Route { Route("DELETE", "/v1/scenes/\(id)") }
+        static func revisions(_ id: String) -> Route { Route("GET", "/v1/scenes/\(id)/revisions") }
+        static let switchScene = Route("POST", "/v1/commands/switch")
+        static let reset = Route("POST", "/v1/commands/reset")
         static let install = Route("GET", "/v1/install")
         static let schema = Route("GET", "/v1/schema")
         static func image(_ id: String) -> Route { Route("GET", "/v1/images/\(id)") }
@@ -55,10 +61,15 @@ actor FakeTransport: ClientTransport {
 
     private static let ok = 200
 
-    /// API versions against the bundled contract's major, so no test names one it will outgrow.
-    static let supportedAPI = "\(SavedContract.bundled.major).0.0"
-    static let newerAPI = "\(SavedContract.bundled.major + 1).0.0"
-    static let olderAPI = "\(SavedContract.bundled.major - 1).0.0"
+    /// API versions against the bundled contract's, so no test names one it will outgrow. The
+    /// others differ in minor, which a host was once let through with (alignment F1); at minor 0,
+    /// the older is a major behind.
+    static let supportedAPI = "\(contract.major).\(contract.minor).\(contract.patch)"
+    static let newerAPI = "\(contract.major).\(contract.minor + 1).0"
+    static let olderAPI =
+        contract.minor > 0
+        ? "\(contract.major).\(contract.minor - 1).0" : "\(contract.major - 1).0.0"
+    private static var contract: APIVersion { SavedContract.bundled.version }
 
     /// The host's answer when the panel is up, as the proving host gives it.
     static func version(_ api: String = supportedAPI, schema: String = "1") -> FakeTransport {

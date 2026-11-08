@@ -71,6 +71,28 @@ import Testing
         #expect(!manager.canUndo)
     }
 
+    @Test func aRevertIsUndoneByName() throws {
+        let saved = editor.layout
+        editor.select(right.id)
+        editor.move(by: CellOffset(cols: 2, rows: 0))
+        let edited = editor.layout
+        editor.revert(to: saved)
+        #expect(editor.layout == saved)
+        #expect(manager.undoActionName == "Revert")
+        manager.undo()
+        #expect(editor.layout == edited)
+    }
+
+    @Test func aReplaceLeavesNoUndo() throws {
+        editor.select(right.id)
+        editor.move(by: CellOffset(cols: 2, rows: 0))
+        let other = try layout([card("c", rect(10, 0, 4, 4))])
+        editor.replace(with: other)
+        #expect(editor.layout == other)
+        #expect(editor.selection.isEmpty)
+        #expect(!manager.canUndo)
+    }
+
     @Test func detachingRemovesTheEditorsActions() throws {
         editor.select(right.id)
         editor.move(by: CellOffset(cols: 2, rows: 0))

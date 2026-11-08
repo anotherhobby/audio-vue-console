@@ -184,6 +184,22 @@ struct SceneRenderingTests {
             ])
     }
 
+    @Test func aReopenedDraftKeepsTheUntouchedCardsSettings() async throws {
+        let drafts = SceneDrafts()
+        let rta = try SceneDraftsTests.rta()
+        let opened = try drafts.draft(for: rta, defaultGrid: SceneDraftsTests.grid)
+        drafts.keep(try SceneDraftsTests.moveBars(opened), for: rta.id)
+        let reopened = try drafts.draft(for: rta, defaultGrid: SceneDraftsTests.grid)
+        let launcher = ScriptedLauncher { FakeRender.reply(to: $0) }
+        let rendering = SceneRendering(
+            scene: reopened.laidOut, context: RenderRequestTests.context, displayKnown: true)
+        await rendering.show(reopened.layout)
+        await rendering.attach(RenderQueue(helper: RenderHelper(launcher: launcher)))
+        let cards = try #require(launcher.requests.last?["scene"]?["cards"]?.arrayValue)
+        #expect(cards.first?["peak"] == .string("hold"))
+        #expect(cards.last?["col"] == .integer(38))
+    }
+
     @Test func noRendererIsSaid() throws {
         let fixture = try RenderingFixture()
         fixture.rendering.unavailable("This build carries no renderer.")

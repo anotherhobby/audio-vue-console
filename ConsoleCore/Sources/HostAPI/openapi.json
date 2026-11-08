@@ -3,7 +3,7 @@
   "info": {
     "title": "audio-vue host agent",
     "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.4.0"
+    "version": "2.5.0"
   },
   "paths": {
     "/v1/version": {
@@ -114,7 +114,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Outcome"
+                  "$ref": "#/components/schemas/SwitchOutcome"
                 }
               }
             }
@@ -188,7 +188,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Outcome"
+                  "$ref": "#/components/schemas/SceneOutcome"
                 }
               }
             }
@@ -330,6 +330,70 @@
         "summary": "Cancel",
         "description": "Stops a calibration wherever it has reached. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
         "operationId": "cancel_v1_commands_cancel_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Outcome"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/commands/reset": {
+      "post": {
+        "summary": "Reset",
+        "description": "Restarts the measurement: every since-reset statistic, the history and what each card holds. Refused while a calibration has the panel. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "operationId": "reset_v1_commands_reset_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3595,6 +3659,51 @@
         ],
         "title": "SceneDocument"
       },
+      "SceneOutcome": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "refused",
+              "expired",
+              "unknown",
+              "no panel"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "scene": {
+            "type": "string",
+            "title": "Scene",
+            "description": "On a done answer, the scene now on screen, by what a switch takes: a built-in's name or a stored scene's id."
+          },
+          "capture": {
+            "type": "string",
+            "enum": [
+              "kept",
+              "rebuilt"
+            ],
+            "title": "Capture",
+            "description": "On a done answer, whether capture was kept or rebuilt. A rebuild restarts the history on screen."
+          },
+          "why": {
+            "type": "string",
+            "title": "Why",
+            "description": "On a done answer, what forced the rebuild, for a person to read; null where capture was kept."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SceneOutcome",
+        "description": "What became of a reload, and on a done one what it cost: a rebuild restarts the history\non screen. A command that is not done carries `status` and `reason` alone."
+      },
       "SceneSummary": {
         "properties": {
           "id": {
@@ -3859,6 +3968,56 @@
           "scene"
         ],
         "title": "Switch"
+      },
+      "SwitchOutcome": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "refused",
+              "expired",
+              "unknown",
+              "no panel"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "scene": {
+            "type": "string",
+            "title": "Scene",
+            "description": "On a done answer, the scene now on screen, by what a switch takes: a built-in's name or a stored scene's id."
+          },
+          "capture": {
+            "type": "string",
+            "enum": [
+              "kept",
+              "rebuilt"
+            ],
+            "title": "Capture",
+            "description": "On a done answer, whether capture was kept or rebuilt. A rebuild restarts the history on screen."
+          },
+          "why": {
+            "type": "string",
+            "title": "Why",
+            "description": "On a done answer, what forced the rebuild, for a person to read; null where capture was kept."
+          },
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded",
+            "description": "On a done answer, whether the scene became the service's next start."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SwitchOutcome",
+        "description": "What became of a switch: a reload's answer, and whether the switch was recorded."
       },
       "Token": {
         "properties": {

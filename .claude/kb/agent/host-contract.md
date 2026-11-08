@@ -22,7 +22,9 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - The agent outlives the panel: after a stop it stays up and reports the panel stopped, and can start
   it again. It also gives start, stop, status, logs, run history (calibration runs by id), and the
   host's id, name, display size and capture devices.
-- The API states its own version. The app checks it on connect, since it can fall behind its host.
+- The API states its own version. The app checks it on connect, since it can fall behind its host,
+  and takes only the saved contract's `info.version`, by its numeric core: any other is refused,
+  newer or older (`APIVersion.compatibility`, `track-audio-vue`, 2026-11-08).
 - The proving host runs Pi OS (since 2026-11-02; audio-vue ships an SD image by default, with manual
   install as an option). It answers as `audio-vue.local`, and the LAN's DNS names it
   `audio-vue.cabin.hobbysprawl.com`, or `audio-vue` by the search domain (Measured, 2026-11-03;
@@ -87,7 +89,16 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   last good scene keeps drawing.
 - `reload` is refused during a calibration, as every command is on the audio-vue screen apart from
   pairing.
-- There is no preview command and no draft store. Apply is save, then `reload`.
+- There is no preview command and no draft store. Apply is save, then `switch`, which puts a stored
+  scene up at its current revision whether or not it is on screen, so the app never uses `reload`
+  (`scene-save` design D8).
+- A done `switch` answers `SwitchOutcome`: `scene`, `capture` (`kept` or `rebuilt`), `why` (for a
+  person, null when kept) and `recorded` (whether it became the panel's next start); `reload` answers
+  `SceneOutcome`, the same without `recorded`. Every other command answers plain `Outcome`, `status`
+  and `reason`, with 200, 409, 503 and 504 (audio-vue `control-api`, built 2026-11-07).
+- `POST /v1/commands/reset` restarts the measurement: statistics, history rings and what each card
+  holds, leaving capture, the scene and calibration. Refused while a calibration has the panel;
+  wakes the display (audio-vue `measurement-reset`, built 2026-11-07).
 
 ## Settings (Built, `settings-schema`, `settings-store`, `card-about`; archived by 2026-11-04)
 

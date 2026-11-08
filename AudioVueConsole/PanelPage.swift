@@ -13,12 +13,15 @@ struct PanelPage: View {
     let panelName: String?
     let addPanel: () -> Void
     @State private var clients: PairedClients?
+    /// What the last Reset came to, beside the button.
+    @State private var resetNote: String?
 
     var body: some View {
         PanelForm(
             rows: rows, liveNote: liveNote, address: connection.address?.description,
             name: panelName, contact: HostContact(live), state: connection.state,
-            actions: PanelActions(pair: { connection.pair() }, addPanel: addPanel)
+            actions: actions,
+            resetNote: resetNote
         ) {
             if let clients { ClientsList(clients: clients) }
         }
@@ -28,6 +31,27 @@ struct PanelPage: View {
         }
         .sheet(item: $connection.pairing) { PairingSheet(pairing: $0) }
         .navigationTitle("Panel")
+    }
+
+    /// The page's buttons: Reset only while paired.
+    private var actions: PanelActions {
+        var actions = PanelActions(pair: { connection.pair() }, addPanel: addPanel)
+        if connection.isPaired == true { actions.reset = { reset() } }
+        return actions
+    }
+
+    /// Reset (`scene-apply`): restarts the panel's measurement, asking nothing first.
+    private func reset() {
+        guard let scenes = connection.makeScenes() else { return }
+        Task {
+            let result: Result<CommandOutcome, HostFailure>
+            do throws(HostFailure) {
+                result = .success(try await scenes.reset())
+            } catch {
+                result = .failure(error)
+            }
+            resetNote = EditorBannerText.text(EditorNote(kind: .reset, result: result))
+        }
     }
 
     /// The panel's values while paired, and dashes otherwise.
@@ -76,6 +100,8 @@ struct PanelRowView: View {
 struct PanelActions {
     var pair: () -> Void = {}
     var addPanel: () -> Void = {}
+    /// Reset, offered while paired.
+    var reset: (() -> Void)?
 }
 
 /// The Panel page for given values, so previews can show each.
@@ -87,6 +113,7 @@ struct PanelForm<Clients: View>: View {
     var contact = HostContact.live
     let state: HostConnection.State
     var actions = PanelActions()
+    var resetNote: String?
     @ViewBuilder var clients: Clients
 
     var body: some View {
@@ -97,6 +124,9 @@ struct PanelForm<Clients: View>: View {
             ForEach(rows.sections, id: \.title) { section in
                 Section {
                     ForEach(section.rows) { PanelRowView(row: $0) }
+                    if section.title == PanelRows.statusTitle, let reset = actions.reset {
+                        ResetRow(note: resetNote, reset: reset)
+                    }
                 } header: {
                     Text(section.title)
                 } footer: {
@@ -275,4 +305,32 @@ private enum PanelPreviews {
             return nil
         }
     }
+}
+
+/// The Status section's Reset, with what the last one came to.
+struct ResetRow: View {
+    let note: String?
+    let reset: () -> Void
+
+    var body: some View {
+        LabeledContent {
+            Button("Reset", action: reset)
+        } label: {
+            Text("Measurement")
+            if let note { Text(note) }
+        }
+    }
+}
+
+#Preview("Reset, after a failure") {
+    Form {
+        Section("Status") {
+            ResetRow(
+                note: EditorBannerText.text(
+                    EditorNote(kind: .reset, result: .failure(.unexpectedAnswer))),
+                reset: {})
+        }
+    }
+    .formStyle(.grouped)
+    .frame(width: 720)
 }

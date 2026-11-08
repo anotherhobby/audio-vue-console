@@ -38,10 +38,7 @@
         "resources",
         {
           "kind": "script",
-          "id": "000000000000000100000010",
           "name": "Embed the render runtime",
-          "shell": "/bin/sh",
-          "script": "\"$SRCROOT/tools/embed-render-runtime.sh\"\n",
           "input-paths": [
             "$(SRCROOT)/tools/embed-render-runtime.sh",
             "$(SRCROOT)/local/python-runtime",
@@ -51,6 +48,9 @@
             "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/python",
             "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/render-bundle",
           ],
+          "shell": "/bin/sh",
+          "run-on-every-build": true,
+          "script": "\"$SRCROOT/tools/embed-render-runtime.sh\"\n",
         },
       ],
       "package-product-members": [

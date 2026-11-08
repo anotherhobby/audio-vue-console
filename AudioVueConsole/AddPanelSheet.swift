@@ -6,11 +6,24 @@ import SwiftUI
 struct AddPanelSheet: View {
     @Bindable var connection: HostConnection
     @Environment(\.dismiss) private var dismiss
+    @Environment(SceneStore.self) private var store
 
     var body: some View {
         AddPanelForm(
-            address: $connection.addressText, state: connection.state,
-            connect: { Task { await connection.connect() } }, done: { dismiss() })
+            address: $connection.addressText, state: connection.state, connect: connect,
+            done: { dismiss() }
+        )
+        .unsavedScenesAlerts(store.unsaved)
+    }
+
+    /// Connects to the address typed, once any unsaved scenes are settled, unless it is the
+    /// panel held, whose scenes a reconnect keeps (`scene-saving`).
+    private func connect() {
+        guard HostAddress(parsing: connection.addressText) != connection.address else {
+            Task { await connection.connect() }
+            return
+        }
+        store.unsaved.settle(store.currentWrites) { Task { await connection.connect() } }
     }
 }
 

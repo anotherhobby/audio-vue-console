@@ -18,6 +18,20 @@ public struct SceneSummary: Sendable, Equatable, Identifiable {
     }
 }
 
+/// One of a stored scene's kept earlier revisions: its number, when it was saved, and its document.
+public struct SceneRevision: Sendable, Equatable, Identifiable {
+    public let rev: Int
+    public let savedAt: Date
+    public let doc: JSONValue
+    public var id: Int { rev }
+
+    public init(rev: Int, savedAt: Date, doc: JSONValue) {
+        self.rev = rev
+        self.savedAt = savedAt
+        self.doc = doc
+    }
+}
+
 /// The host's scenes, install settings, settings schema and images, each read with a token.
 extension HostClient {
     /// `GET /v1/scenes`: every scene the host holds, built in or stored.
@@ -43,9 +57,39 @@ extension HostClient {
             let body = try Self.body { try ok.body.json }
             return SceneDocument(
                 id: body.id, name: body.name, builtIn: body.builtIn, fixed: body.fixed ?? false,
-                doc: try Self.json(body.doc))
+                doc: try Self.json(body.doc), rev: body.rev)
         case .notFound: throw .notFound
         case .unauthorized, .unprocessableContent, .undocumented: throw .unexpectedAnswer
+        }
+    }
+
+    /// `GET /v1/scenes/{scene_id}/revisions`: a stored scene's kept earlier revisions, newest
+    /// first; a built-in keeps none.
+    public func sceneRevisions(_ id: String, at address: HostAddress, token: HostToken)
+        async throws(HostFailure) -> [SceneRevision]
+    {
+        let output = try await call(at: address, token: token) {
+            try await $0.sceneRevisionsV1ScenesSceneIdRevisionsGet(path: .init(sceneId: id))
+        }
+        switch output {
+        case .ok(let ok):
+            return try Self.body { try ok.body.json }.revisions.map {
+                (revision) throws(HostFailure) in
+                guard let savedAt = Self.date(revision.savedAt) else { throw .unexpectedAnswer }
+                return SceneRevision(
+                    rev: revision.rev, savedAt: savedAt, doc: try Self.json(revision.doc))
+            }
+        case .notFound: throw .notFound
+        case .unauthorized, .unprocessableContent, .undocumented: throw .unexpectedAnswer
+        }
+    }
+
+    /// A time the host wrote, in ISO 8601 to the second with its offset (audio-vue `host_store`).
+    static func date(_ text: String) -> Date? {
+        do {
+            return try Date.ISO8601FormatStyle().parse(text)
+        } catch {
+            return nil
         }
     }
 

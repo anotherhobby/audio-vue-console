@@ -18,6 +18,7 @@ struct PanelWindow: View {
     @State private var columns: NavigationSplitViewVisibility = .all
     @State private var live: LiveState?
     @State private var isAddingPanel = false
+    @Environment(SceneStore.self) private var store
 
     var body: some View {
         NavigationSplitView(columnVisibility: $columns) {
@@ -30,6 +31,8 @@ struct PanelWindow: View {
             columns = editing ? .detailOnly : .all
         }
         .sheet(isPresented: $isAddingPanel) { AddPanelSheet(connection: connection) }
+        .unsavedScenesAlerts(store.unsaved, shown: !isAddingPanel)
+        .onChange(of: live?.state?.sceneSpec) { _, spec in store.follow(onScreen: spec) }
         .task { await connection.connectAtLaunch() }
         .task(id: WatchKey(connection)) {
             live = connection.liveState()
@@ -57,7 +60,9 @@ struct PanelWindow: View {
             .toolbar { picker }
             .toolbar(removing: .title)
         case .scenes:
-            ScenesPage(connection: connection, renderer: renderer, isEditing: $isEditingScene)
+            ScenesPage(
+                connection: connection, renderer: renderer, live: live,
+                isEditing: $isEditingScene)
         case .input, .calibration, .display, .history:
             SamplePage(section: section ?? .panel)
         }
@@ -78,14 +83,18 @@ struct PanelWindow: View {
             foundName: found?.name)
     }
 
-    /// The picker: the panel held, and the other panels found, each connected to when chosen
-    /// (`panel-window`).
+    /// The picker: the panel held, and the other panels found, each connected to when chosen,
+    /// once any unsaved scenes are settled (`panel-window`).
     private var picker: PanelPicker {
         PanelPicker(
             panel: label,
             others: discovery.others(heldID: heldID, heldAddress: connection.address),
             mayBrowse: discovery.mayBrowse,
-            choose: { panel in Task { await connection.connect(to: panel) } },
+            choose: { panel in
+                store.unsaved.settle(store.currentWrites) {
+                    Task { await connection.connect(to: panel) }
+                }
+            },
             addPanel: { isAddingPanel = true })
     }
 

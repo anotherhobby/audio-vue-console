@@ -101,6 +101,132 @@ public final class PanelScenes {
         }
     }
 
+    /// Stores `draft` on the host (design D3): a copy never saved is created, any other scene written
+    /// on `overRev`, or on the draft's revision. The scene is then read again, so the app holds the
+    /// host's document and revision, not what it sent; a created scene's id is the host's.
+    public func save(_ draft: Draft, overRev: Int? = nil) async throws(HostFailure)
+        -> SceneDocument
+    {
+        let token = pairing.token
+        do throws(HostFailure) {
+            if SceneDrafts.isCopy(draft.id) {
+                let created = try await client.createScene(
+                    doc: draft.doc, at: address, token: token)
+                return try await reread(created.id, listing: true)
+            }
+            guard let base = overRev ?? draft.rev else { throw .unexpectedAnswer }
+            _ = try await client.writeScene(
+                draft.id, doc: draft.doc, baseRev: base, at: address, token: token)
+            return try await reread(draft.id, listing: false)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Renames the stored scene `id` by writing the host's document with `name` set (design D4),
+    /// trimmed and refused when empty before any request. A stale base is read again and written
+    /// once more, since only the name changes.
+    public func rename(_ id: String, to name: String) async throws(HostFailure) -> SceneDocument {
+        guard let name = Self.name(name) else {
+            throw .invalid([DocumentFailure(place: "name", message: Self.needsAName)])
+        }
+        do throws(HostFailure) {
+            guard let held = scenes.first(where: { $0.id == id }) else { throw .notFound }
+            do throws(HostFailure) {
+                try await write(name, over: held)
+            } catch .stale {
+                let current = try await client.scene(id, at: address, token: pairing.token)
+                try await write(name, over: current)
+            }
+            return try await reread(id, listing: true)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Deletes the stored scene `id` on the host and from `scenes`.
+    public func delete(_ id: String) async throws(HostFailure) {
+        do throws(HostFailure) {
+            try await client.deleteScene(id, at: address, token: pairing.token)
+            scenes.removeAll { $0.id == id }
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Switches the panel to the scene `id`, a stored scene at its current revision (design D8).
+    public func switchTo(_ id: String) async throws(HostFailure) -> CommandOutcome {
+        do throws(HostFailure) {
+            return try await client.switchScene(id, at: address, token: pairing.token)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Reset (design D11): restarts the panel's measurement.
+    public func reset() async throws(HostFailure) -> CommandOutcome {
+        do throws(HostFailure) {
+            return try await client.resetPanel(at: address, token: pairing.token)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// The stored scene `id`'s kept earlier revisions, newest first, for the Versions menu.
+    public func revisions(_ id: String) async throws(HostFailure) -> [SceneRevision] {
+        do throws(HostFailure) {
+            return try await client.sceneRevisions(id, at: address, token: pairing.token)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Reads the scene `id` again and holds the host's document, as Discard Mine does.
+    public func refresh(_ id: String) async throws(HostFailure) {
+        do throws(HostFailure) {
+            _ = try await reread(id, listing: false)
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// `name` trimmed, or nil where nothing is left: a scene needs a name.
+    public static func name(_ name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    public static let needsAName = "A scene needs a name."
+
+    private func write(_ name: String, over document: SceneDocument) async throws(HostFailure) {
+        guard let rev = document.rev else { throw .unexpectedAnswer }
+        var doc = document.doc.objectValue ?? [:]
+        doc["name"] = .string(name)
+        _ = try await client.writeScene(
+            document.id, doc: .object(doc), baseRev: rev, at: address, token: pairing.token)
+    }
+
+    /// Reads the scene `id` again and holds it in place of what was held, reading the listing too
+    /// where the scene's place in the host's order may have changed.
+    private func reread(_ id: String, listing: Bool) async throws(HostFailure) -> SceneDocument {
+        let token = pairing.token
+        let document = try await client.scene(id, at: address, token: token)
+        guard listing else {
+            scenes = scenes.map { $0.id == id ? document : $0 }
+            return document
+        }
+        let order = try await client.scenes(at: address, token: token).filter { !$0.fixed }
+        let held = Dictionary(uniqueKeysWithValues: scenes.map { ($0.id, $0) })
+        scenes = order.compactMap { $0.id == id ? document : held[$0.id] }
+        return document
+    }
+
+    /// `failure` as it is thrown back, a refused token having unpaired the app first.
+    private func unpairing(_ failure: HostFailure) -> HostFailure {
+        if failure == .tokenRefused { fail(failure) }
+        return failure
+    }
+
     /// The scene the panel falls back to when a backdrop image is missing (audio-vue `scene.py`).
     static let defaultScene = "default"
 

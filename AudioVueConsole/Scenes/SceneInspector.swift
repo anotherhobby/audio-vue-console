@@ -71,7 +71,7 @@ struct SceneSettingsPanel: View {
     }
 
     private var kept: String {
-        if SceneDrafts.isCopy(document.id) { return "In this app until it quits" }
+        if SceneDrafts.isCopy(document.id) { return "In this app until saved" }
         return document.builtIn ? "Built in" : "On the panel"
     }
 }

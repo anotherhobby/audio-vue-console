@@ -18,8 +18,11 @@ Format:
   raises the approval. `xcrun mcpbridge run-agent --dry-run claude` prints how Xcode launches its
   own agent.
 
-- 2026-11-03: `cd ConsoleCore && xcrun swift test` - builds the core and runs its Swift Testing
-  suite, the boundary tests included. Runs from the package folder, not the root. Add
+- 2026-11-03: `cd ConsoleCore && xcrun swift test --disable-xctest` - builds the core and runs its
+  Swift Testing suite, the boundary tests included. Runs from the package folder, not the root.
+  Without `--disable-xctest` the run also starts an XCTest pass the suite has no tests for, which
+  sat idle past 10 minutes on 2026-11-08 (0% CPU, main run loop waiting); with it, 445 tests ran in
+  0.06 s. Add
   `--filter BoundaryTests` to run only the boundaries. The runner prints `Target Platform:
   macos14.0`; that is the test host, not the package's platform.
 
@@ -51,11 +54,14 @@ Format:
   the bundle's `requirements.txt` installed, `__pycache__` removed. The runtime is rebuilt only when
   that version or the requirements change (`local/python-runtime/.stamp`); downloads are kept in
   `local/python-downloads/`. All of `local/` is ignored by git. `--check` lists how the mirror differs
-  and exits 1, copying nothing. Run it after cloning and after audio-vue's card code changes: a build
-  without the runtime fails, naming it. First run about 9 s; the runtime is about 358 MB.
+  and exits 1, copying nothing. Every app build runs it (below), so
+  run it by hand only for `--check` or outside Xcode. First run about 9 s; the runtime is about 358 MB.
 - 2026-11-07: the app target's build phase "Embed the render runtime" runs
-  `tools/embed-render-runtime.sh`, which rsyncs `local/python-runtime/` and `local/render-bundle/`
-  into `Contents/Resources/python/` and `render-bundle/`. The app is about 375 MB (Debug) and
+  `tools/embed-render-runtime.sh` on every build (`"run-on-every-build": true` in `project.xcproj`,
+  2026-11-08): it runs `refresh-render-bundle.sh` first, failing the build with an `error:` line
+  naming the checkout where that fails, then rsyncs `local/python-runtime/` and
+  `local/render-bundle/` into `Contents/Resources/python/` and `render-bundle/`. About a second when
+  the runtime is current. The app is about 375 MB (Debug) and
   `codesign --verify` passes on it.
 
 - 2026-11-07: `RENDER_HELPER_LIVE=1 xcrun swift test --filter LiveHelperTests` in `ConsoleCore/` -

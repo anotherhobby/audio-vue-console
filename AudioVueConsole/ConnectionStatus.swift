@@ -93,13 +93,22 @@ struct ConnectionStatus: View {
         }
     }
 
+    /// A host at another API version than the saved contract's, the one this app speaks
+    /// (`host-connection`), with the step that brings them level (design D2).
     private func incompatible(_ address: HostAddress, _ version: HostVersion) -> some View {
-        let name = address.description
-        let api = version.api.description
+        let name = name ?? address.description
+        let theirs = version.api.description
+        let ours = SavedContract.bundled.version.description
         let text: LocalizedStringKey =
             version.api.compatibility == .hostNewer
-            ? "\(name) speaks API \(api), newer than this app supports. Update the app."
-            : "\(name) speaks API \(api), older than this app supports. Update the host."
+            ? """
+            \(name) runs host API \(theirs), newer than this app's \(ours). Refresh this app's \
+            contract and build again.
+            """
+            : """
+            \(name) runs host API \(theirs), older than this app's \(ours). Deploy audio-vue to \
+            the panel.
+            """
         return Label(text, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
     }
 
@@ -117,7 +126,8 @@ struct ConnectionStatus: View {
                 "\(name) refused the request."
             case .unexpectedAnswer:
                 "Something answered at \(endpoint), but not an audio-vue host."
-            case .tokenRefused, .pairingRefused, .unknownClient, .notFound:
+            case .tokenRefused, .pairingRefused, .unknownClient, .notFound, .stale, .invalid,
+                .conflict:
                 "\(name) answered in a way this app didn't expect."
             }
         return Label(text, systemImage: "xmark.octagon.fill")
@@ -130,5 +140,30 @@ struct ConnectionStatus: View {
             ? "\(name) is announced at a name that isn't a host address."
             : "Couldn't find where \(name) is on the network. Check that the host is on."
         return Label(text, systemImage: "xmark.octagon.fill")
+    }
+}
+
+#Preview("A host older than the app") {
+    RefusedHostPreview(api: "1.0.0").frame(width: 520, alignment: .leading)
+}
+
+#Preview("A host newer than the app") {
+    RefusedHostPreview(api: "99.0.0").frame(width: 520, alignment: .leading)
+}
+
+/// The status for a host at `api`, refused on connect.
+private struct RefusedHostPreview: View {
+    let api: String
+
+    var body: some View {
+        if let address = HostAddress(parsing: "audio-vue.local"),
+            let version = APIVersion(parsing: api)
+        {
+            ConnectionStatus(
+                name: "audio-vue",
+                state: .incompatible(address, HostVersion(api: version, schema: 1, cards: .preview))
+            )
+            .padding()
+        }
     }
 }

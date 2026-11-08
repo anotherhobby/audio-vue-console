@@ -182,18 +182,26 @@ Source: `product.md`: built-in scenes are read-only, and scenes are tied to a di
 - **WHEN** the user clicks a card on a built-in scene
 - **THEN** it is selected and shown in the inspector, without resize handles
 
-### Requirement: Edits last until the app quits
+### Requirement: Edits are kept until saved or discarded
 
-A scene's edits SHALL be kept while the app runs: leaving the editor and opening the scene again
-SHALL show them, and so SHALL the scene's thumbnail. Nothing SHALL be saved, and the edits SHALL be
-gone when the app quits.
+A scene's edits SHALL be kept while the app runs until they are saved or discarded, as
+`scene-saving` says: leaving the editor and opening the scene again SHALL show them, and so SHALL
+the scene's thumbnail. A kept edit SHALL keep each card's entry from the document it was made from,
+so every card setting but its cells and group stays as the host gave it.
 
-Source: `product.md`: saves are explicit; Inferred (this change): there is no host to save to yet.
+Source: `product.md`: saves are explicit. Decision (maintainer, 2026-11-07): unsaved edits are asked
+about before a quit or a switch of panel.
 
 #### Scenario: Reopening a scene
 
 - **WHEN** the user moves a card, goes back to the gallery and opens the scene again
 - **THEN** the card is where it was moved to, and the gallery thumbnail shows it there
+
+#### Scenario: Reopening keeps card settings
+
+- **WHEN** a card carries settings of its own, and the user moves another card, goes back to the
+  gallery and opens the scene again
+- **THEN** the first card is drawn with its settings, as before the move
 
 ### Requirement: The library offers the host's placeable cards
 

@@ -39,6 +39,15 @@ struct HostClientScenesTests {
         #expect(scene.builtIn && !scene.fixed)
         #expect(scene.doc["grid"]?["cols"] == .integer(96))
         #expect(scene.doc["cards"]?.arrayValue?.first?["card"] == .string("rta_bars"))
+        #expect(scene.rev == nil)
+    }
+
+    @Test func aStoredSceneIsReadWithItsRevision() async throws {
+        let body = #"{"id": "u1", "name": "Mine", "built_in": false, "rev": 3, "doc": {}}"#
+        let transport = FakeTransport([.scene("u1"): .status(200, body)])
+        let scene = try await HostClient(transport: transport).scene(
+            "u1", at: try address(), token: token)
+        #expect(scene.rev == 3)
     }
 
     @Test func aSceneTheHostLacks() async throws {
@@ -47,6 +56,25 @@ struct HostClientScenesTests {
             _ = try await HostClient(transport: transport).scene(
                 "gone", at: try address(), token: token)
         }
+    }
+
+    @Test func aScenesRevisionsAreReadNewestFirst() async throws {
+        let body =
+            #"{"revisions": [{"rev": 4, "saved_at": "2026-11-07T21:00:05+00:00", "doc": {"a": 1}},"#
+            + #"{"rev": 3, "saved_at": "2026-11-06T09:30:00+00:00", "doc": {"a": 0}}]}"#
+        let transport = FakeTransport([.revisions("u1"): .status(200, body)])
+        let revisions = try await HostClient(transport: transport).sceneRevisions(
+            "u1", at: try address(), token: token)
+        #expect(revisions.map(\.rev) == [4, 3])
+        #expect(revisions.first?.savedAt == Date(timeIntervalSince1970: 1_794_085_205))
+        #expect(revisions.last?.doc["a"] == .integer(0))
+    }
+
+    @Test func aBuiltInKeepsNoRevisions() async throws {
+        let transport = FakeTransport([.revisions("rta"): .status(200, #"{"revisions": []}"#)])
+        let revisions = try await HostClient(transport: transport).sceneRevisions(
+            "rta", at: try address(), token: token)
+        #expect(revisions.isEmpty)
     }
 
     @Test func theInstallBlocksAreReadByName() async throws {

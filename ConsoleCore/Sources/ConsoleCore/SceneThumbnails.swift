@@ -45,6 +45,11 @@ public final class SceneThumbnails {
             display: rendering.context.display, width: Self.width)
     }
 
+    /// Moves the thumbnail of `old` to `new`, as when a copy's first save gives it the host's id.
+    public func move(from old: String, to new: String) {
+        images[new] = images.removeValue(forKey: old)
+    }
+
     /// Forgets every thumbnail, as when another panel is shown or the code differs.
     public func forget() {
         images = [:]

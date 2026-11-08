@@ -22,6 +22,8 @@ struct SceneCanvas: View {
     let sizeOf: (String) -> CellSize?
     /// The scene's layers, or nil where the canvas draws boxes alone, as in previews.
     var rendering: SceneRendering?
+    /// The scene's name above the panel, as the grid's size is below it.
+    var title: SceneNameTitle?
 
     @Environment(SceneStore.self) private var store
     @State private var gesture: CanvasGesture?
@@ -29,6 +31,7 @@ struct SceneCanvas: View {
 
     var body: some View {
         VStack {
+            if let title { title }
             display
             footer
         }

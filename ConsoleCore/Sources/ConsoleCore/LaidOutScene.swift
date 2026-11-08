@@ -9,21 +9,41 @@ public struct LaidOutScene: Sendable, Equatable {
     let entries: [UUID: JSONValue]
 
     /// `document` laid out on its grid, or on `defaultGrid` where it declares none. A card's unset
-    /// `col` or `row` is 0, and an unset span covers the grid (audio-vue `scene-grid`).
-    public init(_ document: SceneDocument, defaultGrid: CellSize) throws(LayoutRefusal) {
+    /// `col` or `row` is 0, and an unset span covers the grid (audio-vue `scene-grid`). Where `ids`
+    /// has one id per card, the cards take them in order: a scene read again after a save keeps
+    /// the ids the editor holds, since the host stores the cards in the order they were sent.
+    public init(_ document: SceneDocument, defaultGrid: CellSize, ids: [UUID]? = nil)
+        throws(LayoutRefusal)
+    {
         let grid = CellSize(
             cols: document.doc["grid"]?["cols"]?.intValue ?? defaultGrid.cols,
             rows: document.doc["grid"]?["rows"]?.intValue ?? defaultGrid.rows)
+        let read = document.doc["cards"]?.arrayValue ?? []
+        let ids = ids?.count == read.count ? ids : nil
         var cards: [LayoutCard] = []
         var entries: [UUID: JSONValue] = [:]
-        for entry in document.doc["cards"]?.arrayValue ?? [] {
-            let card = try Self.card(entry, on: grid)
+        for (index, entry) in read.enumerated() {
+            let card = try Self.card(entry, on: grid, id: ids?[index] ?? UUID())
             cards.append(card)
             entries[card.id] = entry
         }
         self.document = document
         self.layout = try SceneLayout(grid: grid, cards: cards)
         self.entries = entries
+    }
+
+    private init(document: SceneDocument, layout: SceneLayout, entries: [UUID: JSONValue]) {
+        self.document = document
+        self.layout = layout
+        self.entries = entries
+    }
+
+    /// `layout` as a scene of its own, read from `document`: what a copy starts from. Each card
+    /// keeps its id and the entry this scene writes for it, so the copy needs no second parse.
+    func copy(_ layout: SceneLayout, as document: SceneDocument) -> LaidOutScene {
+        LaidOutScene(
+            document: document, layout: layout,
+            entries: Dictionary(uniqueKeysWithValues: layout.cards.map { ($0.id, entry(for: $0)) }))
     }
 
     /// The document's `doc` with its cards as `layout` places them, in its order: each card's
@@ -44,7 +64,7 @@ public struct LaidOutScene: Sendable, Equatable {
         return .object(fields)
     }
 
-    private static func card(_ entry: JSONValue, on grid: CellSize) throws(LayoutRefusal)
+    private static func card(_ entry: JSONValue, on grid: CellSize, id: UUID) throws(LayoutRefusal)
         -> LayoutCard
     {
         guard let kind = entry["card"]?.stringValue else { throw .unreadableCard }
@@ -53,7 +73,7 @@ public struct LaidOutScene: Sendable, Equatable {
             cols: try cell(entry["colspan"], unset: grid.cols),
             rows: try cell(entry["rowspan"], unset: grid.rows))
         let group = entry["group"]?.stringValue
-        return LayoutCard(kind: kind, cells: cells, group: group)
+        return LayoutCard(id: id, kind: kind, cells: cells, group: group)
     }
 
     /// A cell field's whole number, `unset` where it is missing or null.

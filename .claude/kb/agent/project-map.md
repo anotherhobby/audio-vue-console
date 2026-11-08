@@ -36,9 +36,11 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   the generated one (ATS only); it sits outside the synchronized folder so it is not a resource.
 - `AudioVueConsole/`: the app target's sources (`panel-client`, 2026-11-05). `AudioVueConsoleApp.swift`
   (the `App`: its `init` makes the one `PanelDiscovery` and the `HostConnection` given it, starts the
-  browse, and browses again on activation while denied (`discovery`, 2026-11-06); it owns the
-  `SceneStore`, so closing the window keeps them; the single panel window; an app delegate that
-  keeps the app running with no window),
+  browse, and browses again on activation while denied (`discovery`, 2026-11-06); the single
+  panel window with the File menu's `SceneCommands` and `ArrangeCommands`; an `AppDelegate` that
+  keeps the app running with no window and owns the `SceneStore`, so closing the window keeps it
+  and a quit with unsaved scenes asks first, in the window or in an `NSAlert` when none is open;
+  `scene-save`, 2026-11-07),
   `PanelWindow.swift` (the window: the sidebar of pages, the picker in the Panel page's toolbar,
   the connect at launch, and the `LiveState` it watches while open; pages other than Panel still
   read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
@@ -56,14 +58,22 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   scenes), `SceneGallery` and `SceneRow` (this panel's shape first, thumbnails or boxes, Duplicate),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
   `SceneInspector` and `SceneSettingsPanel`, `CardLibrary` (the schema's placeable cards), and
-  `SceneMetrics`.
+  `SceneMetrics`. From `scene-save` (2026-11-07): `SceneCommands` (File ▸ Save and Revert to Saved
+  through the `sceneFile` focused value), `WriteFailureAlert` (`WriteFailureText`: one alert per
+  refused write, Save Over It and Discard Mine for a stale save), `RenameSceneSheet`,
+  `VersionsMenu`, `EditorBanner` (`EditorBannerText`: Apply's and Reset's outcome, the panel-behind
+  note), and `UnsavedScenes` (Save All, Discard or Cancel before a quit or a switch of panel). The
+  editor holds a `SceneSession`; the gallery's menu renames and deletes; the Panel page's Status
+  offers Reset (`ResetRow`).
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the
   marquee and keys into editor calls, asking its `SceneRendering` to draw again what the layout
   changed; `LayerStack` draws the helper's layers there, sliding or stretching a plate from the cells
   it was drawn at; `CanvasHandles`, `CanvasDropDelegate` and `ArrangeCommands` (the Debug-only
-  Arrange menu) are its parts. `SceneStore`, owned by the App, holds the `SceneDrafts` (edits and
-  copies until quit), the `SceneThumbnails` and the `LibraryTiles` (2026-11-07, `library-render`;
+  Arrange menu) are its parts. `SceneStore`, owned by the `AppDelegate`, holds the `SceneDrafts`
+  (drafts and copies until saved or discarded, forgotten only when another host is paired), the
+  `PanelScenes` last read, `UnsavedScenes`, the ids behind on the panel, the `SceneThumbnails` and
+  the `LibraryTiles` (2026-11-07, `library-render`;
   `CardLibrary` shows a tile's image in place of its box); `LayoutPlates` draws any layout as boxes;
   `CanvasMetrics` holds the palette. It holds no layout rules.
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
@@ -99,7 +109,13 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   install, schema, images, the card manifest), `JSONValue` (documents passed through whole),
   `SceneDocument` and `LaidOutScene` (a document as a layout and back), `SchemaFacts` (placeable
   cards, minimums, the grid's defaults), `DisplayShape`, `PanelScenes` (made by
-  `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. The helper: `HelperLocation`,
+  `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,
+  2026-11-07): `Draft` (a scene's parse, its layout and its base revision; unsaved by layout, by a
+  loaded version or as a copy), `HostClient+SceneWrites` (create, write, delete; `.stale`,
+  `.invalid`, `.conflict`), the revisions read in `HostClient+Scenes`, `HostClient+Commands` (switch
+  and reset as `CommandOutcome`, a done switch's `SwitchResult`), `SceneWrites` (each write's outcome
+  to the drafts and thumbnails, Save All, Apply) and `SceneSession` (one open scene's Save, Rename,
+  Discard Mine, Revert, Versions, Apply and Reset, and its `EditorNote`). The helper: `HelperLocation`,
   `HelperProcess` (`FoundationHelperLauncher`, `ChunkChannel`, `LineSplitter`), `HelperFrame`,
   `RenderHelper` (the actor), `RenderQueue` (three lanes: canvas, library, thumbnails, in that
   order; 2026-11-07, `library-render`), `Renderer` (phases). Drawing:
@@ -112,7 +128,8 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
 - `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable
   fields as optional for the generator (`commands.md`); `refresh-render-bundle.sh`, which mirrors
   audio-vue's render bundle and builds the Python runtime into `local/`, and `embed-render-runtime.sh`,
-  the app target's build phase that copies both into the app (`scene-render`, 2026-11-07).
+  the app target's build phase that refreshes the mirror and copies both into the app, on every
+  build (`scene-render`, 2026-11-07; `track-audio-vue`, 2026-11-08).
 - `local/` (ignored by git): `render-bundle/`, the mirror of audio-vue's `local/render-bundle/`;
   `python-runtime/`, the relocatable CPython with the bundle's libraries; `python-downloads/`.
 - The boundaries are held by `Tests/ConsoleCoreTests/BoundaryTests.swift`, which reads source text:

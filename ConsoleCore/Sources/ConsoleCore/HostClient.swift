@@ -53,6 +53,25 @@ public enum HostFailure: Error, Sendable, Equatable {
     case unknownClient
     /// The host holds no scene or image by the id the request named.
     case notFound
+    /// A write named a base revision the document has moved on from, which is now `currentRev`.
+    case stale(currentRev: Int)
+    /// The host refused a document as invalid, with every failure it found.
+    case invalid([DocumentFailure])
+    /// The host refused the request, saying why in words for a person, such as a delete of the
+    /// scene on screen.
+    case conflict(String)
+}
+
+/// One thing wrong with a document the host refused: where, the empty place being the document
+/// itself, and what.
+public struct DocumentFailure: Sendable, Equatable {
+    public let place: String
+    public let message: String
+
+    public init(place: String, message: String) {
+        self.place = place
+        self.message = message
+    }
 }
 
 /// Reads a host agent over its API, through the client generated from the saved contract (design

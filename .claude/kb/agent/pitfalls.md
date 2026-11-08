@@ -220,3 +220,48 @@ A command-line build with `-derivedDataPath` deletes
 `AudioVueConsole.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`, the committed
 project as much as an edited one (measured). Restore it with `git checkout --` after such a build,
 and never commit its deletion.
+
+## An OpenSpec MODIFIED block cannot drop a scenario (2026-11-07)
+
+`openspec validate --strict` refuses a MODIFIED requirement that omits a scenario the standing spec
+has, because archive will not drop it. To retire a case, keep the scenario's name and rewrite it to
+say what happens now. MODIFIED against a spec another open change adds is only an INFO until that
+change is archived; archiving out of order fails.
+
+## A layout's card ids belong to one parse (2026-11-07)
+
+`LaidOutScene.init` gives every card a fresh `UUID`, and `doc(for:)` finds each card's entry by that
+id. A layout paired with another parse of the same document finds no entries, and every card is
+written back as `card` and its cells alone, losing its settings (`scene-save` alignment F1). Turn a
+layout back into a document only through the parse it came from: a `Draft` keeps both. A scene read
+again after a save takes the saved layout's ids in order (`LaidOutScene(_:defaultGrid:ids:)`), so an
+open editor keeps pairing; a version loaded from Versions is a new parse, so the editor's undo is
+cleared (`SceneEditor.replace(with:)`).
+
+## The compiler gives up on a closure ternary in a view's modifiers (2026-11-07)
+
+`cond ? { … } : nil` passed inline to a modifier or initialiser in a long SwiftUI body made Xcode
+fail with "Failed to produce diagnostic for expression" and no location inside the body (measured
+twice: `SceneEditorView`, `PanelPage`). Move the closure-valued argument into a named property.
+
+## The panel's host can lack a route the saved contract has (2026-11-08)
+
+The contract is regenerated from `../audio-vue`'s source, and the panel runs whatever host was last
+deployed to it. Until 2026-11-08 the app let such a host through on the same
+major, and a missing route reached it as an undocumented 404 ("answered in a way this app didn't
+expect"). Now the connect refuses any host not at the saved contract's version, saying which. Check without a token or side effects: a GET on a POST route answers 405
+where the route exists and 404 where it does not (`curl -o /dev/null -w '%{http_code}'
+http://audio-vue.local:19200/v1/commands/<name>`). The fix is deploying audio-vue to the panel. The card code
+is the mirror image of this: the panel runs its last deploy's, the app the checkout's at its last
+build.
+
+## `windowToolbarLabelStyle(_:)` with a binding does not apply the stored style (2026-11-08)
+
+Measured on macOS 27.2 with the debugger (`window.toolbar.displayMode`): bound to an `@AppStorage`
+`ToolbarLabelStyle` defaulting to `.titleAndIcon`, the toolbar opened icon-only, and SwiftUI wrote
+`.iconOnly` (stored as 7) back into the default, with or without `.toolbar(id:)`. The `fixed:` form
+does set the mode, live as its value changes. So the app keeps its own `showsButtonNames` flag,
+passes `fixed: showsButtonNames ? .titleAndIcon : .iconOnly`, and offers View ▸ Show Button Names,
+since a fixed style takes the toolbar's own menu choice away. To read the mode without a screenshot
+(the agent may not capture windows), run with the debugger and print
+`NSApplication.sharedApplication.windows.firstObject.toolbar.displayMode` (1 icon and label, 2 icon).
