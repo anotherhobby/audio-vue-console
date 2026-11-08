@@ -80,3 +80,10 @@ run passed every item after deploying audio-vue to the panel.
 - A true-size view needs a diagonal the user enters in the Panel window, with a mm/inch choice, since
   a display's EDID can lie (the maintainer's panel claims 12.3 inches and is nearly 10). Not yet
   planned.
+
+## Scene saving (2026-11-07)
+
+Planned and aligned as `openspec/changes/scene-save`, not built; build it after `library-render` is
+archived, since both change `SceneStore` and `SceneEditorView`. Ruled (maintainer, 2026-11-07): a
+copy stays in the app until its first Save; Rename writes at once; a quit or panel switch with unsaved
+scenes asks Save All / Discard / Cancel. It also fixes kept edits losing card settings (alignment F1).
