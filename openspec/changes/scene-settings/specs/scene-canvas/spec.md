@@ -1,0 +1,38 @@
+# Spec Delta
+
+## MODIFIED Requirements
+
+### Requirement: Edits are kept until saved or discarded
+
+A scene's edits SHALL be kept while the app runs until they are saved or discarded, as
+`scene-saving` says: leaving the editor and opening the scene again SHALL show them, and so SHALL
+the scene's thumbnail. A kept edit SHALL keep each card's entry from the document it was made from,
+so every part of a card's entry but its cells, its group and the settings the user changed stays as
+the host gave it, and every scene setting the user did not change stays as the host gave it.
+
+Source: `product.md`: saves are explicit. Decision (maintainer, 2026-11-07): unsaved edits are asked
+about before a quit or a switch of panel. Decision (maintainer, 2026-11-08): card settings are
+edited in the inspector (`card-settings`), and so are scene settings (`scene-settings`).
+
+#### Scenario: Reopening a scene
+
+- **WHEN** the user moves a card, goes back to the gallery and opens the scene again
+- **THEN** the card is where it was moved to, and the gallery thumbnail shows it there
+
+#### Scenario: Reopening keeps card settings
+
+- **WHEN** a card carries settings of its own, and the user moves another card, goes back to the
+  gallery and opens the scene again
+- **THEN** the first card is drawn with its settings, as before the move
+
+#### Scenario: Reopening keeps a changed setting
+
+- **WHEN** the user changes a card's setting, goes back to the gallery and opens the scene again
+- **THEN** the card shows the changed setting in the inspector and is drawn with it, and its other
+  settings, plate colour and alternate are as the host gave them
+
+#### Scenario: Reopening keeps a changed scene setting
+
+- **WHEN** the user changes the scene's backdrop, goes back to the gallery and opens the scene again
+- **THEN** the backdrop is as changed on the canvas and the thumbnail, and every other block is as
+  the host gave it
