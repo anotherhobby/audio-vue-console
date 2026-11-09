@@ -133,9 +133,10 @@ of `openspec/changes/styles/handoff.md`). audio-vue's open `loudness-scope` chan
 `loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
 not placeable.
 
-## Input and calibration across rates (planned 2026-11-08)
+## Input and calibration across rates (archived 2026-11-09)
 
-`openspec/changes/input-and-rates` (valid, alignment done). Ruled (maintainer, 2026-11-08):
+Archived as `openspec/changes/archive/2026-11-09-input-and-rates`; its specs are now `capture-input`
+and `calibration-pass`, with `calibration-run`, `calibration-history` and `panel-window` updated. Ruled (maintainer, 2026-11-08):
 - There is no Input page. The Calibration page is renamed Capture and gains an Input section that
   sets `install.input.device` and `rate`, and Input leaves the sidebar.
 - The runs section is renamed Calibration History, and each run shows its rate (an audio-vue ask:
@@ -149,3 +150,13 @@ writes no install settings. Its handoff, `../audio-vue/input-and-rates-handoff.m
 2026-11-08, awaiting a reply. It asks for: `input.rate`'s rates declared in the schema; `rate` on
 `/v1/runs`; the install write's 409 refusal declared in the contract; and other-rate report
 wording.
+Built 2026-11-08. audio-vue answered both handoffs the same day (its `input-and-rates`, API 2.7.0,
+schema 6, deployed to the proving host): the rates as an integer `enum`, `rate` on each run, the
+install 409 as `Stale | Refusal`, and `GET /v1/calibration`, which also answers
+`scene-settings-handoff.md`. Read live 2026-11-08: the panel is installed at 96 kHz on
+`hw:CARD=m2x4HD,DEV=0`, calibrated at 96 kHz only. The maintainer ran a pass of every rate (2026-11-09): five runs
+completed, each with its report and rate, starting 27-28 s apart (render, settle, arm, play; about
+2.5 min for five, as the maintainer expected). Afterwards `/v1/calibration` listed all five rates
+calibrated for the m2x4HD, and once the hold ended the panel captured at its installed 96 kHz. Ruled the same day: after a run the Input section words
+the panel's hold (the last run's rate until audio returns) and offers Return to Scene, the panel's
+cancel, which keeps the record (task 4.6, design D11). Rate changes from the Input section work on the panel (2026-11-09).

@@ -25,16 +25,13 @@ page is renamed Capture.
 
 ### Requirement: The page lists the host's runs
 
-The page SHALL list the host's calibration runs under Calibration History, newest first, each by
+The page SHALL list the host's calibration runs under Calibration History, newest first, each with
 its date and time in the Mac's time zone, its kind (a characterization as Calibration +
-Characterization), the rate it captured at, and whether it has a report. A run the host gives no
-rate for SHALL show `—` for it. The list SHALL be read when the page opens and when a run ends, and
-SHALL show with the panel down.
+Characterization), its rate and whether it has a report. It SHALL read them when the page opens and
+when a run ends, and show them with the panel down.
 
-Source: audio-vue `control-api`, "Calibration runs are served from their files". Decision
-(maintainer, 2026-11-08): the runs live on this page, with each run's kind. Decision (maintainer,
-2026-11-08): each run shows its rate, under Calibration History. audio-vue `calibration-record`: a
-record carries the rate it was captured at.
+Source: audio-vue `control-api`, "Calibration runs are served from their files";
+`calibration-record`. Decisions (maintainer, 2026-11-08).
 
 #### Scenario: Runs with the panel stopped
 

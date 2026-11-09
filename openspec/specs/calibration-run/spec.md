@@ -9,21 +9,21 @@ file comes from, the order of its steps, how it is followed and cancelled, and w
 
 ### Requirement: Calibrate is offered only where a run can work
 
-The Calibration page SHALL offer Calibrate… while the app is paired and the panel is up, and no
-run is under way. Otherwise it SHALL be disabled, saying why. The page SHALL say that calibration plays
+The Capture page SHALL offer Calibrate… while the app is paired, the panel is up and no run is
+under way, and otherwise SHALL disable it, saying why. The page SHALL say that calibration plays
 from this Mac and works only from the machine whose output feeds the panel.
 
-Source: `product.md`, "Calibration": the app can calibrate only from the machine feeding the panel,
-and has to say so. audio-vue `control-commands`: an arm needs a running panel.
+Source: `product.md`, "Calibration": the app calibrates only from the machine feeding the panel,
+and says so. audio-vue `control-commands`: an arm needs a running panel.
 
 #### Scenario: The panel is down
 
-- **WHEN** the Calibration page shows a paired host whose panel is down
+- **WHEN** the Capture page shows a paired host whose panel is down
 - **THEN** Calibrate… is disabled and says the panel is not running
 
 #### Scenario: A panel up and drawing
 
-- **WHEN** the Calibration page shows a paired host whose panel is up
+- **WHEN** the Capture page shows a paired host whose panel is up
 - **THEN** Calibrate… is enabled, beside the note that it plays from this Mac
 
 ### Requirement: A run names the output device feeding the panel
@@ -79,11 +79,13 @@ Source: Decision (maintainer, 2026-11-08), with the wording the maintainer gave.
 
 ### Requirement: The file and the arm state the same run
 
-The file played SHALL be rendered for the run's kind at the panel's installed capture rate, as the
-host's install settings give it. The arm SHALL state the same kind and rate.
+The file played SHALL be rendered for the run's kind at the run's rate: the panel's installed
+capture rate, as the host's install settings give it, or in a pass at every rate the rate the pass
+is on (`calibration-pass`). The arm SHALL state the same kind and rate.
 
-Source: Decision (maintainer, 2026-11-08). audio-vue `calibration-stimulus`, "A calibration
-captures at the rate it calibrates"; `calibration-lifecycle`, "An arm is for one kind of run".
+Source: Decisions (maintainer, 2026-11-08), a pass included. audio-vue `calibration-stimulus`, "A
+calibration captures at the rate it calibrates"; `calibration-lifecycle`, "An arm is for one kind
+of run".
 
 #### Scenario: A characterization at the installed rate
 
@@ -101,6 +103,12 @@ captures at the rate it calibrates"; `calibration-lifecycle`, "An arm is for one
 
 - **WHEN** the host's install settings name no capture rate
 - **THEN** the run uses the default rate the host's settings schema declares
+
+#### Scenario: A rate of a pass
+
+- **WHEN** a pass at every rate reaches 44 100 Hz on a panel installed at 96 000 Hz
+- **THEN** a calibration file is rendered and played at 44 100 Hz, and the arm states a calibration
+  at 44 100 Hz
 
 ### Requirement: The stimulus is rendered from the code the panel runs
 
@@ -207,15 +215,21 @@ record and gives the panel back.
 
 The page SHALL take a run's ending from the ended calibration the panel's state names for this
 run's arm, and SHALL say whether it completed, failed or expired. A completed run SHALL open its
-report, and say where it cannot apply or its report was not written. A failed run SHALL say why.
+report, unless it is a rate of a pass, and say where it cannot apply or its report was not written.
+A failed run SHALL say why.
 
-Source: Decision (maintainer, 2026-11-08). audio-vue's `calibration-from-the-app` (planned):
-`control-state` names the ended calibration by arm; a failed run writes no record.
+Source: Decision (maintainer, 2026-11-08). audio-vue `control-state`: the ended calibration, by
+arm; a failed run writes no record. `calibration-pass`: no report opens by itself.
 
 #### Scenario: A run that completes
 
 - **WHEN** the panel's state names the run as completed
 - **THEN** the page says the run completed and opens its report
+
+#### Scenario: A rate of a pass that completes
+
+- **WHEN** the panel's state names a pass's 48 kHz run as completed
+- **THEN** the pass keeps it as completed and opens no report
 
 #### Scenario: A completed run not applied
 

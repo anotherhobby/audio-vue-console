@@ -159,3 +159,32 @@ Source: audio-vue `settings-store`: a chain write is refused while a calibration
 - **WHEN** another client arms the panel just as the user chooses a rate, and the host refuses the
   write
 - **THEN** the section shows the host's reason and the installed rate
+
+### Requirement: The hold after a calibration is explained
+
+While the panel holds the calibration scene after a run has ended, the Input section SHALL say that
+the panel shows the last run's result at the rate it captures at, and returns to its scene and
+installed input when audio plays. The device and rate SHALL stay disabled.
+
+Source: audio-vue `calibration-lifecycle`, "A finished run holds the screen until audio returns".
+Decision (maintainer, 2026-11-09).
+
+#### Scenario: After a pass of every rate
+
+- **WHEN** a pass has ended with its 192 kHz run, the panel installed at 96 kHz and no audio playing
+- **THEN** the section says the panel shows the last run's result at 192 kHz and returns to its
+  input when audio plays, with the device and rate disabled
+
+### Requirement: Return to Scene ends the hold
+
+During the hold, the Input section SHALL offer Return to Scene, which sends the panel a cancel. The
+hold SHALL end with the run's record kept. A cancel the panel refuses SHALL show its words.
+
+Source: audio-vue `calibration-lifecycle` (a cancel ends the hold) and `control-commands` (a cancel
+during the hold keeps the record). Decision (maintainer, 2026-11-09).
+
+#### Scenario: Returning to the scene
+
+- **WHEN** the user chooses Return to Scene during the hold
+- **THEN** the panel is sent a cancel, the hold ends with the record kept, and the device and rate
+  can be chosen again

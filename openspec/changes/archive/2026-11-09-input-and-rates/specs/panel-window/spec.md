@@ -8,11 +8,9 @@ The sidebar SHALL list Panel, Scenes, Capture, Display and History, and no Acces
 picker. The pages other than Panel, Scenes and Capture are held to no requirement here, and keep
 their sample values until their own changes build them.
 
-Source: Decision (maintainer, 2026-11-05): Access goes; the other pages can wait, and sample data is
-fine before the project's release. Decision (maintainer, 2026-11-06): Overview is renamed Panel, and
-the picker moves to the Panel page. Decision (maintainer, 2026-11-08): Calibration is built.
-Decision (maintainer, 2026-11-08): Calibration is renamed Capture and holds the input, so Input
-leaves the sidebar.
+Source: Decisions (maintainer): Access goes, and the other pages may show sample data until built
+(2026-11-05); Overview is renamed Panel, with the picker (2026-11-06); Capture holds Calibration
+and the input (2026-11-08).
 
 #### Scenario: The sidebar
 

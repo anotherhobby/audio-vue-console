@@ -188,6 +188,18 @@ Why: the user picks the input where they calibrate it, and the page's name cover
 2026-11-08). Alternative: keep the Input sidebar item as a sketch for the channel pair and format.
 That leaves two places for one block's settings.
 
+### D11. The hold after a run is explained, and Return to Scene ends it (maintainer, 2026-11-09)
+
+After a run ends, the panel keeps the calibration scene, at that run's rate, until audio returns,
+and a chain write is refused meanwhile (`calibration_owns_panel`). After a pass the panel stays at
+the last rate (192 kHz) with the Input menus disabled. The section words the hold, with the live
+capture rate, in place of "A calibration is running", and Return to Scene sends the panel's cancel
+(`PanelInput.endHold()`), which ends the hold and keeps the record. The hold is the live lifecycle
+at an ended word (`done`, `failed`, `expired`) while no pass of this app is under way.
+
+Alternative: send the cancel at the end of every pass. It takes the result off the panel's screen
+before the user has seen it.
+
 ## Risks / Trade-offs
 
 - [A capture device that cannot open a rate makes that rate expire after the arm's deadline, and a

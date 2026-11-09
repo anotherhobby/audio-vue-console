@@ -4,13 +4,12 @@
 
 ### Requirement: Calibrate is offered only where a run can work
 
-The Capture page SHALL offer Calibrate… while the app is paired and the panel is up, and no
-run is under way. Otherwise it SHALL be disabled, saying why. The page SHALL say that calibration plays
+The Capture page SHALL offer Calibrate… while the app is paired, the panel is up and no run is
+under way, and otherwise SHALL disable it, saying why. The page SHALL say that calibration plays
 from this Mac and works only from the machine whose output feeds the panel.
 
-Source: `product.md`, "Calibration": the app can calibrate only from the machine feeding the panel,
-and has to say so. audio-vue `control-commands`: an arm needs a running panel. Decision (maintainer,
-2026-11-08): the Calibration page is renamed Capture.
+Source: `product.md`, "Calibration": the app calibrates only from the machine feeding the panel,
+and says so. audio-vue `control-commands`: an arm needs a running panel.
 
 #### Scenario: The panel is down
 
@@ -28,9 +27,9 @@ The file played SHALL be rendered for the run's kind at the run's rate: the pane
 capture rate, as the host's install settings give it, or in a pass at every rate the rate the pass
 is on (`calibration-pass`). The arm SHALL state the same kind and rate.
 
-Source: Decision (maintainer, 2026-11-08). audio-vue `calibration-stimulus`, "A calibration
-captures at the rate it calibrates"; `calibration-lifecycle`, "An arm is for one kind of run".
-Decision (maintainer, 2026-11-08): calibrate at every rate in one pass.
+Source: Decisions (maintainer, 2026-11-08), a pass included. audio-vue `calibration-stimulus`, "A
+calibration captures at the rate it calibrates"; `calibration-lifecycle`, "An arm is for one kind
+of run".
 
 #### Scenario: A characterization at the installed rate
 
@@ -62,9 +61,8 @@ run's arm, and SHALL say whether it completed, failed or expired. A completed ru
 report, unless it is a rate of a pass, and say where it cannot apply or its report was not written.
 A failed run SHALL say why.
 
-Source: Decision (maintainer, 2026-11-08). audio-vue's `calibration-from-the-app` (planned):
-`control-state` names the ended calibration by arm; a failed run writes no record. `calibration-pass`:
-a pass opens no report by itself.
+Source: Decision (maintainer, 2026-11-08). audio-vue `control-state`: the ended calibration, by
+arm; a failed run writes no record. `calibration-pass`: no report opens by itself.
 
 #### Scenario: A run that completes
 
