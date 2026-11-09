@@ -275,3 +275,21 @@ passes `fixed: showsButtonNames ? .titleAndIcon : .iconOnly`, and offers View â–
 since a fixed style takes the toolbar's own menu choice away. To read the mode without a screenshot
 (the agent may not capture windows), run with the debugger and print
 `NSApplication.sharedApplication.windows.firstObject.toolbar.displayMode` (1 icon and label, 2 icon).
+
+## A chain install write answers only after the panel has restarted (2026-11-08)
+
+`PUT /v1/install/{block}` with a chain change runs `tools/panel.py start` before answering: stop,
+start, and wait up to `START_S` (30 s) for the panel to leave `starting` (audio-vue
+`control_service/settings.py`, `put_install`). The client's usual 5 s limit timed out first, so the
+app kept the old value and revision while the host had stored the new one; the next write was then
+refused as stale and the reload showed the previous pick, which looked like a menu lagging one
+change behind (Measured: the input block's revisions on the proving host). The install write uses
+`HostClient`'s restart transport (60 s), and an unanswered write reads the block again. Read the
+host's revisions (`GET /v1/install/{block}/revisions`) before blaming the UI.
+
+## The core suite can hang on an occasional run (2026-11-08)
+
+`swift test --disable-xctest` sat idle (0% CPU, every thread waiting) on about 1 run in 10, on the
+committed code as well as with `input-and-rates` (Measured: 1 of 12 at `5a76c50`, 3 of 15 after).
+Not yet traced; a stack sample shows only suspended tasks. Kill it and run again, and run the suite
+in a loop with a time limit before calling a change flaky.

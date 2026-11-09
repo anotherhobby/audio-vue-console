@@ -129,7 +129,16 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   write that changes `analysis:` says so.
 - **Install settings** (`/v1/install/{block}`): a document per block, stored only once a client writes
   it, defaults until then. A non-chain write applies at the panel's next start. A chain write names
-  the keys, restarts a running panel and is refused while a calibration has it.
+  the keys, restarts the panel in every condition but `down`, and is refused while a calibration has
+  it. `PUT` takes `{doc, base_rev}` (0 for a block never written), answers only once a restart it
+  causes has finished (up to about 30 s; `pitfalls.md`), and gives `InstallWritten`:
+  `rev`, `applies`, `chain_changed` and `calibration` (the host's words on what the chain change does
+  to calibration). Its 409 is `Stale | Refusal`: a stale write carries `current_rev`, the refusal
+  during a calibration only `detail` (a stale body also reads as a `Refusal`, so check `Stale`
+  first). The console writes only `input`'s `device` and `rate`
+  (`PanelInput`), keeping the block's other keys.
+- **Capture devices** (`GET /v1/host/devices`): ALSA names, with a `reason` where the list is empty.
+  `input.device` unset is the host's default device.
 - **Revisions**: each scene and install block has its own revision. A write names its base revision,
   and a stale one is refused with the current revision. 20 earlier revisions are kept
   (`KEPT_REVISIONS`, `src/host_store.py`); a revert stores one as a new revision. `/validate` routes
@@ -196,7 +205,17 @@ output's rate with the bundled `cal-play`, arms, and plays once the arm is done 
   calibration's rates included), or `error`. The file is byte-identical to `tools/calibrate.py
   --write`'s. The console offers Calibrate… only while its bundle's digest is the panel's.
 - **The rate** is the installed capture rate: `install.input.rate`, else its schema `default`. The
-  live `capture.rate_hz` is not it where a scene captures at its own rate.
+  live `capture.rate_hz` is not it where a scene captures at its own rate. An arm stating another
+  `file_rate` makes the panel capture at it, and the installed rate returns once the hold after the
+  run ends; an arm during that hold starts a new run at its own rate. So a pass of every rate
+  (`CalibrationPass`) arms rate after rate and writes no install settings. The rates are the
+  schema's `install.input.rate` `enum` (scenes' `analysis.capture_rate` has the same); validation
+  refuses any other, and a stored install at another rate opens no capture.
+- **`GET /v1/calibration`** gives each rate holding a valid record for the stored `input.device`:
+  `{rate, run_id, status}`, `status` `calibrated` or `stale` (still applies), lowest first, a rate
+  with none left out. Read from the records by `record.active`'s own rule, so it answers with the
+  panel down. The Input section marks rates from it; `scene-settings` will share
+  `HostClient.calibratedRates`.
 - **`POST /v1/commands/arm`** takes `{"stated": {"kind", "file_rate", ...}}` and answers
   `ArmOutcome`; a done one gives `arm`, the arm's id. Refused while another arm listens, a run is
   under way, an arm is landing, the panel replays a clip or capture has stopped, or an update runs.
@@ -212,5 +231,5 @@ output's rate with the bundled `cal-play`, arms, and plays once the arm is done 
   `applicable`, `reason`. A client matches its run by `arm`. Every `failed` run has no record; a
   saved record ends `done`, its `reason` saying a stimulus was missing or its report failed.
 - **`GET /v1/runs`** lists `run_id`, `has_report`, `kind` and `applicable` (fit to apply when
-  written), newest first, with the panel down too; **`GET /v1/runs/{id}/report`** is the HTML, self
+  written) and `rate` (null for older records), newest first, with the panel down too; **`GET /v1/runs/{id}/report`** is the HTML, self
   contained, with no links. No run's audio is served; `make cal-fetch-audio` fetches it.

@@ -40,10 +40,13 @@ actor FakeTransport: ClientTransport {
         static let switchScene = Route("POST", "/v1/commands/switch")
         static let reset = Route("POST", "/v1/commands/reset")
         static let install = Route("GET", "/v1/install")
+        static func writeInstall(_ block: String) -> Route { Route("PUT", "/v1/install/\(block)") }
+        static let devices = Route("GET", "/v1/host/devices")
         static let schema = Route("GET", "/v1/schema")
         static func image(_ id: String) -> Route { Route("GET", "/v1/images/\(id)") }
         static let cardManifest = Route("GET", "/v1/cards/manifest")
         static let runs = Route("GET", "/v1/runs")
+        static let calibrated = Route("GET", "/v1/calibration")
         static func report(_ id: String) -> Route { Route("GET", "/v1/runs/\(id)/report") }
         static let arm = Route("POST", "/v1/commands/arm")
         static let cancel = Route("POST", "/v1/commands/cancel")

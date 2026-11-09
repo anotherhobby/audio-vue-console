@@ -6,11 +6,26 @@ import Testing
 /// `scene-canvas` and `scene-layout`: the cards and minimums the schema declares, their categories,
 /// and the grid's defaults, read from a trimmed copy of audio-vue's exported schema.
 struct SchemaFactsTests {
-    private static func facts() throws -> SchemaFacts {
+    private static func schema() throws -> JSONValue {
         let file = URL(filePath: #filePath).deletingLastPathComponent()
             .appending(path: "Fixtures/schema-trimmed.json")
-        let schema = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: file))
-        return try #require(SchemaFacts(schema: schema))
+        return try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: file))
+    }
+
+    private static func facts() throws -> SchemaFacts {
+        try #require(SchemaFacts(schema: schema()))
+    }
+
+    /// `capture-input`: the rates come from the host's schema, lowest first.
+    @Test func theInputsRatesAsTheHostDeclaresThem() throws {
+        #expect(try SchemaFacts.inputRates(Self.schema()) == [44100, 48000, 88200, 96000, 192000])
+    }
+
+    @Test func aRateWithNoChoicesDeclaresNoRates() {
+        let rate = JSONValue.object(["type": .string("integer"), "default": .integer(48_000)])
+        let input = JSONValue.object(["properties": .object(["rate": rate])])
+        let schema = JSONValue.object(["$defs": .object(["install.input": input])])
+        #expect(SchemaFacts.inputRates(schema) == nil)
     }
 
     @Test func theGridsDefaults() throws {

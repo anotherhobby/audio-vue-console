@@ -8,11 +8,11 @@ import ConsoleCore
     /// Runs `proceed` at once with no run under way; otherwise asks, and on going on cancels the run
     /// first.
     static func settle(
-        _ session: CalibrationSession?, before action: String, then proceed: () -> Void
+        _ pass: CalibrationPass?, before action: String, then proceed: () -> Void
     ) {
-        guard let session, session.isUnderWay else { return proceed() }
+        guard let pass, pass.isUnderWay else { return proceed() }
         guard confirm(action) else { return }
-        session.cancel()
+        pass.cancel()
         proceed()
     }
 
@@ -34,11 +34,11 @@ import ConsoleCore
     private static let pollStep = Duration.milliseconds(pollStepMilliseconds)
     private static let pollStepMilliseconds: Int64 = 50
 
-    /// Waits for the session's cancel to reach the panel, for at most `limit`.
-    static func waitForEnd(of session: CalibrationSession, limit: Duration = cancelWait) async {
+    /// Waits for the pass's cancel to reach the panel, for at most `limit`.
+    static func waitForEnd(of pass: CalibrationPass, limit: Duration = cancelWait) async {
         let step = pollStep
         var waited = Duration.zero
-        while session.isUnderWay, waited < limit {
+        while pass.isUnderWay, waited < limit {
             do {
                 try await Task.sleep(for: step)
             } catch {

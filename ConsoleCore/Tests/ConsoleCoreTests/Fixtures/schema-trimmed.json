@@ -305,6 +305,82 @@
    ],
    "x-placeable": true,
    "x-sizing": "free"
+  },
+  "install.input": {
+   "additionalProperties": false,
+   "properties": {
+    "device": {
+     "type": "string",
+     "x-class": "chain",
+     "x-help": "The capture device, as ALSA names it; unset uses the default device.",
+     "x-label": "Device",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "fmt": {
+     "default": "S16_LE",
+     "enum": [
+      "S16_LE",
+      "S32_LE"
+     ],
+     "x-class": "chain",
+     "x-help": "The device's sample format: S16_LE, or S32_LE for 24 bits in 32.",
+     "x-label": "Sample format",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "pair": {
+     "default": [
+      0,
+      1
+     ],
+     "items": {
+      "minimum": 0,
+      "type": "integer"
+     },
+     "maxItems": 2,
+     "minItems": 2,
+     "type": "array",
+     "x-class": "chain",
+     "x-help": "Which two of the stream's channels are measured, as left and right.",
+     "x-label": "Channel pair",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    },
+    "rate": {
+     "default": 48000,
+     "enum": [
+      44100,
+      48000,
+      88200,
+      96000,
+      192000
+     ],
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "chain",
+     "x-help": "The rate the panel captures at.",
+     "x-label": "Rate",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": "Hz"
+    },
+    "stream_channels": {
+     "default": 2,
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "chain",
+     "x-help": "How many channels the device streams; `pair` picks the two measured.",
+     "x-label": "Stream channels",
+     "x-live": false,
+     "x-standard": null,
+     "x-unit": ""
+    }
+   },
+   "type": "object"
   }
  },
  "$schema": "https://json-schema.org/draft/2020-12/schema",

@@ -125,6 +125,25 @@ struct HostClientTests {
         }
     }
 
+    /// `capture-input`: the host's capture devices as ALSA names them.
+    @Test func theCaptureDevicesAreRead() async throws {
+        let body = #"{"devices": ["hw:CARD=D10s,DEV=0", "hw:CARD=Device,DEV=0"]}"#
+        let transport = FakeTransport([.devices: .status(200, body)])
+        let read = try await HostClient(transport: transport).captureDevices(
+            at: try #require(address), token: HostToken("secret"))
+        #expect(read.devices == ["hw:CARD=D10s,DEV=0", "hw:CARD=Device,DEV=0"])
+        #expect(read.reason == nil)
+    }
+
+    @Test func anEmptyDeviceListCarriesItsReason() async throws {
+        let body = #"{"devices": [], "reason": "arecord is not installed"}"#
+        let transport = FakeTransport([.devices: .status(200, body)])
+        let read = try await HostClient(transport: transport).captureDevices(
+            at: try #require(address), token: HostToken("secret"))
+        #expect(read.devices.isEmpty)
+        #expect(read.reason == "arecord is not installed")
+    }
+
     @Test func aTokenHidesItsValueWhenPrinted() {
         #expect(!"\(HostToken("secret"))".contains("secret"))
     }

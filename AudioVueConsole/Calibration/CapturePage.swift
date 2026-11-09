@@ -1,15 +1,17 @@
 import ConsoleCore
 import SwiftUI
 
-/// The Calibration page: the calibration in force from the live state, Calibrate… and the run
-/// under way, and the host's runs, newest first (`calibration-run`, `calibration-history`). The
-/// runs are read when the page opens and when a run ends, whose report then opens. The models do
-/// the work, and this only shows them.
-struct CalibrationPage: View {
+/// The Capture page: the panel's input, the calibration in force from the live state, Calibrate…
+/// and the pass under way, and the host's runs, newest first (`capture-input`, `calibration-run`,
+/// `calibration-pass`, `calibration-history`). The input and the runs are read when the page opens,
+/// and the runs again as each rate ends. A one-rate pass then opens its report; a pass of every
+/// rate ends with its summary and opens none. The models do the work, and this only shows them.
+struct CapturePage: View {
     @Bindable var connection: HostConnection
     let live: LiveState?
     let renderer: Renderer
-    let session: CalibrationSession?
+    let pass: CalibrationPass?
+    @State private var input: PanelInput?
     @State private var runs: CalibrationRuns?
     /// The run whose report is open.
     @State private var opened: RunEntry?
@@ -17,26 +19,47 @@ struct CalibrationPage: View {
 
     var body: some View {
         NavigationStack {
-            CalibrationForm(
+            CaptureForm(
                 rows: CalibrationRows(state: connection.isPaired == true ? live?.state : nil),
                 runs: runs?.runs ?? [], listing: listing, open: { opened = $0 }
             ) {
-                CalibrateSection(readiness: readiness, session: session) { isAsking = true }
+                InputSection(
+                    input: input, isPanelDown: live?.state?.condition == .down, lock: inputLock)
+            } calibrate: {
+                CalibrateSection(
+                    readiness: readiness, pass: pass, runs: runs?.runs ?? [],
+                    open: { opened = $0 }
+                ) { isAsking = true }
             }
-            .navigationTitle("Calibration")
+            .navigationTitle("Capture")
             .navigationDestination(item: $opened) { RunReport(run: $0, runs: runs) }
         }
         .sheet(isPresented: $isAsking) { sheet }
         .task(id: connection.isPaired) {
+            input = connection.makePanelInput()
             runs = connection.makeCalibrationRuns()
+            await input?.load()
             await runs?.load()
         }
-        .onChange(of: session?.ending) { _, ending in Task { await ended(ending) } }
+        .onChange(of: pass?.session.ending) { _, ending in Task { await ended(ending) } }
     }
 
     @ViewBuilder private var sheet: some View {
         if case .ready(let rate) = readiness {
-            CalibrateSheet(rate: rate, hostID: connection.host?.id) { start($0, on: $1) }
+            CalibrateSheet(rate: rate, hostRates: input?.rates, hostID: connection.host?.id) {
+                start($0, $1, on: $2)
+            }
+        }
+    }
+
+    /// Whether a calibration has the panel: this app's pass, any run the panel reports, or the
+    /// hold after a run, which the panel reports at an ended word (design D11).
+    private var inputLock: InputLock {
+        if pass?.isUnderWay == true { return .calibrating }
+        switch live?.state?.calibrationLifecycle {
+        case nil, .off?: return .free
+        case .done?, .failed?, .expired?: return .holding(rate: live?.state?.rateHz)
+        case .waiting?, .arming?, .running?, .analysing?: return .calibrating
         }
     }
 
@@ -44,19 +67,19 @@ struct CalibrationPage: View {
         CalibrationReadiness(
             paired: connection.isPaired == true, condition: live?.state?.condition,
             verdict: renderer.verdict, installedRate: runs?.installedRate,
-            underWay: session?.isUnderWay ?? false)
+            underWay: pass?.isUnderWay ?? false)
     }
 
-    private func start(_ run: StatedRun, on device: OutputDevice) {
+    private func start(_ kind: StatedRun.Kind, _ plan: PassPlan, on device: OutputDevice) {
         guard let host = connection.calibrationHost() else { return }
-        session?.start(run, device: device.name, host: host)
+        pass?.start(kind: kind, plan: plan, device: device.name, host: host)
     }
 
-    /// Reads the runs again once a run ends, and opens a completed run's report.
+    /// Reads the runs again once a rate ends, and opens a one-rate pass's completed report.
     private func ended(_ ending: CalibrationSession.Ending?) async {
         guard let ending else { return }
         await runs?.load()
-        guard case .completed(let runID?, _, _) = ending else { return }
+        guard pass?.isMultiRate == false, case .completed(let runID?, _, _) = ending else { return }
         opened = runs?.runs.first { $0.id == runID }
     }
 
@@ -71,7 +94,7 @@ struct CalibrationPage: View {
     }
 }
 
-/// Why a read from the host failed, in words for the Calibration page.
+/// Why a read from the host failed, in words for the Capture page.
 enum ReadFailureText {
     static func text(_ failure: HostFailure) -> String {
         switch failure {
@@ -93,18 +116,21 @@ enum RunsListing: Equatable {
     case failed(String)
 }
 
-/// The Calibration page for given values, so previews can show each.
-struct CalibrationForm<Calibrate: View>: View {
+/// The Capture page for given values, so previews can show each.
+struct CaptureForm<Input: View, Calibrate: View>: View {
     let rows: CalibrationRows
     let runs: [RunEntry]
     let listing: RunsListing
     /// Opens a run's report.
     var open: (RunEntry) -> Void = { _ in }
-    /// Calibrate…, or the run under way.
+    /// The Input section.
+    @ViewBuilder var input: Input
+    /// Calibrate…, or the pass under way.
     @ViewBuilder var calibrate: Calibrate
 
     var body: some View {
         Form {
+            input
             Section {
                 ForEach(rows.inForce.rows) { PanelRowView(row: $0) }
             } header: {
@@ -117,7 +143,9 @@ struct CalibrationForm<Calibrate: View>: View {
             } footer: {
                 Text(CalibrateSheet.whereItPlays)
             }
-            Section("Runs") { RunsList(runs: runs, listing: listing, open: open) }
+            Section("Calibration History") {
+                RunsList(runs: runs, listing: listing, open: open)
+            }
         }
         .formStyle(.grouped)
     }
@@ -151,7 +179,7 @@ struct RunsList: View {
     }
 }
 
-/// One run: when it started, its kind, and whether it has a report.
+/// One run: when it started, its kind and rate, and whether it has a report.
 struct RunRow: View {
     let run: RunEntry
 
@@ -164,7 +192,7 @@ struct RunRow: View {
             }
         } label: {
             Text(run.title)
-            Text(RunKindText.text(run.kind))
+            Text("\(RunKindText.text(run.kind)) · \(run.rate.map(RateText.text) ?? "—")")
         }
     }
 }
@@ -181,23 +209,38 @@ struct RunRow: View {
         case .success(let state): state
         case .failure: nil
         }
-    return CalibrationForm(
+    return CaptureForm(
         rows: CalibrationRows(state: state),
         runs: [
-            RunEntry(id: "2026-11-01T14-55-02Z", hasReport: true, kind: "calibration"),
-            RunEntry(id: "2026-10-25T23-16-08Z", hasReport: false, kind: "characterization"),
+            RunEntry(
+                id: "2026-11-01T14-55-02Z", hasReport: true, kind: "calibration", rate: 96_000),
+            RunEntry(
+                id: "2026-10-25T23-16-08Z", hasReport: false, kind: "characterization",
+                rate: 44_100),
             RunEntry(id: "manual-1", hasReport: true, kind: "calibration"),
         ],
         listing: .shown
     ) {
+        InputFields(
+            listing: .shown(
+                InputShown(
+                    choice: InputChoice(device: "hw:CARD=D10s,DEV=0", rate: 96_000),
+                    devices: ["hw:CARD=D10s,DEV=0"],
+                    rateChoices: [44_100, 48_000, 88_200, 96_000, 192_000])),
+            selection: .constant(InputChoice(device: "hw:CARD=D10s,DEV=0", rate: 96_000)),
+            lock: .free)
+    } calibrate: {
         Button("Calibrate…") {}
     }
-    .frame(width: 640, height: 560)
+    .frame(width: 640, height: 720)
 }
 
 #Preview("Not paired") {
-    CalibrationForm(rows: CalibrationRows(state: nil), runs: [], listing: .notPaired) {
-        CalibrateSection(readiness: .notReady("Pair with the panel to calibrate it."), session: nil)
+    CaptureForm(rows: CalibrationRows(state: nil), runs: [], listing: .notPaired) {
+        InputFields(
+            listing: .notPaired, selection: .constant(InputChoice(rate: 0)), lock: .free)
+    } calibrate: {
+        CalibrateSection(readiness: .notReady("Pair with the panel to calibrate it."), pass: nil)
     }
-    .frame(width: 640, height: 480)
+    .frame(width: 640, height: 520)
 }

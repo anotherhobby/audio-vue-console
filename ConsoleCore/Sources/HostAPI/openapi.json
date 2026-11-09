@@ -3,7 +3,7 @@
   "info": {
     "title": "audio-vue host agent",
     "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.6.0"
+    "version": "2.7.0"
   },
   "paths": {
     "/v1/version": {
@@ -719,6 +719,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Runs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/calibration": {
+      "get": {
+        "summary": "Calibrated",
+        "description": "Each capture rate holding a valid calibration for the installed device, with the\nrun whose record the panel applies there and whether it is stale, read from the\nrecords, so it answers with the panel down. A rate with none is left out.",
+        "operationId": "calibrated_v1_calibration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibratedRates"
                 }
               }
             }
@@ -2180,7 +2214,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Stale"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Stale"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Refusal"
+                    }
+                  ],
+                  "title": "Response 409 Write Install V1 Install  Block  Put"
                 }
               }
             },
@@ -2265,7 +2307,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Stale"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Stale"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Refusal"
+                    }
+                  ],
+                  "title": "Response 409 Revert Install V1 Install  Block  Revert Post"
                 }
               }
             },
@@ -2628,6 +2678,55 @@
         ],
         "title": "ArmOutcome",
         "description": "What became of an arm, and on a done one that the panel is listening."
+      },
+      "CalibratedRate": {
+        "properties": {
+          "rate": {
+            "type": "integer",
+            "title": "Rate",
+            "description": "The capture rate, in Hz."
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id",
+            "description": "The run whose record the panel applies at this rate."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "calibrated",
+              "stale"
+            ],
+            "title": "Status",
+            "description": "`stale` where the record is older than a record is trusted for; it still applies."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rate",
+          "run_id",
+          "status"
+        ],
+        "title": "CalibratedRate"
+      },
+      "CalibratedRates": {
+        "properties": {
+          "rates": {
+            "items": {
+              "$ref": "#/components/schemas/CalibratedRate"
+            },
+            "type": "array",
+            "title": "Rates",
+            "description": "Lowest rate first. Every rate with no valid record for the installed device is left out."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "rates"
+        ],
+        "title": "CalibratedRates"
       },
       "Calibration": {
         "properties": {
@@ -3697,6 +3796,11 @@
             "type": "boolean",
             "title": "Applicable",
             "description": "Whether the run's record could apply when it was written: false where its stimulus did not all arrive, so it is kept and never applied. Whether it is in force now is `state.sections.calibration.run_id`."
+          },
+          "rate": {
+            "type": "integer",
+            "title": "Rate",
+            "description": "The rate in Hz the record says the run captured at; none where it says none."
           }
         },
         "additionalProperties": true,

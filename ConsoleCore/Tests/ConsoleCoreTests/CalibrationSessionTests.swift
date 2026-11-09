@@ -87,10 +87,20 @@ final class ScriptedStimulus: StimulusSource {
         return false
     }
 
+    /// Whether the file is playing: the step says so, and the `play` call has launched and waits.
+    /// The step changes a moment before `cal-play` launches, so a test that acts on the player
+    /// waits for both.
+    static func isPlaying(_ session: CalibrationSession, on launcher: ScriptedPlayerLauncher)
+        -> Bool
+    {
+        isPlaying(session) && launcher.calls.last?.first == "play"
+            && launcher.players.last?.isWaiting == true
+    }
+
     @Test func theStepsGoInCalibrationsOrder() async throws {
         let rig = Self.rig()
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         #expect(rig.stimulus.runs == [Self.stated])
         let file = rig.stimulus.directory.appending(path: "stimulus.wav").path()
         #expect(rig.launcher.calls == [["rate", "D10s ", "96000"], ["play", "D10s ", file]])
@@ -122,7 +132,7 @@ final class ScriptedStimulus: StimulusSource {
     @Test func theStepFollowsThePanelOnceTheFileHasPlayed() async throws {
         let rig = Self.rig()
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         rig.session.observe(Self.state(.running))
         #expect(Self.isPlaying(rig.session))
         rig.launcher.players.last?.end(Self.done)
@@ -139,7 +149,7 @@ final class ScriptedStimulus: StimulusSource {
     @Test func endedWordsEndNothing() async throws {
         let rig = Self.rig()
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         for word in [CalibrationLifecycle.done, .off, .waiting, .off, .expired] {
             rig.session.observe(Self.state(word))
         }
@@ -150,7 +160,7 @@ final class ScriptedStimulus: StimulusSource {
     @Test func aCompletedRunEndsFromItsArmsEnding() async throws {
         let rig = Self.rig()
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         rig.session.observe(
             Self.state(.off, ended: EndedCalibration(arm: "a0", outcome: .done, runID: "old")))
         #expect(rig.session.isUnderWay)
@@ -164,7 +174,7 @@ final class ScriptedStimulus: StimulusSource {
     @Test func anExpiryWhilePlayingStopsThePlayer() async throws {
         let rig = Self.rig()
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         let reason = "no calibration file heard before the deadline"
         rig.session.observe(
             Self.state(.off, ended: EndedCalibration(arm: "a1", outcome: .expired, reason: reason)))
@@ -175,11 +185,46 @@ final class ScriptedStimulus: StimulusSource {
     @Test func aPlayerThatFailsSendsACancel() async throws {
         let rig = Self.rig([.arm: Self.armed, .cancel: .status(200, #"{"status": "done"}"#)])
         try Self.start(rig)
-        try await Self.waitUntil { Self.isPlaying(rig.session) }
+        try await Self.waitUntil { Self.isPlaying(rig.session, on: rig.launcher) }
         rig.launcher.players.last?.end(PlayerExit(status: 1, errorOutput: "device gone\n"))
         try await Self.waitUntil { rig.session.ending != nil }
         #expect(rig.session.ending == .playerFailed("device gone"))
         #expect(await rig.transport.requests(to: .cancel).count == 1)
+    }
+
+    /// Design D4: an awaited run returns its ending once the panel names its arm.
+    @Test func anAwaitedRunReturnsItsEnding() async throws {
+        let rig = Self.rig()
+        let host = CalibrationHost(
+            address: try #require(HostAddress(parsing: "audio-vue")), token: HostToken("secret"))
+        let session = rig.session
+        let running = Task { await session.run(Self.stated, device: "D10s ", host: host) }
+        try await Self.waitUntil { Self.isPlaying(session, on: rig.launcher) }
+        let ended = EndedCalibration(arm: "a1", outcome: .done, runID: "r1", applicable: true)
+        session.observe(Self.state(.done, ended: ended))
+        #expect(await running.value == .completed(runID: "r1", applicable: true, reason: nil))
+    }
+
+    /// Design D4: a pass starts its next rate as soon as `run` returns, so the stopped playback of a
+    /// run the panel ended has unwound by then, leaving `cal-play` free.
+    @Test func anAwaitedRunReturnsOnlyOnceItsPlaybackHasStopped() async throws {
+        let launcher = ScriptedPlayerLauncher(stopDelay: .milliseconds(20)) {
+            $0.first == "rate" ? Self.done : nil
+        }
+        let player = CalibrationPlayer(launcher: launcher)
+        let session = CalibrationSession(
+            player: player, stimulus: ScriptedStimulus(),
+            client: HostClient(transport: FakeTransport([.arm: Self.armed])))
+        let host = CalibrationHost(
+            address: try #require(HostAddress(parsing: "audio-vue")), token: HostToken("secret"))
+        for _ in 0..<3 {
+            let running = Task { await session.run(Self.stated, device: "D10s ", host: host) }
+            try await Self.waitUntil { Self.isPlaying(session, on: launcher) }
+            let ended = EndedCalibration(arm: "a1", outcome: .expired)
+            session.observe(Self.state(.off, ended: ended))
+            _ = await running.value
+            try await player.setRate(device: "D10s ", hz: 48_000)
+        }
     }
 
     @Test func aSecondStartWhileOneRunsIsRefused() async throws {

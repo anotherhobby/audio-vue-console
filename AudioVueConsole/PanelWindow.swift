@@ -4,8 +4,8 @@ import SwiftUI
 /// The app's one window for a panel, settings-style, with the panel picked at the top of the Panel
 /// page (`panel-window`). It connects at launch, watches the paired host's live state while it is
 /// open, and starts the renderer once paired. Opening a scene to edit collapses the sidebar so the
-/// editor gets the width. The pages other than Panel, Scenes and Calibration still show sample
-/// values, until their own changes build them.
+/// editor gets the width. The pages other than Panel, Scenes and Capture still show sample values,
+/// until their own changes build them.
 struct PanelWindow: View {
     /// The window's id, which the Window menu and the Dock bring it back by.
     static let windowID = "panel"
@@ -13,8 +13,9 @@ struct PanelWindow: View {
     @Bindable var connection: HostConnection
     let discovery: PanelDiscovery
     let renderer: Renderer
-    /// The app's calibration run, fed the live state while the window watches it.
-    let calibration: CalibrationSession?
+    /// The app's calibration, fed the live state and whether it is current while the window
+    /// watches it.
+    let calibration: CalibrationPass?
     @State private var section: PanelSection? = .panel
     @State private var isEditingScene = false
     @State private var columns: NavigationSplitViewVisibility = .all
@@ -37,7 +38,8 @@ struct PanelWindow: View {
         }
         .unsavedScenesAlerts(store.unsaved, shown: !isAddingPanel)
         .onChange(of: live?.state?.sceneSpec) { _, spec in store.follow(onScreen: spec) }
-        .onChange(of: live?.state) { _, state in if let state { calibration?.observe(state) } }
+        .onChange(of: live?.state) { forwardLiveState() }
+        .onChange(of: live?.isLive) { forwardLiveState() }
         .task { await connection.connectAtLaunch() }
         .task(id: WatchKey(connection)) {
             live = connection.liveState()
@@ -68,12 +70,18 @@ struct PanelWindow: View {
             ScenesPage(
                 connection: connection, renderer: renderer, live: live,
                 isEditing: $isEditingScene)
-        case .calibration:
-            CalibrationPage(
-                connection: connection, live: live, renderer: renderer, session: calibration)
-        case .input, .display, .history:
+        case .capture:
+            CapturePage(
+                connection: connection, live: live, renderer: renderer, pass: calibration)
+        case .display, .history:
             SamplePage(section: section ?? .panel)
         }
+    }
+
+    /// Passes the live state, and whether it is current, to the calibration, which stops a pass
+    /// between rates once the panel is down or no longer heard from.
+    private func forwardLiveState() {
+        calibration?.observe(live?.state, isLive: live?.isLive ?? false)
     }
 
     /// The id of the panel held, when the app knows it.
@@ -126,7 +134,7 @@ struct PanelWindow: View {
 
 /// The sidebar's pages. Access went: pairing and the clients are on the Panel page.
 enum PanelSection: String, CaseIterable, Identifiable {
-    case panel, scenes, input, calibration, display, history
+    case panel, scenes, capture, display, history
 
     var id: Self { self }
     var title: String { rawValue.capitalized }
@@ -135,8 +143,7 @@ enum PanelSection: String, CaseIterable, Identifiable {
         switch self {
         case .panel: "gauge.with.dots.needle.33percent"
         case .scenes: "rectangle.3.group"
-        case .input: "waveform"
-        case .calibration: "tuningfork"
+        case .capture: "tuningfork"
         case .display: "display"
         case .history: "clock.arrow.circlepath"
         }
@@ -166,9 +173,8 @@ private struct SamplePage: View {
     var body: some View {
         if let panel = data.panels.first {
             switch section {
-            case .input: SketchInputPage()
             case .display: SketchDisplayPage(panel: panel)
-            case .panel, .scenes, .calibration, .history: SketchLaterPage(section: section)
+            case .panel, .scenes, .capture, .history: SketchLaterPage(section: section)
             }
         } else {
             ContentUnavailableView("No Sample Data", systemImage: "tray")

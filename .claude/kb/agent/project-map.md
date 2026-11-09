@@ -42,15 +42,15 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   and a quit with unsaved scenes asks first, in the window or in an `NSAlert` when none is open;
   `scene-save`, 2026-11-07),
   `PanelWindow.swift` (the window: the sidebar of pages, the picker in the Panel page's toolbar,
-  the connect at launch, and the `LiveState` it watches while open; Input, Display and History
-  still read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
+  the connect at launch, and the `LiveState` it watches while open; the sidebar is Panel, Scenes,
+  Capture, Display and History, and Display and History still read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
   discovered until paired: the panel held, the other panels found by address, or the denial line,
   then Add Panel…; `PanelPickerItems` is the menu), `PanelPage.swift` (the page once called
   Overview: a pairing prompt while unpaired, then Status, Capture and Calibration from `PanelRows`,
   then the Pairing section; `PanelForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
   `PanelMetrics.swift` (the window's sizes), `PairingSheet.swift`, assets, and `Sketches/`, the
-  sample pages (Input, Display) and their panels (`SketchData`, `sketch.json`).
+  sample page (Display) and its panels (`SketchData`, `sketch.json`).
   The App also makes the one `Renderer` (`scene-render`, 2026-11-07), which `PanelWindow` starts
   once paired and the Panel page's Status shows as its Renderer row.
 - `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
@@ -68,20 +68,31 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   note), and `UnsavedScenes` (Save All, Discard or Cancel before a quit or a switch of panel). The
   editor holds a `SceneSession`; the gallery's menu renames and deletes; the Panel page's Status
   offers Reset (`ResetRow`).
-- `AudioVueConsole/Calibration/` (`calibration`, 2026-11-08): `CalibrationPage` (the calibration
-  in force from `CalibrationRows`, `CalibrateSection` with Calibrate… or the run under way, and the
-  runs from `CalibrationRuns`; a run opens `RunReport`; once a run ends it reads the runs again and
-  opens a completed run's report), `CalibrateSheet` (output device, remembered per panel by
-  `PlaybackDeviceMemory`; Calibration or Calibration + Characterization, `RunKindText`), `RunProgress` (`CalibrateSection`, `EndingText`),
-  `ReportView` (the report in a `WKWebView` from a string, every load blocked, only the first
-  navigation allowed) and `RunUnderWay` (the question before a quit or a panel switch cuts off a
-  run). The `AppDelegate` owns the `CalibrationPlayer` and the `CalibrationSession`, made with the
-  renderer's stimulus; `PanelWindow` feeds the session each live state.
-  In `ConsoleCore`: `CalibrationSession` (+`Endings`: the run's steps, ending from the ended
-  calibration by arm id), `StatedRun`, `CalibrationReadiness`, `CalibrationRuns`, `CalibrationRows`,
-  `CalibrationLifecycle`, `EndedCalibration`, `StimulusSource`/`CalibrationHost`, `HelperStimulus`
-  (the helper's `stimulus` request), `WAVHeader`, `OutputDevices` (CoreAudio),
-  `PlaybackDeviceMemory`, `HostClient+Calibration` (runs, report) and the arm and cancel in
+- `AudioVueConsole/Calibration/` (`calibration`, 2026-11-08; `input-and-rates`, 2026-11-08): the
+  sidebar's Capture page. `CapturePage` (`CaptureForm`: `InputSection`, the calibration in force from
+  `CalibrationRows`, `CalibrateSection` with Calibrate… or the pass under way, and Calibration History
+  from `CalibrationRuns`; a run opens `RunReport`; the runs are read again as each rate ends, and a
+  one-rate pass opens its completed report), `InputSection` (`InputFields` for given values: device
+  and rate pickers over a `PanelInput`, asking before a write unless the panel is down, disabled
+  while a calibration has the panel; `InputLock` and `HoldRow` word the hold after a run and offer
+  Return to Scene), `CalibrateSheet` (output device, remembered per panel by
+  `PlaybackDeviceMemory`; Calibration or Calibration + Characterization, `RunKindText`; at the
+  installed rate or at every rate, naming the rates the output skips), `RunProgress`
+  (`CalibrateSection`, `RunProgressRows` with "Rate 3 of 5", `PassSummaryRow`, `EndingRow`,
+  `EndingText`), `ReportView` (the report in a `WKWebView` from a string, every load blocked, only
+  the first navigation allowed) and `RunUnderWay` (the question before a quit or a panel switch cuts
+  off a pass). The `AppDelegate` owns the `CalibrationPlayer` and the `CalibrationPass` around a
+  `CalibrationSession`, made with the renderer's stimulus; `PanelWindow` feeds the pass each live
+  state and whether it is live.
+  In `ConsoleCore`: `CalibrationPass` (one run per rate over the session's awaited `run`, going on
+  past a failed rate), `PassPlan` (+`RateOutcome`, `PassOutcome`), `CalibrationSession` (+`Endings`:
+  the run's steps, ending from the ended calibration by arm id), `StatedRun`,
+  `CalibrationReadiness`, `CalibrationRuns`, `CalibrationRows`, `PanelInput` and `InputEdit` (the
+  `input` install block), `RateText`, `CalibrationLifecycle`, `EndedCalibration`,
+  `StimulusSource`/`CalibrationHost`, `HelperStimulus` (the helper's `stimulus` request),
+  `WAVHeader`, `OutputDevices` (CoreAudio, with each output's available nominal rates),
+  `PlaybackDeviceMemory`, `HostClient+Calibration` (runs, report), `HostClient+Install` (install
+  blocks with revisions, the install write, capture devices) and the arm and cancel in
   `HostClient+Commands`.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).
   `SceneCanvas` draws a `SceneEditor`'s layout in the panel's outline and turns clicks, drags, the

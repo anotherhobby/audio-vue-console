@@ -53,7 +53,7 @@ public struct PanelRows: Sendable, Equatable {
             title: "Capture",
             rows: [
                 Row(label: "Device", value: Self.text(state?.captureDevice)),
-                Row(label: "Rate", value: Self.text(state?.rateHz.map(Self.rate))),
+                Row(label: "Rate", value: Self.text(state?.rateHz.map(RateText.text))),
                 Row(label: "Analysis", value: Self.text(state.flatMap(Self.analysis))),
             ],
             note: Self.note(unavailable, [.capture, .analysis]))
@@ -129,13 +129,6 @@ public struct PanelRows: Sendable, Equatable {
     private static func size(_ width: Int?, _ height: Int?) -> String? {
         guard let width, let height else { return nil }
         return "\(width) × \(height)"
-    }
-
-    private static let hertzPerKilohertz = 1000.0
-
-    private static func rate(_ hertz: Int) -> String {
-        let kilohertz = Double(hertz) / hertzPerKilohertz
-        return "\(kilohertz.formatted(.number.precision(.fractionLength(0...1)))) kHz"
     }
 
     private static func analysis(_ state: PanelState) -> String? {

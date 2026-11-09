@@ -71,15 +71,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let sceneStore = SceneStore()
     /// The bundled `cal-play`, the app's so a quit can stop it mid-play (`calibration-player`).
     let player = CalibrationPlayer.app()
-    /// The calibration run, the app's so it outlives the window and a quit can reach it (design
-    /// D3). Made once the renderer that writes its stimulus is known.
-    private(set) var calibration: CalibrationSession?
+    /// The calibration, a pass of one rate or of every rate, the app's so it outlives the window
+    /// and a quit can reach it, between two rates too (design D4). Made once the renderer that
+    /// writes its stimulus is known.
+    private(set) var calibration: CalibrationPass?
 
-    /// The app's calibration session, made with `renderer`'s stimulus the first time, or nil where
-    /// the app carries no render helper.
-    func calibration(using renderer: Renderer) -> CalibrationSession? {
+    /// The app's calibration, made around a session with `renderer`'s stimulus the first time, or
+    /// nil where the app carries no render helper.
+    func calibration(using renderer: Renderer) -> CalibrationPass? {
         if calibration == nil, let stimulus = renderer.stimulus {
-            calibration = CalibrationSession(player: player, stimulus: stimulus)
+            calibration = CalibrationPass(
+                session: CalibrationSession(player: player, stimulus: stimulus))
         }
         return calibration
     }

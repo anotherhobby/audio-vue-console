@@ -80,14 +80,23 @@ public struct DocumentFailure: Sendable, Equatable {
 /// calls are grouped by subject in extensions.
 public struct HostClient: Sendable {
     private let transport: any ClientTransport
+    /// The transport for a call the host answers only once it has restarted the panel.
+    private let restartTransport: any ClientTransport
 
     /// A client over the app's URLSession.
     public init() {
-        self.init(transport: Self.sessionTransport())
+        self.init(
+            transport: Self.sessionTransport(timeout: Self.requestTimeout),
+            restartTransport: Self.sessionTransport(timeout: Self.restartTimeout))
     }
 
     init(transport: any ClientTransport) {
+        self.init(transport: transport, restartTransport: transport)
+    }
+
+    init(transport: any ClientTransport, restartTransport: any ClientTransport) {
         self.transport = transport
+        self.restartTransport = restartTransport
     }
 
     /// The host's `GET /v1/version`, an open read.
@@ -110,11 +119,11 @@ public struct HostClient: Sendable {
     /// operation takes one. A failure is told apart as `HostFailure` says: no host answering, a
     /// token refused, or anything else the host did that the contract does not say.
     func call<Output: Sendable>(
-        at address: HostAddress, token: HostToken? = nil,
+        at address: HostAddress, token: HostToken? = nil, restartsPanel: Bool = false,
         _ operation: @Sendable (Client) async throws -> Output
     ) async throws(HostFailure) -> Output {
         let client = Client(
-            serverURL: address.serverURL, transport: transport,
+            serverURL: address.serverURL, transport: restartsPanel ? restartTransport : transport,
             middlewares: [HostRules(token: token)])
         do {
             return try await operation(client)
@@ -144,12 +153,16 @@ public struct HostClient: Sendable {
     private static let forbidden = 403
     /// How long a host has to answer before it counts as not there.
     static let requestTimeout: TimeInterval = 5
+    /// How long a call that restarts the panel may take: the host answers once the panel has
+    /// stopped and started again, waiting up to 30 s for the start (audio-vue `tools/panel.py`,
+    /// `START_S`).
+    static let restartTimeout: TimeInterval = 60
 
     /// An ephemeral session that keeps no cookies or cache between requests, and gives up on a host
-    /// that does not answer in `requestTimeout`.
-    private static func sessionTransport() -> URLSessionTransport {
+    /// that sends nothing for `timeout`.
+    private static func sessionTransport(timeout: TimeInterval) -> URLSessionTransport {
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = requestTimeout
+        configuration.timeoutIntervalForRequest = timeout
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         return URLSessionTransport(
             configuration: .init(session: URLSession(configuration: configuration)))

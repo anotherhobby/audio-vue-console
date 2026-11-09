@@ -88,6 +88,19 @@ struct HostClientScenesTests {
         #expect(blocks["input"]?["rate"] == .integer(96000))
     }
 
+    /// Design D2: each block's revision is read beside its document, the one a write is made on.
+    @Test func theInstallBlocksAreReadWithTheirRevisions() async throws {
+        let body =
+            #"{"blocks": [{"block": "fonts", "rev": 0, "doc": {}},"#
+            + #"{"block": "input", "rev": 4, "doc": {"rate": 96000, "pair": [2, 3]}}]}"#
+        let transport = FakeTransport([.install: .status(200, body)])
+        let blocks = try await HostClient(transport: transport).installBlocks(
+            at: try address(), token: token)
+        #expect(blocks["fonts"] == InstallBlockState(doc: [:], rev: 0))
+        #expect(blocks["input"]?.rev == 4)
+        #expect(blocks["input"]?.doc["pair"] == .array([.integer(2), .integer(3)]))
+    }
+
     @Test func theSchemaIsReadWhole() async throws {
         let body = #"{"x-schema-version": 4, "$defs": {"card.logo": {"x-placeable": true}}}"#
         let transport = FakeTransport([.schema: .status(200, body)])

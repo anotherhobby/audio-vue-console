@@ -65,7 +65,7 @@ struct ReportView: NSViewRepresentable {
     }
 }
 
-/// A run opened on the Calibration page: its report, fetched when opened, or why there is none.
+/// A run opened on the Capture page: its report, fetched when opened, or why there is none.
 struct RunReport: View {
     let run: RunEntry
     let runs: CalibrationRuns?

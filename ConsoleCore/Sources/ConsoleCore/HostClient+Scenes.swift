@@ -32,7 +32,7 @@ public struct SceneRevision: Sendable, Equatable, Identifiable {
     }
 }
 
-/// The host's scenes, install settings, settings schema and images, each read with a token.
+/// The host's scenes, settings schema and images, each read with a token.
 extension HostClient {
     /// `GET /v1/scenes`: every scene the host holds, built in or stored.
     public func scenes(at address: HostAddress, token: HostToken) async throws(HostFailure)
@@ -91,21 +91,6 @@ extension HostClient {
         } catch {
             return nil
         }
-    }
-
-    /// `GET /v1/install`: each install block's document, by the block's name.
-    public func install(at address: HostAddress, token: HostToken) async throws(HostFailure)
-        -> [String: JSONValue]
-    {
-        let output = try await call(at: address, token: token) {
-            try await $0.readInstallV1InstallGet()
-        }
-        guard case .ok(let ok) = output else { throw .unexpectedAnswer }
-        var blocks: [String: JSONValue] = [:]
-        for block in try Self.body({ try ok.body.json }).blocks {
-            blocks[block.block] = try Self.json(block.doc)
-        }
-        return blocks
     }
 
     /// `GET /v1/schema`: the settings' declarations as JSON Schema, whole.

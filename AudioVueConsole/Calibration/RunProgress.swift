@@ -1,18 +1,26 @@
 import ConsoleCore
 import SwiftUI
 
-/// Calibrate…, offered only where a run can work, else disabled saying why; while a run is under
-/// way, where it is with Cancel; and once it ends, what became of it (`calibration-run`).
+/// Calibrate…, offered only where a run can work, else disabled saying why; while a pass is under
+/// way, where it is with Cancel; and once it ends, what became of it: one run's ending, or each
+/// rate's outcome for a pass of every rate (`calibration-run`, `calibration-pass`).
 struct CalibrateSection: View {
     let readiness: CalibrationReadiness
-    let session: CalibrationSession?
+    let pass: CalibrationPass?
+    /// The host's runs, for the summary's reports.
+    var runs: [RunEntry] = []
+    var open: (RunEntry) -> Void = { _ in }
     var ask: () -> Void = {}
 
     var body: some View {
-        if let session, session.isUnderWay {
-            RunProgress(session: session)
+        if let pass, pass.isUnderWay {
+            RunProgress(pass: pass)
         } else {
-            if let ending = session?.ending { EndingRow(ending: ending) }
+            if let pass, pass.isMultiRate {
+                ForEach(pass.outcomes) { PassSummaryRow(outcome: $0, runs: runs, open: open) }
+            } else if let ending = pass?.session.ending {
+                EndingRow(ending: ending)
+            }
             LabeledContent {
                 Button("Calibrate…", action: ask).disabled(!isReady)
             } label: {
@@ -29,29 +37,20 @@ struct CalibrateSection: View {
     }
 }
 
-/// A run under way: its step, the time left while the file plays, the panel's words on a refused
-/// cancel, and Cancel.
+/// A pass under way: for a pass of every rate, the rate it is on and its place; the run's step, the
+/// time left while the file plays, the panel's words on a refused cancel, and Cancel.
 struct RunProgress: View {
-    let session: CalibrationSession
+    let pass: CalibrationPass
 
     var body: some View {
-        LabeledContent {
-            Button("Cancel", role: .cancel) { session.cancel() }
-        } label: {
-            HStack {
-                ProgressView().controlSize(.small)
-                if case .playing(let until) = session.step {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text(Self.playing(until, at: context.date))
-                    }
-                } else {
-                    Text(Self.text(session.step))
-                }
-            }
-        }
-        if let note = session.note {
-            Label(note, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-        }
+        RunProgressRows(
+            place: pass.isMultiRate ? pass.current : nil, step: pass.session.step,
+            note: pass.session.note, cancel: pass.cancel)
+    }
+
+    /// "Rate 3 of 5 · 88.2 kHz".
+    static func place(_ current: CalibrationPass.Place) -> String {
+        "Rate \(current.index) of \(current.count) · \(RateText.text(current.rate))"
     }
 
     static func text(_ step: CalibrationSession.Step?) -> String {
@@ -87,6 +86,63 @@ struct EndingRow: View {
     }
 }
 
+/// A pass's progress for given values, so previews can show each.
+struct RunProgressRows: View {
+    /// The rate under way and its place, for a pass of every rate.
+    let place: CalibrationPass.Place?
+    let step: CalibrationSession.Step?
+    var note: String?
+    let cancel: () -> Void
+
+    var body: some View {
+        if let place { Text(RunProgress.place(place)).font(.headline) }
+        LabeledContent {
+            Button("Cancel", role: .cancel, action: cancel)
+        } label: {
+            HStack {
+                ProgressView().controlSize(.small)
+                if case .playing(let until) = step {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(RunProgress.playing(until, at: context.date))
+                    }
+                } else {
+                    Text(RunProgress.text(step))
+                }
+            }
+        }
+        if let note {
+            Label(note, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+        }
+    }
+}
+
+/// One rate of a finished pass: its rate and what became of it, with its report where the host
+/// lists the run with one.
+struct PassSummaryRow: View {
+    let outcome: PassOutcome
+    let runs: [RunEntry]
+    let open: (RunEntry) -> Void
+
+    var body: some View {
+        LabeledContent {
+            if let report { Button("Open Report") { open(report) } }
+        } label: {
+            Text(RateText.text(outcome.rate))
+            switch outcome.outcome {
+            case .ended(let ending): EndingRow(ending: ending)
+            case .skipped: Text("Skipped: this Mac's output can't play it.")
+            case .notRun: Text("Not run.")
+            }
+        }
+    }
+
+    /// The completed run's entry in the host's list, where it has a report.
+    private var report: RunEntry? {
+        guard case .ended(.completed(let runID?, _, _)) = outcome.outcome else { return nil }
+        return runs.first { $0.id == runID && $0.hasReport }
+    }
+}
+
 /// A run's ending in words (`calibration-run`, "A run's ending says what became of it").
 enum EndingText {
     static func text(_ ending: CalibrationSession.Ending) -> String {
@@ -110,4 +166,34 @@ enum EndingText {
             ? "The run completed, but its report wasn't written: \(reason)"
             : "The run completed, but isn't in force: \(reason)"
     }
+}
+
+#Preview("A pass under way") {
+    Form {
+        RunProgressRows(
+            place: CalibrationPass.Place(rate: 88_200, index: 3, count: 5),
+            step: .playing(until: .now.addingTimeInterval(9))
+        ) {}
+    }
+    .formStyle(.grouped)
+    .frame(width: 560, height: 160)
+}
+
+#Preview("A pass's summary") {
+    let runs = [RunEntry(id: "r1", hasReport: true, kind: "calibration", rate: 44_100)]
+    Form {
+        ForEach(
+            [
+                PassOutcome(
+                    rate: 44_100,
+                    outcome: .ended(.completed(runID: "r1", applicable: true, reason: nil))),
+                PassOutcome(rate: 48_000, outcome: .ended(.expired(reason: nil))),
+                PassOutcome(rate: 88_200, outcome: .ended(.cancelled)),
+                PassOutcome(rate: 96_000, outcome: .notRun),
+                PassOutcome(rate: 192_000, outcome: .skipped),
+            ]
+        ) { PassSummaryRow(outcome: $0, runs: runs) { _ in } }
+    }
+    .formStyle(.grouped)
+    .frame(width: 560, height: 360)
 }

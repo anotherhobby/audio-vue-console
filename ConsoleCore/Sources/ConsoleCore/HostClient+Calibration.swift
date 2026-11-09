@@ -9,11 +9,14 @@ public struct RunEntry: Sendable, Hashable, Identifiable {
     public let hasReport: Bool
     /// `calibration` or `characterization`, as the host says.
     public let kind: String
+    /// The rate in Hz the run captured at, or nil where the host does not say.
+    public let rate: Int?
 
-    public init(id: String, hasReport: Bool, kind: String) {
+    public init(id: String, hasReport: Bool, kind: String, rate: Int? = nil) {
         self.id = id
         self.hasReport = hasReport
         self.kind = kind
+        self.rate = rate
     }
 
     /// When the run started, read from its id; nil where the id is not a date and time.
@@ -45,6 +48,27 @@ public struct RunEntry: Sendable, Hashable, Identifiable {
         timeZone: .gmt)
 }
 
+/// A capture rate holding a valid calibration for the installed device, as the host reads its
+/// records (audio-vue `control-api`, "The calibrated rates are served from the records").
+public struct CalibratedRate: Sendable, Equatable {
+    public enum Status: Sendable, Equatable {
+        case calibrated
+        /// Older than a record is trusted for; it still applies.
+        case stale
+    }
+
+    public let rate: Int
+    /// The run whose record the panel applies at this rate.
+    public let runID: String
+    public let status: Status
+
+    public init(rate: Int, runID: String, status: Status) {
+        self.rate = rate
+        self.runID = runID
+        self.status = status
+    }
+}
+
 /// The host's calibration runs and their reports, read with a token (audio-vue `control-api`,
 /// "Calibration runs are served from their files").
 extension HostClient {
@@ -56,7 +80,7 @@ extension HostClient {
         switch output {
         case .ok(let ok):
             return try Self.body { try ok.body.json }.runs.map {
-                RunEntry(id: $0.runId, hasReport: $0.hasReport, kind: $0.kind)
+                RunEntry(id: $0.runId, hasReport: $0.hasReport, kind: $0.kind, rate: $0.rate)
             }
         case .unauthorized, .undocumented: throw .unexpectedAnswer
         }
@@ -82,6 +106,22 @@ extension HostClient {
             return html
         case .notFound: throw .notFound
         case .unauthorized, .unprocessableContent, .undocumented: throw .unexpectedAnswer
+        }
+    }
+
+    /// `GET /v1/calibration`: each rate holding a valid calibration for the installed device,
+    /// lowest first; a rate with none is left out. Read from the records, so the panel may be down.
+    public func calibratedRates(at address: HostAddress, token: HostToken)
+        async throws(HostFailure) -> [CalibratedRate]
+    {
+        let output = try await call(at: address, token: token) {
+            try await $0.calibratedV1CalibrationGet()
+        }
+        guard case .ok(let ok) = output else { throw .unexpectedAnswer }
+        return try Self.body { try ok.body.json }.rates.map {
+            CalibratedRate(
+                rate: $0.rate, runID: $0.runId,
+                status: $0.status == .stale ? .stale : .calibrated)
         }
     }
 

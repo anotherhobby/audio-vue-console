@@ -3,15 +3,32 @@ import Foundation
 
 /// An output device on this Mac: CoreAudio's unique id, which outlasts a reconnect, and its name,
 /// which is what `cal-play` is given (design D2). CoreAudio may end a name with a space, as the
-/// D10s's `D10s `; the name is kept as given.
+/// D10s's `D10s `; the name is kept as given. Its available nominal rates are read, never set:
+/// `cal-play` sets and checks every rate it plays at (design D6).
 public struct OutputDevice: Sendable, Hashable, Identifiable {
     public let uid: String
     public let name: String
+    /// The nominal rates CoreAudio says the device can be set to, in Hz, each a range or a single
+    /// rate.
+    public let availableRates: [ClosedRange<Double>]
     public var id: String { uid }
 
-    public init(uid: String, name: String) {
+    public init(uid: String, name: String, availableRates: [ClosedRange<Double>] = []) {
         self.uid = uid
         self.name = name
+        self.availableRates = availableRates
+    }
+
+    /// How far from a range a rate may fall and still be in it, for rates CoreAudio reports as
+    /// doubles.
+    private static let tolerance = 0.5
+
+    /// Whether the device can be set to `hertz`.
+    public func offers(_ hertz: Int) -> Bool {
+        let rate = Double(hertz)
+        return availableRates.contains {
+            rate >= $0.lowerBound - Self.tolerance && rate <= $0.upperBound + Self.tolerance
+        }
     }
 }
 
@@ -29,7 +46,23 @@ public struct CoreAudioOutputDevices: OutputDevices {
             guard let uid = Self.string(kAudioDevicePropertyDeviceUID, of: id),
                 let name = Self.string(kAudioObjectPropertyName, of: id)
             else { return nil }
-            return OutputDevice(uid: uid, name: name)
+            return OutputDevice(uid: uid, name: name, availableRates: Self.rates(of: id))
+        }
+    }
+
+    private static func rates(of id: AudioDeviceID) -> [ClosedRange<Double>] {
+        var address = Self.address(kAudioDevicePropertyAvailableNominalSampleRates)
+        var size: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(id, &address, 0, nil, &size) == noErr else {
+            return []
+        }
+        var ranges = [AudioValueRange](
+            repeating: AudioValueRange(), count: Int(size) / MemoryLayout<AudioValueRange>.size)
+        guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &ranges) == noErr else {
+            return []
+        }
+        return ranges.compactMap {
+            $0.mMinimum <= $0.mMaximum ? $0.mMinimum...$0.mMaximum : nil
         }
     }
 

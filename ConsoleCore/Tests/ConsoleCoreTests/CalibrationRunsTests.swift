@@ -3,7 +3,7 @@ import Testing
 
 @testable import ConsoleCore
 
-/// The runs list the Calibration page binds to (`calibration-history`).
+/// The runs list the Capture page binds to (`calibration-history`).
 @MainActor struct CalibrationRunsTests {
     private static let kept = Pairing(hostID: "h1", token: HostToken("secret"), clientID: "me")
     private static let two = FakeTransport.Answer.status(

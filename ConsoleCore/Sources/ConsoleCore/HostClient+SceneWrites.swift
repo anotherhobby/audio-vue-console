@@ -61,7 +61,8 @@ extension HostClient {
         }
     }
 
-    private static func invalid(_ body: Components.Schemas.Invalid) -> HostFailure {
+    /// A 422's failures, as the scene and install writes both answer them.
+    static func invalid(_ body: Components.Schemas.Invalid) -> HostFailure {
         .invalid(body.failures.map { DocumentFailure(place: $0.place, message: $0.message) })
     }
 

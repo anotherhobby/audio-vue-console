@@ -104,6 +104,16 @@ public struct SchemaFacts: Sendable, Equatable {
         CellSize(cols: roundedUp(minimum.cols * rows), rows: roundedUp(minimum.rows * rows))
     }
 
+    /// The capture rates `install.input.rate` takes, in Hz, lowest first: the rates the host
+    /// calibrates at, which the Input section offers and an every-rate pass runs. Nil where the
+    /// schema declares none (`capture-input`, design D1).
+    public static func inputRates(_ schema: JSONValue) -> [Int]? {
+        let rate = schema["$defs"]?["install.input"]?["properties"]?["rate"]
+        guard let choices = rate?["enum"]?.arrayValue else { return nil }
+        let rates = choices.compactMap(\.intValue).sorted()
+        return rates.isEmpty ? nil : rates
+    }
+
     private static let cardPrefix = "card."
 
     private static func roundedUp(_ cellsTimesRows: Int) -> Int {

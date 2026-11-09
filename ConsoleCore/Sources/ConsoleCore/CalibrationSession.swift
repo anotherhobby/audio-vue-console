@@ -55,6 +55,8 @@ public final class CalibrationSession {
         var cancelAsked = false
         /// The step the lifecycle word gives, shown once the file has played.
         var panelStep: Step?
+        /// Who awaits the ending, where the run was started with `run`.
+        var waiter: CheckedContinuation<Ending, Never>?
     }
 
     public init(
@@ -79,6 +81,19 @@ public final class CalibrationSession {
         return true
     }
 
+    /// Runs one calibration to its ending and returns it, or nil where a run is already under way
+    /// (design D4). The run is the one `start` makes: its steps, cancel and ending are the same.
+    public func run(_ stated: StatedRun, device: String, host: CalibrationHost) async -> Ending? {
+        guard start(stated, device: device, host: host) else { return nil }
+        let steps = run?.task
+        let ending = await withCheckedContinuation { run?.waiter = $0 }
+        // The ending can come from the panel while the file still plays. Its stopped playback
+        // must unwind before a caller starts the next run, or it would act on that run and hold
+        // `cal-play` busy.
+        await steps?.value
+        return ending
+    }
+
     /// Stops the run at whatever step it has reached. Before the arm nothing is sent; from the arm
     /// on, playback stops and the panel is sent a cancel.
     public func cancel() {
@@ -98,7 +113,7 @@ public final class CalibrationSession {
     public func observe(_ state: PanelState) {
         guard let arm = run?.arm else { return }
         if let ended = state.endedCalibration, ended.arm == arm {
-            player.stop()
+            // Finishing cancels the run's steps, which stops a file still playing.
             return finish(Self.ending(ended))
         }
         guard let shown = Self.step(state.calibrationLifecycle) else { return }
@@ -198,13 +213,16 @@ public final class CalibrationSession {
         }
     }
 
-    /// Ends the run once, removing its file.
+    /// Ends the run once, removing its file. Its steps are cancelled, so an ending the panel names
+    /// just before the file starts to play stops the play from starting.
     private func finish(_ ending: Ending) {
         guard let active = run else { return }
+        active.task?.cancel()
         if let file = active.file { Self.remove(file) }
         run = nil
         step = nil
         self.ending = ending
+        active.waiter?.resume(returning: ending)
     }
 
     private static func remove(_ file: URL) {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// What the Calibration page says of the calibration in force, as text, with the Panel page's dash
+/// What the Capture page says of the calibration in force, as text, with the Panel page's dash
 /// rule and status words (`calibration-history`, "The page shows the calibration in force"). The
 /// status word is also why none applies where none does: uncalibrated, obsolete or shifted by hand.
 public struct CalibrationRows: Sendable, Equatable {

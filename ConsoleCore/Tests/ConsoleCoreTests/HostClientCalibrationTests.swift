@@ -31,6 +31,37 @@ struct HostClientCalibrationTests {
         #expect(request.value(forHTTPHeaderField: "Origin") == nil)
     }
 
+    /// `capture-input`: each rate holding a calibration for the installed device.
+    @Test func theCalibratedRates() async throws {
+        let body =
+            #"{"rates": [{"rate": 48000, "run_id": "r1", "status": "calibrated"},"#
+            + #"{"rate": 96000, "run_id": "r2", "status": "stale"}]}"#
+        let transport = FakeTransport([.calibrated: .status(200, body)])
+        let rates = try await HostClient(transport: transport).calibratedRates(
+            at: try address(), token: token)
+        #expect(
+            rates == [
+                CalibratedRate(rate: 48_000, runID: "r1", status: .calibrated),
+                CalibratedRate(rate: 96_000, runID: "r2", status: .stale),
+            ])
+        let request = try #require(await transport.requests.first)
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer secret")
+    }
+
+    /// `calibration-history`: each run's rate where its record says one, none where it does not.
+    @Test func eachRunsRate() async throws {
+        let body = #"""
+            {"runs": [
+              {"run_id": "r2", "has_report": true, "kind": "calibration", "applicable": true,
+               "rate": 96000},
+              {"run_id": "r1", "has_report": true, "kind": "calibration", "applicable": true,
+               "rate": null}]}
+            """#
+        let transport = FakeTransport([.runs: .status(200, body)])
+        let runs = try await HostClient(transport: transport).runs(at: try address(), token: token)
+        #expect(runs.map(\.rate) == [96_000, nil])
+    }
+
     @Test func aReportsHTML() async throws {
         let html = "<html><body><h1>Calibration</h1></body></html>"
         let transport = FakeTransport([

@@ -73,6 +73,8 @@ public final class CalibrationPlayer: Sendable {
     }
 
     private func run(_ arguments: [String]) async throws(PlayerFailure) {
+        // A call whose task is already cancelled starts nothing.
+        if Task.isCancelled { throw .cancelled }
         let player = try start(arguments)
         defer { state.withLock { $0 = State() } }
         let exit = await withTaskCancellationHandler {

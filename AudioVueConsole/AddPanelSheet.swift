@@ -6,7 +6,7 @@ import SwiftUI
 struct AddPanelSheet: View {
     @Bindable var connection: HostConnection
     /// The calibration under way, if any, settled before another panel replaces this one.
-    var calibration: CalibrationSession?
+    var calibration: CalibrationPass?
     @Environment(\.dismiss) private var dismiss
     @Environment(SceneStore.self) private var store
 

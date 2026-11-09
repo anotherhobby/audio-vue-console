@@ -13,7 +13,9 @@ public struct StatedRun: Sendable, Equatable {
     }
 
     public var kind: Kind
-    /// The rate the file is written, played and captured at: the panel's installed capture rate.
+    /// The rate the file is written, played and captured at: the panel's installed capture rate
+    /// for a single run, or the rate a pass of every rate is on. The panel returns to its installed
+    /// rate after the run (audio-vue `calibration-stimulus`).
     public var rate: Int
 
     public init(kind: Kind = .calibration, rate: Int) {

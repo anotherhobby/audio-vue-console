@@ -171,6 +171,17 @@ public final class HostConnection {
         }
     }
 
+    /// The connected host's capture input, for the Capture page to read and write, or nil when not
+    /// connected and paired. A token the host refuses on it marks the connection not paired.
+    public func makePanelInput() -> PanelInput? {
+        guard case .connected(let address, _, paired: true) = state,
+            let pairing = keptPairing(at: address)
+        else { return nil }
+        return PanelInput(address: address, client: client, pairing: pairing, store: tokens) {
+            [weak self] in self?.mark(paired: false, at: address)
+        }
+    }
+
     /// The live state of the connected host, for the window to watch, or nil when not connected
     /// and paired. A token the host refuses on it marks the connection not paired.
     public func liveState() -> LiveState? {

@@ -20,7 +20,7 @@ import Testing
     @Test func cancelWhilePlayingStopsTheChildAndSendsOneCancel() async throws {
         let rig = Rig.rig([.arm: Rig.armed, .cancel: .status(200, #"{"status": "done"}"#)])
         try Rig.start(rig)
-        try await Rig.waitUntil { Rig.isPlaying(rig.session) }
+        try await Rig.waitUntil { Rig.isPlaying(rig.session, on: rig.launcher) }
         rig.session.cancel()
         try await Rig.waitUntil { rig.session.ending != nil }
         #expect(rig.session.ending == .cancelled)
@@ -32,7 +32,7 @@ import Testing
         let stands = #"{"status": "done", "record_stands": true}"#
         let rig = Rig.rig([.arm: Rig.armed, .cancel: .status(200, stands)])
         try Rig.start(rig)
-        try await Rig.waitUntil { Rig.isPlaying(rig.session) }
+        try await Rig.waitUntil { Rig.isPlaying(rig.session, on: rig.launcher) }
         rig.session.cancel()
         try await Rig.waitUntil { !Rig.isPlaying(rig.session) }
         #expect(rig.session.isUnderWay)
@@ -45,7 +45,7 @@ import Testing
         let late = #"{"status": "refused", "reason": "too late -- the record is being written"}"#
         let rig = Rig.rig([.arm: Rig.armed, .cancel: .status(409, late)])
         try Rig.start(rig)
-        try await Rig.waitUntil { Rig.isPlaying(rig.session) }
+        try await Rig.waitUntil { Rig.isPlaying(rig.session, on: rig.launcher) }
         rig.session.cancel()
         try await Rig.waitUntil { rig.session.note != nil }
         #expect(rig.session.note == "too late -- the record is being written")
@@ -57,7 +57,7 @@ import Testing
     @Test func aFailedRunSaysWhy() async throws {
         let rig = Rig.rig()
         try Rig.start(rig)
-        try await Rig.waitUntil { Rig.isPlaying(rig.session) }
+        try await Rig.waitUntil { Rig.isPlaying(rig.session, on: rig.launcher) }
         let ended = EndedCalibration(arm: "a1", outcome: .failed, reason: "capture stopped")
         rig.session.observe(Rig.state(.off, ended: ended))
         #expect(rig.session.ending == .failed(reason: "capture stopped"))
@@ -66,7 +66,7 @@ import Testing
     @Test func aCompletedRunThatCannotApplySaysWhichStimulus() async throws {
         let rig = Rig.rig()
         try Rig.start(rig)
-        try await Rig.waitUntil { Rig.isPlaying(rig.session) }
+        try await Rig.waitUntil { Rig.isPlaying(rig.session, on: rig.launcher) }
         let missing = "the 997 Hz series at 41.2 s did not arrive"
         let ended = EndedCalibration(
             arm: "a1", outcome: .done, runID: "r2", applicable: false, reason: missing)

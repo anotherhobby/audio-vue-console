@@ -3,7 +3,7 @@ import Testing
 
 @testable import ConsoleCore
 
-/// The calibration in force as the Calibration page says it (`calibration-history`).
+/// The calibration in force as the Capture page says it (`calibration-history`).
 struct CalibrationRowsTests {
     private static func values(_ rows: CalibrationRows) -> [String: String] {
         Dictionary(uniqueKeysWithValues: rows.inForce.rows.map { ($0.label, $0.value) })
