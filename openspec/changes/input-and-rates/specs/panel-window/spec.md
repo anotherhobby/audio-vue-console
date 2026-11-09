@@ -1,0 +1,32 @@
+# Spec Delta
+
+## MODIFIED Requirements
+
+### Requirement: The sidebar has no Access page
+
+The sidebar SHALL list Panel, Scenes, Capture, Display and History, and no Access page and no panel
+picker. The pages other than Panel, Scenes and Capture are held to no requirement here, and keep
+their sample values until their own changes build them.
+
+Source: Decision (maintainer, 2026-11-05): Access goes; the other pages can wait, and sample data is
+fine before the project's release. Decision (maintainer, 2026-11-06): Overview is renamed Panel, and
+the picker moves to the Panel page. Decision (maintainer, 2026-11-08): Calibration is built.
+Decision (maintainer, 2026-11-08): Calibration is renamed Capture and holds the input, so Input
+leaves the sidebar.
+
+#### Scenario: The sidebar
+
+- **WHEN** the panel window is open
+- **THEN** its sidebar lists Panel, Scenes, Capture, Display and History, in that order, with
+  nothing above them
+
+#### Scenario: The Calibration page
+
+- **WHEN** the user looks for the host's calibration and runs on a paired host
+- **THEN** they are on the Capture page, with no sample values, and no Calibration page is listed
+
+#### Scenario: The Capture page
+
+- **WHEN** the user opens Capture on a paired host
+- **THEN** it shows the panel's capture device and rate, the host's calibration and its runs, and
+  no sample values

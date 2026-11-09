@@ -132,3 +132,20 @@ audio-vue asks, placed in its root 2026-11-08, awaiting replies: `card-settings-
 of `openspec/changes/styles/handoff.md`). audio-vue's open `loudness-scope` change renames
 `loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
 not placeable.
+
+## Input and calibration across rates (planned 2026-11-08)
+
+`openspec/changes/input-and-rates` (valid, alignment done). Ruled (maintainer, 2026-11-08):
+- There is no Input page. The Calibration page is renamed Capture and gains an Input section that
+  sets `install.input.device` and `rate`, and Input leaves the sidebar.
+- The runs section is renamed Calibration History, and each run shows its rate (an audio-vue ask:
+  `/v1/runs` gives none).
+- Calibrate… gains "at every rate", calibration only, lowest rate first.
+- The rate list comes from the host's schema, not the app.
+- A failed or expired rate does not stop the pass; only Cancel does.
+- The Mac's output is left at the last rate.
+An arm stating `file_rate` captures at that rate and arms back to back during the hold, so a pass
+writes no install settings. Its handoff, `../audio-vue/input-and-rates-handoff.md`, was placed
+2026-11-08, awaiting a reply. It asks for: `input.rate`'s rates declared in the schema; `rate` on
+`/v1/runs`; the install write's 409 refusal declared in the contract; and other-rate report
+wording.
