@@ -45,15 +45,13 @@ Source: audio-vue `control-api`, "The API serves no browser".
 
 ### Requirement: The app checks API compatibility on connect
 
-The app SHALL read the host's API version as semantic versioning and support one version, the saved
-contract's: a host whose version has another numeric core is refused, whatever part differs. For a
-refused host, the app SHALL say whether the host is newer or older than the app, and what to do:
-deploy audio-vue to the panel where it is older, refresh the app's contract where it is newer.
+The app SHALL read the host's API version as semantic versioning and support only the saved
+contract's: a host whose numeric core differs in any part is refused. For a refused host, the app
+SHALL say whether it is newer or older, and to deploy audio-vue to the panel where it is older or
+refresh the app's contract where it is newer.
 
-Source: `product.md`, which checks versions on connect. Decision (maintainer, 2026-11-08): exactly
-the saved contract's version, after a host lacking a route of the same major was let through. The
-supported version is the saved contract's (`host-client`, "The supported API is the saved
-contract's").
+Source: `product.md`. Decision (maintainer, 2026-11-08): only the saved contract's version
+(`host-client`), after a host missing a route was let through.
 
 #### Scenario: A compatible host
 

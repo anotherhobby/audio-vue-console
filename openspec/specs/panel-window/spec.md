@@ -38,9 +38,8 @@ The panel picker SHALL offer Add Panel…, which takes a host address and connec
 `host-connection` says. The app SHALL hold one panel at a time: adding a panel replaces the one it
 held, once any unsaved scenes are settled as `scene-saving` says.
 
-Source: Decision (maintainer, 2026-11-05): an address is typed in the picker's Add Panel….
-Decision (maintainer, 2026-11-06): Add Panel… stays beside the panels found. Decision (maintainer,
-2026-11-07): switching panels with unsaved scenes asks first.
+Source: Decisions (maintainer): an address is typed in Add Panel… (2026-11-05), which stays beside
+the panels found (2026-11-06); a switch with unsaved scenes asks first (2026-11-07).
 
 #### Scenario: Adding a panel
 
@@ -107,9 +106,8 @@ Status SHALL show the condition, the scene on screen and the display's size, and
 `scene-apply` says; Capture the device, the rate and the analysis time against its budget;
 Calibration its status and age.
 
-Source: Decision (maintainer, 2026-11-05): the sketched sections keep their order, Pairing last.
-Decision (maintainer, 2026-11-06): the Overview is the Panel page, opening on Status. Decision
-(maintainer, 2026-11-07): Reset in the editor and on the Panel page.
+Source: Decisions (maintainer): the sketched order, Pairing last (2026-11-05); the Overview is the
+Panel page, opening on Status (2026-11-06); Reset in the editor and here (2026-11-07).
 
 #### Scenario: A paired host whose panel is up
 

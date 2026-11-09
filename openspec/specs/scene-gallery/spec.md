@@ -74,10 +74,10 @@ Source: `scene-canvas`, "Edits last until the app quits": the gallery's thumbnai
 
 ### Requirement: Duplicate makes an unsaved copy
 
-Duplicate, on a scene of this panel's shape that is not fixed, SHALL make a copy kept in the app, not
-built in and so editable, listed in the gallery and opened on the canvas. The copy SHALL be named for
-the scene with "copy" after it, or "copy 2", "copy 3" and on, the first no other scene has. It SHALL
-write nothing to the host until the copy is saved, as `scene-saving` says.
+Duplicate, on a scene of this panel's shape that is not fixed, SHALL make an editable copy kept in
+the app, listed in the gallery and opened on the canvas, named for the scene with "copy" after it,
+numbered from 2 where that name is taken. It SHALL write nothing to the host until
+it is saved (`scene-saving`).
 
 Source: `product.md`: built-in scenes are read-only, shown with "duplicate to edit"; saves are explicit.
 Decision (maintainer, 2026-11-07): a copy stays in the app until its first Save.
