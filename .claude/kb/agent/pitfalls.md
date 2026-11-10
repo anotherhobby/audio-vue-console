@@ -293,3 +293,23 @@ host's revisions (`GET /v1/install/{block}/revisions`) before blaming the UI.
 committed code as well as with `input-and-rates` (Measured: 1 of 12 at `5a76c50`, 3 of 15 after).
 Not yet traced; a stack sample shows only suspended tasks. Kill it and run again, and run the suite
 in a loop with a time limit before calling a change flaky.
+
+## Core Audio from Swift 6: generic reads and listener blocks (2026-11-09)
+
+A generic `AudioObjectGetPropertyData` read into `[T]` or `T` does not compile until `T:
+BitwiseCopyable` ("forming 'UnsafeMutableRawPointer' ... may contain an object reference";
+`CoreAudioObject`). A listener block stored on a `Sendable` class must be typed
+`@Sendable @convention(block) (UInt32, UnsafePointer<AudioObjectPropertyAddress>) -> Void`.
+`AudioObjectPropertyListenerBlock` is not `Sendable`. Store it once and pass that same value to
+add and remove, or the remove matches nothing (`OutputWatch`). Measured on the D10s from `swift
+test`: setting the nominal rate and the stream's physical format reads back within a poll, and the
+listener hears both (`OutputControlLiveTests`, `AUDIO_VUE_LIVE_OUTPUT=D10s`).
+
+## The installed capture rate has one model: `PanelInput` (2026-11-09)
+
+`CalibrationRuns` once read `install.input.rate` too, when the Capture page opened, and Calibrate…
+used that copy. After the Input section wrote a new rate, the sheet still offered the old one, and
+a run would have calibrated the rate the panel no longer captured at (seen by the maintainer: host
+at 48 kHz, sheet at 96). Readiness now takes `PanelInput.rate`, the model that writes the block.
+Do not keep a second copy of an install value in another model.
+

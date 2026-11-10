@@ -71,16 +71,21 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   note), and `UnsavedScenes` (Save All, Discard or Cancel before a quit or a switch of panel). The
   editor holds a `SceneSession`; the gallery's menu renames and deletes; the Panel page's Status
   offers Reset (`ResetRow`).
-- `AudioVueConsole/Calibration/` (`calibration`, 2026-11-08; `input-and-rates`, 2026-11-08): the
+- `AudioVueConsole/Calibration/` (`calibration`, 2026-11-08; `input-and-rates`, 2026-11-08;
+  `mac-output`, 2026-11-09): the
   sidebar's Capture page. `CapturePage` (`CaptureForm`: `InputSection`, the calibration in force from
   `CalibrationRows`, `CalibrateSection` with Calibrate… or the pass under way, and Calibration History
   from `CalibrationRuns`; a run opens `RunReport`; the runs are read again as each rate ends, and a
-  one-rate pass opens its completed report), `InputSection` (`InputFields` for given values: device
-  and rate pickers over a `PanelInput`, asking before a write unless the panel is down, disabled
-  while a calibration has the panel; `InputLock` and `HoldRow` word the hold after a run and offer
-  Return to Scene), `CalibrateSheet` (output device, remembered per panel by
-  `PlaybackDeviceMemory`; Calibration or Calibration + Characterization, `RunKindText`; at the
-  installed rate or at every rate, naming the rates the output skips), `RunProgress`
+  one-rate pass opens its completed report), `InputSection` (the "Input and Output" section;
+  `InputFields` for given values: capture device, rate and format pickers over a `PanelInput`,
+  asking before a write unless the panel is down, then `OutputFields`; it applies `RateSync` to
+  both sides; disabled while a calibration has the panel), `InputRows` (`CaptureFormatRow`,
+  `ShallowRow`, `HoldRow` and `InputNoteRow`: the hold after a run with Return to Scene, and the
+  write's note), `OutputFields` (`OutputShown`, `OutputActions`: Output Device, Rate and Format
+  (this Mac), Synchronize Rates, and `OutputNotes` for the mismatch, a shallow format and a refused
+  set), `CalibrateSheet` (names the output chosen in Input and Output and warns where it plays
+  under 24 bits; Calibration or Calibration + Characterization, `RunKindText`; at the installed
+  rate or at every rate, naming the rates the output skips), `RunProgress`
   (`CalibrateSection`, `RunProgressRows` with "Rate 3 of 5", `PassSummaryRow`, `EndingRow`,
   `EndingText`), `ReportView` (the report in a `WKWebView` from a string, every load blocked, only
   the first navigation allowed) and `RunUnderWay` (the question before a quit or a panel switch cuts
@@ -88,13 +93,15 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `CalibrationSession`, made with the renderer's stimulus; `PanelWindow` feeds the pass each live
   state and whether it is live.
   In `ConsoleCore`: `CalibrationPass` (one run per rate over the session's awaited `run`, going on
-  past a failed rate), `PassPlan` (+`RateOutcome`, `PassOutcome`), `CalibrationSession` (+`Endings`:
+  past a failed rate, then returning a synchronized output to the capture rate), `PassPlan` (+`RateOutcome`, `PassOutcome`), `CalibrationSession` (+`Endings`:
   the run's steps, ending from the ended calibration by arm id), `StatedRun`,
   `CalibrationReadiness`, `CalibrationRuns`, `CalibrationRows`, `PanelInput` and `InputEdit` (the
-  `input` install block), `RateText`, `CalibrationLifecycle`, `EndedCalibration`,
+  `input` install block: device, rate and `fmt`), `RateText`, `FormatText`, `CalibrationLifecycle`, `EndedCalibration`,
   `StimulusSource`/`CalibrationHost`, `HelperStimulus` (the helper's `stimulus` request),
-  `WAVHeader`, `OutputDevices` (CoreAudio, with each output's available nominal rates),
-  `PlaybackDeviceMemory`, `HostClient+Calibration` (runs, report), `HostClient+Install` (install
+  `WAVHeader`, `OutputDevice` (+`OutputFormat`, `OutputFormatRange`: rates and formats offered),
+  `OutputControl` (`CoreAudioOutputControl` over `CoreAudioObject`, `OutputWatch` for listeners:
+  reads, sets and follows a device), `MacOutput` (the output's model per panel), `RateSync`
+  (+`RateMatch`), `PlaybackDeviceMemory` (the device and Synchronize Rates per panel), `HostClient+Calibration` (runs, report), `HostClient+Install` (install
   blocks with revisions, the install write, capture devices) and the arm and cancel in
   `HostClient+Commands`.
 - `AudioVueConsole/Canvas/`: the scene canvas, built to keep (`canvas-spike`, 2026-11-04).

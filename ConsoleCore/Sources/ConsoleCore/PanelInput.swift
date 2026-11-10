@@ -42,6 +42,12 @@ public final class PanelInput {
     /// The rates the host's schema declares for the input, lowest first, or nil where it declares
     /// none.
     public private(set) var rates: [Int]?
+    /// The installed capture format, as ALSA names it: the block's, else the schema's default. Nil
+    /// where neither gives one.
+    public private(set) var format: String?
+    /// The formats the host's schema declares for the input, in its order, or nil where it
+    /// declares none.
+    public private(set) var formats: [String]?
     /// Each rate's calibration for the installed device, a rate missing holding none; nil where
     /// the host's report could not be read, so no rate is marked.
     public private(set) var calibrations: [Int: CalibratedRate.Status]?
@@ -87,6 +93,21 @@ public final class PanelInput {
         return (declared + [rate]).sorted()
     }
 
+    /// Whether the host offers the installed format. Where the schema declares no formats, the
+    /// installed format is the only choice and counts as offered.
+    public var isFormatOffered: Bool {
+        guard let format, let formats else { return true }
+        return formats.contains(format)
+    }
+
+    /// The formats to choose from: the schema's, in its order, with the installed format shown as
+    /// it is where the schema does not declare it.
+    public var formatChoices: [String] {
+        let declared = formats ?? []
+        guard let format, !declared.contains(format) else { return declared }
+        return declared + [format]
+    }
+
     /// Reads the `input` block with its revision, the schema's rates and the host's devices.
     public func load() async {
         state = .loading
@@ -106,9 +127,12 @@ public final class PanelInput {
         await readCalibrations()
     }
 
-    /// Writes `device` and `rate` into the block on the revision read, keeping its other keys.
-    public func write(device: String?, rate: Int) async {
-        let doc = InputEdit.doc(block: block.doc, device: device, rate: rate)
+    /// Writes `device`, `rate` and `format` into the block on the revision read, keeping its other
+    /// keys. Returns whether the host holds them afterwards: stored, or found stored when an
+    /// unanswered write reads the block again (`mac-output` design D1).
+    @discardableResult
+    public func write(device: String?, rate: Int, format: String?) async -> Bool {
+        let doc = InputEdit.doc(block: block.doc, device: device, rate: rate, format: format)
         isWriting = true
         defer { isWriting = false }
         do {
@@ -117,12 +141,20 @@ public final class PanelInput {
             block = InstallBlockState(doc: doc, rev: written.rev)
             self.device = device
             self.rate = rate
+            self.format = format ?? self.format
             note = .written(calibration: written.calibration)
         } catch {
             await refused(error)
-            return
+            return error == .unreachable && holds(device: device, rate: rate, format: format)
         }
         await readCalibrations()
+        return true
+    }
+
+    /// Whether the block as last read holds `device`, `rate` and `format`, a nil format matching
+    /// any.
+    private func holds(device: String?, rate: Int, format: String?) -> Bool {
+        self.device == device && self.rate == rate && (format == nil || self.format == format)
     }
 
     /// Reads which rates hold a calibration for the installed device, leaving every rate unmarked
@@ -177,6 +209,8 @@ public final class PanelInput {
         device = input.doc["device"]?.stringValue
         rate = CalibrationRuns.rate(install: ["input": .object(input.doc)], schema: schema)
         rates = SchemaFacts.inputRates(schema)
+        format = input.doc["fmt"]?.stringValue ?? SchemaFacts.inputFormatDefault(schema)
+        formats = SchemaFacts.inputFormats(schema)
     }
 
     private func fail(_ failure: HostFailure) {

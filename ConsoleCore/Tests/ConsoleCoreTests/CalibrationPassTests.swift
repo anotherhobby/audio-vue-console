@@ -9,21 +9,30 @@ import Testing
     private typealias Rig = CalibrationSessionTests.Rig
     private static let cancelled = FakeTransport.Answer.status(200, #"{"status": "done"}"#)
 
-    private static func rig() -> (Rig, CalibrationPass) {
+    private static let d10s = OutputDevice(
+        uid: "d10s", name: "D10s ", availableRates: [44_100...192_000])
+
+    /// The D10s at 192 kHz, where a pass of every rate leaves it.
+    private static func output() -> ScriptedOutputControl {
+        ScriptedOutputControl([d10s], current: ["d10s": OutputCurrent(rate: 192_000, format: nil)])
+    }
+
+    private static func rig(output: ScriptedOutputControl = output()) -> (Rig, CalibrationPass) {
         let rig = CalibrationSessionTests.rig([
             .arm: CalibrationSessionTests.armed, .cancel: cancelled,
         ])
-        let pass = CalibrationPass(session: rig.session)
+        let pass = CalibrationPass(session: rig.session, output: output)
         pass.observe(PanelState(condition: .up), isLive: true)
         return (rig, pass)
     }
 
     private static func start(
-        _ pass: CalibrationPass, _ plan: PassPlan, kind: StatedRun.Kind = .calibration
+        _ pass: CalibrationPass, _ plan: PassPlan, kind: StatedRun.Kind = .calibration,
+        returnTo: Int? = nil
     ) throws {
         let host = CalibrationHost(
             address: try #require(HostAddress(parsing: "audio-vue")), token: HostToken("secret"))
-        #expect(pass.start(kind: kind, plan: plan, device: "D10s ", host: host))
+        #expect(pass.start(kind: kind, plan: plan, device: d10s, host: host, returnTo: returnTo))
     }
 
     /// Waits until the pass is playing `rate`'s file.
@@ -145,5 +154,61 @@ import Testing
             pass.outcomes.map(\.outcome) == [
                 Self.completed, .ended(.cancelled), .notRun, .notRun, .skipped,
             ])
+    }
+
+    // MARK: The output after a pass (`mac-output` design D9)
+
+    /// `mac-output`, "After a pass of every rate".
+    @Test func aSynchronizedOutputReturnsToTheCaptureRate() async throws {
+        let output = Self.output()
+        let (rig, pass) = Self.rig(output: output)
+        try Self.start(pass, PassPlan(runs: [192_000]), returnTo: 96_000)
+        try await Self.playing(pass, at: 192_000, rig)
+        Self.end(pass, .done)
+        try await Self.finished(pass)
+        #expect(output.rateSets == [96_000])
+    }
+
+    /// `mac-output`, "Not synchronized".
+    @Test func anOutputNotSynchronizedStaysAtTheLastRate() async throws {
+        let output = Self.output()
+        let (rig, pass) = Self.rig(output: output)
+        try Self.start(pass, PassPlan(runs: [192_000]))
+        try await Self.playing(pass, at: 192_000, rig)
+        Self.end(pass, .done)
+        try await Self.finished(pass)
+        #expect(output.rateSets.isEmpty)
+    }
+
+    @Test func anOutputAlreadyAtTheCaptureRateIsNotSet() async throws {
+        let output = Self.output()
+        let (rig, pass) = Self.rig(output: output)
+        try Self.start(pass, PassPlan(runs: [192_000]), returnTo: 192_000)
+        try await Self.playing(pass, at: 192_000, rig)
+        Self.end(pass, .done)
+        try await Self.finished(pass)
+        #expect(output.rateSets.isEmpty)
+    }
+
+    @Test func aCancelledPassStillReturnsTheOutput() async throws {
+        let output = Self.output()
+        let (rig, pass) = Self.rig(output: output)
+        try Self.start(pass, PassPlan(runs: [192_000, 96_000]), returnTo: 96_000)
+        try await Self.playing(pass, at: 192_000, rig)
+        pass.cancel()
+        try await Self.finished(pass)
+        #expect(output.rateSets == [96_000])
+    }
+
+    @Test func aRefusedReturnLeavesTheOutcomesAsTheyWere() async throws {
+        let output = Self.output()
+        output.refuse(with: .refused(-50))
+        let (rig, pass) = Self.rig(output: output)
+        try Self.start(pass, PassPlan(runs: [192_000]), returnTo: 96_000)
+        try await Self.playing(pass, at: 192_000, rig)
+        Self.end(pass, .done)
+        try await Self.finished(pass)
+        #expect(output.rateSets == [96_000])
+        #expect(pass.outcomes.map(\.outcome) == [Self.completed])
     }
 }

@@ -11,7 +11,8 @@ import Testing
     private static let schema = FakeTransport.Answer.status(
         200,
         #"{"$defs": {"install.input": {"properties": {"rate": "#
-            + #"{"default": 48000, "enum": [44100, 48000, 88200, 96000, 192000]}}}}}"#)
+            + #"{"default": 48000, "enum": [44100, 48000, 88200, 96000, 192000]}, "#
+            + #""fmt": {"default": "S16_LE", "enum": ["S16_LE", "S32_LE"]}}}}}"#)
     private static let devices = FakeTransport.Answer.status(
         200, #"{"devices": ["\#(d10s)", "hw:CARD=Device,DEV=0"]}"#)
 
@@ -50,6 +51,16 @@ import Testing
         #expect(input.device == nil && input.rate == 48_000)
         #expect(input.rates == [44_100, 48_000, 88_200, 96_000, 192_000])
         #expect(input.devices.count == 2 && input.isDeviceAttached)
+        #expect(input.format == "S16_LE" && input.formats == ["S16_LE", "S32_LE"])
+        #expect(input.isFormatOffered)
+    }
+
+    @Test func anInstalledFormatTheHostDoesNotOfferShowsAsItIs() async throws {
+        let block = #"{"block": "input", "rev": 2, "doc": {"fmt": "S24_3LE"}}"#
+        let input = try model(FakeTransport(Self.answers(input: block)))
+        await input.load()
+        #expect(!input.isFormatOffered)
+        #expect(input.formatChoices == ["S16_LE", "S32_LE", "S24_3LE"])
     }
 
     @Test func anInstalledDeviceTheHostDoesNotListIsNotAttached() async throws {
@@ -85,7 +96,7 @@ import Testing
         let input = try model(transport)
         await input.load()
         await transport.answer(.calibrated, with: .status(200, #"{"rates": []}"#))
-        await input.write(device: Self.d10s, rate: 48_000)
+        await input.write(device: Self.d10s, rate: 48_000, format: nil)
         #expect(input.calibrations == [:])
     }
 
@@ -104,12 +115,14 @@ import Testing
         let transport = FakeTransport(answers)
         let input = try model(transport)
         await input.load()
-        await input.write(device: Self.d10s, rate: 96_000)
+        #expect(await input.write(device: Self.d10s, rate: 96_000, format: "S32_LE"))
         let request = try #require(await transport.requests(to: .writeInstall("input")).first)
         let body = try JSONDecoder().decode(JSONValue.self, from: try #require(request.httpBody))
         #expect(body["base_rev"] == .integer(4))
         #expect(body["doc"]?["pair"] == .array([.integer(2), .integer(3)]))
         #expect(body["doc"]?["device"] == .string(Self.d10s))
+        #expect(body["doc"]?["fmt"] == .string("S32_LE"))
+        #expect(input.format == "S32_LE")
         #expect(input.rate == 96_000 && input.device == Self.d10s)
         #expect(input.note == .written(calibration: "96 kHz holds no calibration"))
     }
@@ -123,7 +136,7 @@ import Testing
         await input.load()
         await transport.answer(
             .install, with: Self.install(#"{"block": "input", "rev": 5, "doc": {"rate": 88200}}"#))
-        await input.write(device: nil, rate: 96_000)
+        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
         #expect(input.note == .changedElsewhere)
         #expect(input.rate == 88_200)
         #expect(await transport.requests(to: .install).count == 2)
@@ -138,9 +151,20 @@ import Testing
         await input.load()
         await transport.answer(
             .install, with: Self.install(#"{"block": "input", "rev": 5, "doc": {"rate": 96000}}"#))
-        await input.write(device: nil, rate: 96_000)
+        #expect(await input.write(device: nil, rate: 96_000, format: nil))
         #expect(input.note == .unanswered)
         #expect(input.rate == 96_000)
+    }
+
+    /// `mac-output` design D1: an unanswered write the host did not store is not followed.
+    @Test func anUnansweredWriteTheHostDidNotStoreIsNotHeld() async throws {
+        var answers = Self.answers(input: #"{"block": "input", "rev": 4, "doc": {}}"#)
+        answers[.writeInstall("input")] = .failure(URLError(.timedOut))
+        let input = try model(FakeTransport(answers))
+        await input.load()
+        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
+        #expect(input.note == .unanswered)
+        #expect(input.rate == 48_000)
     }
 
     /// `capture-input`, "Returning to the scene": one cancel, which ends the hold.
@@ -171,7 +195,7 @@ import Testing
         answers[.writeInstall("input")] = .status(409, #"{"detail": "\#(words)"}"#)
         let input = try model(FakeTransport(answers))
         await input.load()
-        await input.write(device: nil, rate: 96_000)
+        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
         #expect(input.note == .refused(words))
         #expect(input.rate == 48_000)
     }

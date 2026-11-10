@@ -26,8 +26,19 @@ struct PlaybackDeviceMemoryTests {
         #expect(memory.chosen(for: "h1", among: [Self.speakers]) == nil)
     }
 
+    /// `mac-output`, "A panel not seen before" and "Turned off".
+    @Test func synchronizationIsOnUntilTurnedOffForOnePanel() throws {
+        let memory = try memory()
+        #expect(memory.isSynchronized(for: "h1"))
+        memory.setSynchronized(false, for: "h1")
+        #expect(!memory.isSynchronized(for: "h1"))
+        #expect(memory.isSynchronized(for: "h2"))
+        memory.setSynchronized(true, for: "h1")
+        #expect(memory.isSynchronized(for: "h1"))
+    }
+
     @Test func thisMacListsAnOutputDevice() {
-        let devices = CoreAudioOutputDevices().list()
+        let devices = CoreAudioOutputControl().list()
         #expect(!devices.isEmpty)
         #expect(devices.allSatisfy { !$0.uid.isEmpty && !$0.name.isEmpty })
     }

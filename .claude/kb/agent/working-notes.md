@@ -154,14 +154,14 @@ and `calibration-pass`, with `calibration-run`, `calibration-history` and `panel
 - Calibrate… gains "at every rate", calibration only, lowest rate first.
 - The rate list comes from the host's schema, not the app.
 - A failed or expired rate does not stop the pass; only Cancel does.
-- The Mac's output is left at the last rate.
+- The Mac's output is left at the last rate, unless Synchronize Rates is on (`mac-output`, 2026-11-09).
 An arm stating `file_rate` captures at that rate and arms back to back during the hold, so a pass
 writes no install settings. Its handoff, `../audio-vue/input-and-rates-handoff.md`, was placed
 2026-11-08, awaiting a reply. It asks for: `input.rate`'s rates declared in the schema; `rate` on
 `/v1/runs`; the install write's 409 refusal declared in the contract; and other-rate report
 wording.
-Built 2026-11-08. audio-vue answered both handoffs the same day (its `input-and-rates`, API 2.7.0,
-schema 6, deployed to the proving host): the rates as an integer `enum`, `rate` on each run, the
+Built 2026-11-08. audio-vue answered both handoffs the same day (its `input-and-rates`, deployed to
+the proving host): the rates as an integer `enum`, `rate` on each run, the
 install 409 as `Stale | Refusal`, and `GET /v1/calibration`, which also answers
 `scene-settings-handoff.md`. Read live 2026-11-08: the panel is installed at 96 kHz on
 `hw:CARD=m2x4HD,DEV=0`, calibrated at 96 kHz only. The maintainer ran a pass of every rate (2026-11-09): five runs
@@ -170,3 +170,21 @@ completed, each with its report and rate, starting 27-28 s apart (render, settle
 calibrated for the m2x4HD, and once the hold ended the panel captured at its installed 96 kHz. Ruled the same day: after a run the Input section words
 the panel's hold (the last run's rate until audio returns) and offers Return to Scene, the panel's
 cancel, which keeps the record (task 4.6, design D11). Rate changes from the Input section work on the panel (2026-11-09).
+
+## This Mac's output on the Capture page (built 2026-11-09, archive held for audio-vue)
+
+Built and run by the maintainer on the proving host, a pass of every rate included. Held unarchived
+(maintainer, 2026-11-09) until audio-vue answers the handoff: task 5.3 then checks a calibration
+sets the D10s's bit depth, and the archive syncs the specs.
+
+`openspec/changes/mac-output`. Ruled (maintainer, 2026-11-09):
+- The Input section shows Capture Device, Rate and Format (audio-vue), Output Device, Rate and
+  Format (this Mac), and Synchronize Rates.
+- The capture rate leads, and a change made elsewhere is shown as a mismatch, never followed.
+- Bit depth is shown and flagged below 24 bits, never synchronized.
+- The output is chosen in the Input section, not Calibrate….
+- A synchronized output returns to the capture rate after a pass.
+Its handoff, `../audio-vue/mac-output-handoff.md`, was placed 2026-11-09, awaiting a reply. It asks:
+- `cal-play rate` also sets the deepest integer format and settles on either change (task 5.3
+  waits on it).
+- `settings-schema` states that choices export as an `enum`.

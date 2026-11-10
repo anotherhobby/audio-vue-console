@@ -12,6 +12,7 @@ struct CapturePage: View {
     let renderer: Renderer
     let pass: CalibrationPass?
     @State private var input: PanelInput?
+    @State private var output: MacOutput?
     @State private var runs: CalibrationRuns?
     /// The run whose report is open.
     @State private var opened: RunEntry?
@@ -24,7 +25,8 @@ struct CapturePage: View {
                 runs: runs?.runs ?? [], listing: listing, open: { opened = $0 }
             ) {
                 InputSection(
-                    input: input, isPanelDown: live?.state?.condition == .down, lock: inputLock)
+                    input: input, output: output, isPanelDown: live?.state?.condition == .down,
+                    lock: inputLock)
             } calibrate: {
                 CalibrateSection(
                     readiness: readiness, pass: pass, runs: runs?.runs ?? [],
@@ -37,16 +39,19 @@ struct CapturePage: View {
         .sheet(isPresented: $isAsking) { sheet }
         .task(id: connection.isPaired) {
             input = connection.makePanelInput()
+            output = connection.makeMacOutput()
+            output?.load()
             runs = connection.makeCalibrationRuns()
             await input?.load()
             await runs?.load()
         }
+        .task(id: followID) { await output?.follow() }
         .onChange(of: pass?.session.ending) { _, ending in Task { await ended(ending) } }
     }
 
     @ViewBuilder private var sheet: some View {
         if case .ready(let rate) = readiness {
-            CalibrateSheet(rate: rate, hostRates: input?.rates, hostID: connection.host?.id) {
+            CalibrateSheet(rate: rate, hostRates: input?.rates, device: output?.device) {
                 start($0, $1, on: $2)
             }
         }
@@ -63,16 +68,23 @@ struct CapturePage: View {
         }
     }
 
+    /// What following this Mac's output hangs on: nil with no output, else its device's id, empty
+    /// with no device, so following starts again when either changes.
+    private var followID: String? {
+        output.map { $0.device?.uid ?? "" }
+    }
+
     private var readiness: CalibrationReadiness {
         CalibrationReadiness(
             paired: connection.isPaired == true, condition: live?.state?.condition,
-            verdict: renderer.verdict, installedRate: runs?.installedRate,
+            verdict: renderer.verdict, installedRate: input?.rate,
             underWay: pass?.isUnderWay ?? false)
     }
 
     private func start(_ kind: StatedRun.Kind, _ plan: PassPlan, on device: OutputDevice) {
         guard let host = connection.calibrationHost() else { return }
-        pass?.start(kind: kind, plan: plan, device: device.name, host: host)
+        let returnTo = output?.isSynchronized == true ? input?.rate : nil
+        pass?.start(kind: kind, plan: plan, device: device, host: host, returnTo: returnTo)
     }
 
     /// Reads the runs again once a rate ends, and opens a one-rate pass's completed report.

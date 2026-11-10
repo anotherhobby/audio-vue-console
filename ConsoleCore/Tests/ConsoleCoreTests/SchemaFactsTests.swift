@@ -28,6 +28,20 @@ struct SchemaFactsTests {
         #expect(SchemaFacts.inputRates(schema) == nil)
     }
 
+    @Test func theCaptureFormatsInTheSchemasOrder() throws {
+        #expect(try SchemaFacts.inputFormats(Self.schema()) == ["S16_LE", "S32_LE"])
+    }
+
+    @Test func theCaptureFormatsDefault() throws {
+        #expect(try SchemaFacts.inputFormatDefault(Self.schema()) == "S16_LE")
+    }
+
+    @Test func anInputWithNoFormatDeclaresNoFormats() {
+        let input = JSONValue.object(["properties": .object([:])])
+        let schema = JSONValue.object(["$defs": .object(["install.input": input])])
+        #expect(SchemaFacts.inputFormats(schema) == nil)
+    }
+
     @Test func theGridsDefaults() throws {
         #expect(try Self.facts().defaultGrid == CellSize(cols: 64, rows: 36))
     }

@@ -35,6 +35,11 @@ Format:
   `.claude/CLAUDE.md`, "Host Versions". Always regenerates, since audio-vue's `local/openapi.json`
   can be older than its code. Never edit the saved copy by hand.
 
+- 2026-11-09: `AUDIO_VUE_LIVE_OUTPUT=D10s xcrun swift test --disable-xctest --filter
+  OutputControlLiveTests` in `ConsoleCore/`: sets the named output's rate and format through Core
+  Audio, hears each change, and puts both back. Skipped without the variable. Passed on the D10s
+  (2026-11-09). It changes the device for about a second, so mute what it feeds.
+
 - 2026-11-05: `python3 -I tools/test_optional_nullables.py` - the nullable rewrite's tests, plain
   asserts with no pytest, since `tools/` has no environment for the gate to resolve imports in.
 

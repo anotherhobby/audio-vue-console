@@ -182,6 +182,15 @@ public final class HostConnection {
         }
     }
 
+    /// This Mac's output for the connected host's panel, for the Capture page, or nil when not
+    /// connected and paired (`mac-output` design D4).
+    public func makeMacOutput() -> MacOutput? {
+        guard case .connected(let address, _, paired: true) = state,
+            let pairing = keptPairing(at: address)
+        else { return nil }
+        return MacOutput(hostID: pairing.hostID)
+    }
+
     /// The live state of the connected host, for the window to watch, or nil when not connected
     /// and paired. A token the host refuses on it marks the connection not paired.
     public func liveState() -> LiveState? {

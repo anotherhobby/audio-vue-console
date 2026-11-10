@@ -15,9 +15,6 @@ public final class CalibrationRuns {
 
     public private(set) var state = State.idle
     public private(set) var runs: [RunEntry] = []
-    /// The panel's installed capture rate, the rate a calibration runs at: `install.input.rate`,
-    /// else the settings schema's default for it (design D4). Nil until read.
-    public private(set) var installedRate: Int?
 
     private let address: HostAddress
     private let client: HostClient
@@ -37,14 +34,12 @@ public final class CalibrationRuns {
         self.onUnpaired = onUnpaired
     }
 
-    /// Reads the host's runs, and the installed capture rate.
+    /// Reads the host's runs. The installed capture rate is `PanelInput`'s, the one model that
+    /// writes it, so it never goes stale after a change.
     public func load() async {
         state = .loading
         do {
             runs = try await client.runs(at: address, token: pairing.token)
-            let install = try await client.install(at: address, token: pairing.token)
-            let schema = try await client.schema(at: address, token: pairing.token)
-            installedRate = Self.rate(install: install, schema: schema)
             state = .loaded
         } catch {
             fail(error)

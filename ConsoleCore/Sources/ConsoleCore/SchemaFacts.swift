@@ -123,6 +123,21 @@ public struct SchemaFacts: Sendable, Equatable {
         return rates.isEmpty ? nil : rates
     }
 
+    /// The capture formats `install.input.fmt` takes, as ALSA names them, in the order the schema
+    /// declares them. Nil where the schema declares none (`capture-input`, design D1).
+    public static func inputFormats(_ schema: JSONValue) -> [String]? {
+        let format = schema["$defs"]?["install.input"]?["properties"]?["fmt"]
+        guard let choices = format?["enum"]?.arrayValue else { return nil }
+        let formats = choices.compactMap(\.stringValue)
+        return formats.isEmpty ? nil : formats
+    }
+
+    /// The capture format `install.input.fmt` takes where the block leaves it unset, or nil where
+    /// the schema declares no default.
+    public static func inputFormatDefault(_ schema: JSONValue) -> String? {
+        schema["$defs"]?["install.input"]?["properties"]?["fmt"]?["default"]?.stringValue
+    }
+
     private static let cardPrefix = "card."
 
     private static func roundedUp(_ cellsTimesRows: Int) -> Int {

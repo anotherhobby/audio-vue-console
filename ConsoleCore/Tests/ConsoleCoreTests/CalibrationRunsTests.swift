@@ -16,15 +16,7 @@ import Testing
            "applicable": true}]}
         """#)
 
-    /// The runs, an install with the rate written, and a schema declaring the default.
-    private static let answers: [FakeTransport.Route: FakeTransport.Answer] = [
-        .runs: two,
-        .install: .status(
-            200, #"{"blocks": [{"block": "input", "rev": 2, "doc": {"rate": 96000}}]}"#),
-        .schema: .status(
-            200,
-            #"{"$defs": {"install.input": {"properties": {"rate": {"default": 48000}}}}}"#),
-    ]
+    private static let answers: [FakeTransport.Route: FakeTransport.Answer] = [.runs: two]
 
     private final class Unpaired {
         var times = 0
@@ -45,7 +37,6 @@ import Testing
         await model.load()
         #expect(model.state == .loaded)
         #expect(model.runs.map(\.id) == ["2026-11-01T14-55-02Z", "2026-10-25T23-16-08Z"])
-        #expect(model.installedRate == 96_000)
     }
 
     @Test func aFailedLoadKeepsTheEarlierListAndTheFailure() async throws {
