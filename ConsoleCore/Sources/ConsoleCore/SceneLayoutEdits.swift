@@ -129,6 +129,27 @@ extension SceneLayout {
         return SceneLayout(checked: grid, cards: cards.filter { !chosen.contains($0.id) })
     }
 
+    /// The cards `ids`, and no others of their groups, setting `key` to `value`. Settings touch no
+    /// cells, so this is never refused (`card-settings`, design D4).
+    public func setting(_ key: String, to value: JSONValue, on ids: Set<UUID>) -> SceneLayout {
+        changingSettings(of: ids) { $0[key] = value }
+    }
+
+    /// The cards `ids` leaving `key` unset, so each takes its own default.
+    public func unsetting(_ key: String, on ids: Set<UUID>) -> SceneLayout {
+        changingSettings(of: ids) { $0[key] = nil }
+    }
+
+    private func changingSettings(
+        of ids: Set<UUID>, _ change: (inout [String: JSONValue]) -> Void
+    ) -> SceneLayout {
+        var changed = cards
+        for index in changed.indices where ids.contains(changed[index].id) {
+            change(&changed[index].settings)
+        }
+        return SceneLayout(checked: grid, cards: changed)
+    }
+
     /// The lowest `group-N` no remaining group uses.
     private func newGroupName(replacing replaced: Set<String>) -> String {
         let taken = Set(cards.compactMap(\.group)).subtracting(replaced)

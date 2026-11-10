@@ -46,4 +46,15 @@ struct JSONValueTests {
         #expect(try Self.text(of: value) == Self.scene)
         #expect(value["grid"]?["cols"] == .integer(96))
     }
+
+    /// `card-settings`: a choice and a setting the inspector cannot edit are shown as text.
+    @Test func aValueAsAPersonReadsIt() {
+        #expect(JSONValue.string("smpte").text == "smpte")
+        #expect(JSONValue.integer(96_000).text == "96000")
+        #expect(JSONValue.decimal(0.9).text == "0.9")
+        #expect(JSONValue.bool(true).text == "On")
+        #expect(
+            JSONValue.array([.string("#2A3550"), .string("#FFFFFF")]).text == "#2A3550, #FFFFFF")
+        #expect(JSONValue.object(["b": .integer(2), "a": .null]).text == "a: None, b: 2")
+    }
 }

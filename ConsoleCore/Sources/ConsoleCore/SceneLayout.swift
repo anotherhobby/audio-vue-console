@@ -104,12 +104,19 @@ public struct LayoutCard: Sendable, Hashable, Identifiable {
     public var cells: CellRect
     /// The declared group the card belongs to, if any.
     public var group: String?
+    /// The settings the scene sets for the card, by key: its entry's `params`. A setting left out
+    /// takes the card's default (`card-settings`, design D1).
+    public var settings: [String: JSONValue]
 
-    public init(id: UUID = UUID(), kind: String, cells: CellRect, group: String? = nil) {
+    public init(
+        id: UUID = UUID(), kind: String, cells: CellRect, group: String? = nil,
+        settings: [String: JSONValue] = [:]
+    ) {
         self.id = id
         self.kind = kind
         self.cells = cells
         self.group = group
+        self.settings = settings
     }
 }
 

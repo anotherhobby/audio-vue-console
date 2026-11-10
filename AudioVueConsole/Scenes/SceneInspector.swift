@@ -1,16 +1,19 @@
 import ConsoleCore
 import SwiftUI
 
-/// The selected card's place on the grid, the selection's Group and Ungroup with the reason Group
-/// is refused, or the scene's own facts when nothing is selected.
+/// The selected card's place on the grid and its settings; for several, Group and Ungroup with the
+/// reason Group is refused, the settings they share, then each card's own; or the scene's own facts
+/// when nothing is selected (`card-settings`).
 struct SceneInspector: View {
     let editor: SceneEditor?
     let document: SceneDocument
+    /// Each card kind's settings, as the panel's schema declares them.
+    let settings: [String: SettingGroup]
 
     var body: some View {
         let cards = editor?.selectedCards ?? []
-        if editor != nil, let card = cards.first, cards.count == 1 {
-            single(card)
+        if let editor, let card = cards.first, cards.count == 1 {
+            single(card, editor)
         } else if let editor, !cards.isEmpty {
             several(cards, editor)
         } else {
@@ -18,9 +21,9 @@ struct SceneInspector: View {
         }
     }
 
-    private func single(_ card: LayoutCard) -> some View {
+    private func single(_ card: LayoutCard, _ editor: SceneEditor) -> some View {
         Form {
-            Section(card.kind.replacingOccurrences(of: "_", with: " ")) {
+            Section(Self.title(card)) {
                 LabeledContent("Position") {
                     Text(verbatim: "column \(card.cells.col), row \(card.cells.row)")
                 }
@@ -29,26 +32,58 @@ struct SceneInspector: View {
                 }
                 LabeledContent("Group", value: card.group ?? "None")
             }
+            Section("Settings") { ownSettings(card, editor) }
         }
         .formStyle(.grouped)
+        .id(editor.selection)
     }
 
     private func several(_ cards: [LayoutCard], _ editor: SceneEditor) -> some View {
-        Form {
-            Section {
-                LabeledContent("Selected") { Text(verbatim: "\(cards.count) cards") }
-                HStack {
-                    Button("Group") { editor.group() }
-                        .disabled(editor.groupRefusal != nil)
-                    Button("Ungroup") { editor.ungroup() }
-                        .disabled(!editor.canUngroup)
+        let shared = SettingGroup.shared(cards.map { settings[$0.kind] ?? SettingGroup([]) })
+        return Form {
+            grouping(cards, editor)
+            if !shared.settings.isEmpty {
+                Section("Shared Settings") {
+                    CardSettingsList(
+                        declared: shared, cards: cards, groups: settings, editor: editor)
                 }
-                if let refusal = editor.groupRefusal {
-                    Text(refusal.description).font(.callout).foregroundStyle(.secondary)
+            }
+            ForEach(cards) { card in
+                Section {
+                    DisclosureGroup(Self.title(card)) { ownSettings(card, editor) }
                 }
             }
         }
         .formStyle(.grouped)
+        .id(editor.selection)
+    }
+
+    private func grouping(_ cards: [LayoutCard], _ editor: SceneEditor) -> some View {
+        Section {
+            LabeledContent("Selected") { Text(verbatim: "\(cards.count) cards") }
+            HStack {
+                Button("Group") { editor.group() }
+                    .disabled(editor.groupRefusal != nil)
+                Button("Ungroup") { editor.ungroup() }
+                    .disabled(!editor.canUngroup)
+            }
+            if let refusal = editor.groupRefusal {
+                Text(refusal.description).font(.callout).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Every setting `card` declares, changing that card alone.
+    @ViewBuilder private func ownSettings(_ card: LayoutCard, _ editor: SceneEditor) -> some View {
+        if let declared = settings[card.kind], !declared.settings.isEmpty {
+            CardSettingsList(declared: declared, cards: [card], groups: settings, editor: editor)
+        } else {
+            Text("This card has no settings.").foregroundStyle(.secondary)
+        }
+    }
+
+    private static func title(_ card: LayoutCard) -> String {
+        card.kind.replacingOccurrences(of: "_", with: " ")
     }
 }
 

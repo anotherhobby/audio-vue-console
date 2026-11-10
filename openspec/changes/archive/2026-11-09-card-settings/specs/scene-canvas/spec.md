@@ -4,15 +4,13 @@
 
 ### Requirement: Edits are kept until saved or discarded
 
-A scene's edits SHALL be kept while the app runs until they are saved or discarded, as
-`scene-saving` says: leaving the editor and opening the scene again SHALL show them, and so SHALL
-the scene's thumbnail. A kept edit SHALL keep each card's entry from the document it was made from,
-so every part of a card's entry but its cells, its group and the settings the user changed stays as
-the host gave it.
+A scene's edits SHALL be kept while the app runs until saved or discarded (`scene-saving`):
+opening the scene again, and its thumbnail, SHALL show them. A kept edit SHALL keep every part of
+each card's entry but its cells, its group and the settings the user changed as the host gave it.
 
-Source: `product.md`: saves are explicit. Decision (maintainer, 2026-11-07): unsaved edits are asked
-about before a quit or a switch of panel. Decision (maintainer, 2026-11-08): card settings are
-edited in the inspector (`card-settings`).
+Source: `product.md`: saves are explicit. Decisions (maintainer): unsaved edits are asked about
+before a quit or a switch of panel (2026-11-07); card settings are edited in the inspector
+(2026-11-08).
 
 #### Scenario: Reopening a scene
 

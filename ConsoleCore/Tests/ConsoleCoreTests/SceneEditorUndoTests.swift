@@ -100,3 +100,82 @@ import Testing
         #expect(!manager.canUndo)
     }
 }
+
+/// `card-settings`, "Each setting change is one step to undo" and "A shared setting is changed on
+/// every selected card" (design D4).
+@MainActor struct SceneEditorSettingsUndoTests {
+    private let manager = UndoManager()
+    private let vu = card("vu_meter", rect(0, 0, 4, 4), group: "g")
+    private let peak = card("peak_rms", rect(4, 0, 4, 4), group: "g")
+    private let loose = card("peak_rms", rect(8, 0, 4, 4))
+    private let editor: SceneEditor
+
+    init() throws {
+        manager.groupsByEvent = false
+        editor = SceneEditor(layout: try layout([vu, peak, loose]), undoManager: manager)
+    }
+
+    @Test func aChangeIsOneStepNamedForItsLabel() {
+        editor.select(loose.id)
+        editor.set("lamp_hold_s", to: .integer(2), label: "Lamp hold", on: [loose.id])
+        #expect(manager.undoActionName == "Change Lamp hold")
+        #expect(editor.layout.card(loose.id)?.settings["lamp_hold_s"] == .integer(2))
+        manager.undo()
+        #expect(editor.layout.card(loose.id)?.settings.isEmpty == true)
+        #expect(!manager.canUndo)
+    }
+
+    @Test func useDefaultIsOneStepNamedForItsLabel() {
+        editor.select(loose.id)
+        editor.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
+        editor.useDefault("floor_db", label: "Floor", on: [loose.id])
+        #expect(manager.undoActionName == "Use Default for Floor")
+        #expect(editor.layout.card(loose.id)?.settings["floor_db"] == nil)
+        manager.undo()
+        #expect(editor.layout.card(loose.id)?.settings["floor_db"] == .integer(-80))
+    }
+
+    @Test func settingTheCurrentValueAddsNoStep() {
+        editor.select(loose.id)
+        editor.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
+        manager.removeAllActions()
+        editor.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
+        editor.useDefault("show_scale", label: "Scale", on: [loose.id])
+        #expect(!manager.canUndo)
+    }
+
+    @Test func aChangeOnTwoCardsUndoesAsOne() {
+        editor.select(vu.id)
+        editor.set("show_readout", to: .bool(false), label: "Readout", on: [vu.id, peak.id])
+        #expect(editor.selectedCards.allSatisfy { $0.settings["show_readout"] == .bool(false) })
+        manager.undo()
+        #expect(editor.selectedCards.allSatisfy { $0.settings.isEmpty })
+        #expect(!manager.canUndo)
+    }
+
+    @Test func aChangeOnOneCardOfAGroupChangesThatCardAlone() {
+        editor.select(vu.id)
+        #expect(editor.selection == [vu.id, peak.id])
+        editor.set("channel", to: .string("right"), label: "Channel", on: [vu.id])
+        #expect(editor.layout.card(vu.id)?.settings["channel"] == .string("right"))
+        #expect(editor.layout.card(peak.id)?.settings.isEmpty == true)
+    }
+
+    @Test func aCardThatLeftTheSelectionIsStillChanged() {
+        editor.select(loose.id)
+        editor.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
+        editor.select(vu.id)
+        editor.set("floor_db", to: .integer(-70), label: "Floor", on: [loose.id])
+        #expect(editor.layout.card(loose.id)?.settings["floor_db"] == .integer(-70))
+        #expect(editor.layout.card(vu.id)?.settings.isEmpty == true)
+    }
+
+    @Test func aReadOnlySceneRefusesAChange() throws {
+        let readOnly = SceneEditor(layout: try layout([loose]), readOnly: .builtIn)
+        readOnly.select(loose.id)
+        readOnly.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
+        readOnly.useDefault("floor_db", label: "Floor", on: [loose.id])
+        #expect(readOnly.layout.card(loose.id)?.settings.isEmpty == true)
+        #expect(readOnly.refusal == .readOnly(.builtIn))
+    }
+}

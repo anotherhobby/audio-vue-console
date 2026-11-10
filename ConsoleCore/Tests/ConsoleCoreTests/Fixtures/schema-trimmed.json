@@ -12,6 +12,7 @@
      "x-label": "Columns",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "gap": {
@@ -23,6 +24,7 @@
      "x-label": "Gap",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": "px"
     },
     "rows": {
@@ -34,10 +36,16 @@
      "x-label": "Rows",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     }
    },
-   "type": "object"
+   "type": "object",
+   "x-settings": [
+    "cols",
+    "rows",
+    "gap"
+   ]
   },
   "card.calibration": {
    "additionalProperties": false,
@@ -49,7 +57,90 @@
     36
    ],
    "x-placeable": false,
+   "x-settings": [],
    "x-sizing": "free"
+  },
+  "card.dynamics_gauge": {
+   "additionalProperties": false,
+   "properties": {
+    "crushed_below_db": {
+     "default": 9.0,
+     "maximum": 14.0,
+     "minimum": 4.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Readings below this show as crushed, by mastering convention.",
+     "x-label": "Crushed below",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 0.5,
+     "x-unit": "dB"
+    },
+    "max_db": {
+     "default": 20.0,
+     "maximum": 30.0,
+     "minimum": 10.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The top of the printed dB scale.",
+     "x-label": "Scale top",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 5.0,
+     "x-unit": "dB"
+    },
+    "open_above_db": {
+     "default": 13.0,
+     "maximum": 20.0,
+     "minimum": 8.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Readings above this show as open, by mastering convention.",
+     "x-label": "Open above",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 0.5,
+     "x-unit": "dB"
+    },
+    "show_readout": {
+     "default": false,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Print the three readings as numbers too.",
+     "x-label": "Numeric readout",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "show_scale": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Show the scale and the legend.",
+     "x-label": "Scale and legend",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    }
+   },
+   "type": "object",
+   "x-aspect": 1.4,
+   "x-category": "dynamics",
+   "x-min-cells": [
+    14,
+    11
+   ],
+   "x-placeable": true,
+   "x-settings": [
+    "max_db",
+    "crushed_below_db",
+    "open_above_db",
+    "show_readout",
+    "show_scale"
+   ],
+   "x-sizing": "aspect"
   },
   "card.logo": {
    "additionalProperties": false,
@@ -61,9 +152,10 @@
     4
    ],
    "x-placeable": true,
+   "x-settings": [],
    "x-sizing": "free"
   },
-  "card.peak_rms_vertical": {
+  "card.peak_rms": {
    "additionalProperties": false,
    "properties": {
     "caution_db": {
@@ -76,6 +168,7 @@
      "x-label": "Caution above",
      "x-live": true,
      "x-standard": null,
+     "x-step": 1.0,
      "x-unit": "dBFS"
     },
     "floor_db": {
@@ -88,6 +181,7 @@
      "x-label": "Floor",
      "x-live": true,
      "x-standard": null,
+     "x-step": 10.0,
      "x-unit": "dBFS"
     },
     "hold_fall_db_s": {
@@ -103,6 +197,7 @@
       "document": null,
       "values": []
      },
+     "x-step": 1.0,
      "x-unit": "dB/s"
     },
     "hold_s": {
@@ -118,6 +213,7 @@
       "document": null,
       "values": []
      },
+     "x-step": 0.5,
      "x-unit": "s"
     },
     "over_db": {
@@ -130,6 +226,7 @@
      "x-label": "Over above",
      "x-live": true,
      "x-standard": null,
+     "x-step": 0.5,
      "x-unit": "dBFS"
     },
     "show_readout": {
@@ -140,6 +237,7 @@
      "x-label": "Numeric readout",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "show_scale": {
@@ -150,6 +248,122 @@
      "x-label": "Scale and labels",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    }
+   },
+   "type": "object",
+   "x-category": "level",
+   "x-min-cells": [
+    15,
+    10
+   ],
+   "x-placeable": true,
+   "x-settings": [
+    "floor_db",
+    "caution_db",
+    "over_db",
+    "hold_s",
+    "hold_fall_db_s",
+    "show_readout",
+    "show_scale"
+   ],
+   "x-sizing": "free"
+  },
+  "card.peak_rms_vertical": {
+   "additionalProperties": false,
+   "properties": {
+    "caution_db": {
+     "default": -6.0,
+     "maximum": 0.0,
+     "minimum": -24.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Bars above this show in the caution colour.",
+     "x-label": "Caution above",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 1.0,
+     "x-unit": "dBFS"
+    },
+    "floor_db": {
+     "default": -60.0,
+     "maximum": -20.0,
+     "minimum": -100.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The bottom of the dB scale.",
+     "x-label": "Floor",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 10.0,
+     "x-unit": "dBFS"
+    },
+    "hold_fall_db_s": {
+     "default": 15.0,
+     "maximum": 60.0,
+     "minimum": 1.0,
+     "type": "number",
+     "x-class": "measurement",
+     "x-help": "How fast the peak hold falls once its time is up.",
+     "x-label": "Hold fall",
+     "x-live": true,
+     "x-standard": {
+      "document": null,
+      "values": []
+     },
+     "x-step": 1.0,
+     "x-unit": "dB/s"
+    },
+    "hold_s": {
+     "default": 1.5,
+     "maximum": 10.0,
+     "minimum": 0.0,
+     "type": "number",
+     "x-class": "measurement",
+     "x-help": "How long the peak hold keeps its maximum before it falls.",
+     "x-label": "Peak hold",
+     "x-live": true,
+     "x-standard": {
+      "document": null,
+      "values": []
+     },
+     "x-step": 0.5,
+     "x-unit": "s"
+    },
+    "over_db": {
+     "default": -3.0,
+     "maximum": 0.0,
+     "minimum": -12.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "Bars above this show in the over colour.",
+     "x-label": "Over above",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 0.5,
+     "x-unit": "dBFS"
+    },
+    "show_readout": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Print peak, RMS and crest as numbers.",
+     "x-label": "Numeric readout",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "show_scale": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Show the scale and its labels.",
+     "x-label": "Scale and labels",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     }
    },
@@ -160,6 +374,172 @@
     15
    ],
    "x-placeable": true,
+   "x-settings": [
+    "floor_db",
+    "caution_db",
+    "over_db",
+    "hold_s",
+    "hold_fall_db_s",
+    "show_readout",
+    "show_scale"
+   ],
+   "x-sizing": "free"
+  },
+  "card.rta_bars": {
+   "additionalProperties": false,
+   "properties": {
+    "ceiling_db": {
+     "default": -10.0,
+     "maximum": 0.0,
+     "minimum": -40.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The top of the dBFS scale.",
+     "x-label": "Ceiling",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 5.0,
+     "x-unit": "dBFS"
+    },
+    "floor_db": {
+     "default": -60.0,
+     "maximum": -20.0,
+     "minimum": -160.0,
+     "type": "number",
+     "x-class": "display_range",
+     "x-help": "The bottom of the dBFS scale.",
+     "x-label": "Floor",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 5.0,
+     "x-unit": "dBFS"
+    },
+    "gap": {
+     "default": 0.14,
+     "maximum": 0.5,
+     "minimum": 0.0,
+     "type": "number",
+     "x-class": "appearance",
+     "x-help": "The space between bars, as a fraction of each band's width.",
+     "x-label": "Bar gap",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 0.02,
+     "x-unit": ""
+    },
+    "major_color": {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string",
+     "x-class": "appearance",
+     "x-help": "The major lines' colour; unset uses the palette's grid colour.",
+     "x-label": "Major line colour",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "major_grid": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Draw a line at each major level.",
+     "x-label": "Major level lines",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "major_weight_px": {
+     "default": 1,
+     "maximum": 8,
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "appearance",
+     "x-help": "How thick the major level lines are.",
+     "x-label": "Major line weight",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 1,
+     "x-unit": "px"
+    },
+    "minor_color": {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string",
+     "x-class": "appearance",
+     "x-help": "The minor lines' colour; unset uses the palette's grid colour.",
+     "x-label": "Minor line colour",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "minor_grid": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Draw a line halfway between the major levels.",
+     "x-label": "Minor level lines",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "minor_weight_px": {
+     "default": 1,
+     "maximum": 8,
+     "minimum": 1,
+     "type": "integer",
+     "x-class": "appearance",
+     "x-help": "How thick the minor level lines are.",
+     "x-label": "Minor line weight",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": 1,
+     "x-unit": "px"
+    },
+    "peak_hold": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Show each band's held peak.",
+     "x-label": "Peak hold",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    },
+    "show_labels": {
+     "default": true,
+     "type": "boolean",
+     "x-class": "appearance",
+     "x-help": "Label the level and frequency axes.",
+     "x-label": "Axis labels",
+     "x-live": true,
+     "x-standard": null,
+     "x-step": null,
+     "x-unit": ""
+    }
+   },
+   "type": "object",
+   "x-category": "spectrum",
+   "x-min-cells": [
+    17,
+    10
+   ],
+   "x-placeable": true,
+   "x-settings": [
+    "floor_db",
+    "ceiling_db",
+    "major_grid",
+    "minor_grid",
+    "major_weight_px",
+    "minor_weight_px",
+    "major_color",
+    "minor_color",
+    "show_labels",
+    "peak_hold",
+    "gap"
+   ],
    "x-sizing": "free"
   },
   "card.vu_meter": {
@@ -183,6 +563,7 @@
        "smpte"
       ]
      },
+     "x-step": null,
      "x-unit": ""
     },
     "channel": {
@@ -196,6 +577,7 @@
      "x-label": "Channel",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "lamp_hold_s": {
@@ -208,6 +590,7 @@
      "x-label": "Lamp hold",
      "x-live": true,
      "x-standard": null,
+     "x-step": 0.05,
      "x-unit": "s"
     },
     "reference_dbfs": {
@@ -223,6 +606,7 @@
       "document": null,
       "values": []
      },
+     "x-step": 1.0,
      "x-unit": "dBFS"
     },
     "show_face": {
@@ -233,6 +617,7 @@
      "x-label": "Scale and labels",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     }
    },
@@ -244,6 +629,13 @@
     14
    ],
    "x-placeable": true,
+   "x-settings": [
+    "channel",
+    "alignment",
+    "reference_dbfs",
+    "lamp_hold_s",
+    "show_face"
+   ],
    "x-sizing": "aspect"
   },
   "card.waveform": {
@@ -259,6 +651,7 @@
      "x-label": "Full height at",
      "x-live": true,
      "x-standard": null,
+     "x-step": 1.0,
      "x-unit": "dBFS"
     },
     "show_grid": {
@@ -269,6 +662,7 @@
      "x-label": "Gridlines",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "show_labels": {
@@ -279,6 +673,7 @@
      "x-label": "Axis labels",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "span_s": {
@@ -294,6 +689,7 @@
      "x-label": "Time span",
      "x-live": true,
      "x-standard": null,
+     "x-step": null,
      "x-unit": "s"
     }
    },
@@ -304,6 +700,12 @@
     7
    ],
    "x-placeable": true,
+   "x-settings": [
+    "span_s",
+    "ceiling_db",
+    "show_grid",
+    "show_labels"
+   ],
    "x-sizing": "free"
   },
   "install.input": {
@@ -316,6 +718,7 @@
      "x-label": "Device",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "fmt": {
@@ -329,6 +732,7 @@
      "x-label": "Sample format",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "pair": {
@@ -348,6 +752,7 @@
      "x-label": "Channel pair",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     },
     "rate": {
@@ -366,6 +771,7 @@
      "x-label": "Rate",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": "Hz"
     },
     "stream_channels": {
@@ -377,10 +783,18 @@
      "x-label": "Stream channels",
      "x-live": false,
      "x-standard": null,
+     "x-step": null,
      "x-unit": ""
     }
    },
-   "type": "object"
+   "type": "object",
+   "x-settings": [
+    "device",
+    "fmt",
+    "stream_channels",
+    "pair",
+    "rate"
+   ]
   }
  },
  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -415,5 +829,5 @@
    "label": "audio-vue"
   }
  ],
- "x-schema-version": 4
+ "x-schema-version": 8
 }

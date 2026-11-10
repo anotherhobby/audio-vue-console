@@ -59,7 +59,10 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   split by `ConsoleCore`'s `GallerySections`, `gallery-sections` 2026-11-08; thumbnails or boxes,
   Duplicate),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
-  `SceneInspector` and `SceneSettingsPanel`, `CardLibrary` (the schema's placeable cards under the
+  `SceneInspector` (a card's place and settings; several cards' Group/Ungroup, shared settings,
+  then a collapsed section per card) and `SceneSettingsPanel`, `CardSettings` (`CardSettingsList`,
+  `SettingRow`, `SettingControl`, `NumberField`, `ColourWell`; `card-settings` 2026-11-09),
+  `CardLibrary` (the schema's placeable cards under the
   panel's categories, from `SchemaFacts.library`, `gallery-sections` 2026-11-08), and
   `SceneMetrics`. From `scene-save` (2026-11-07): `SceneCommands` (File ▸ Save and Revert to Saved
   through the `sceneFile` focused value), `WriteFailureAlert` (`WriteFailureText`: one alert per
@@ -137,7 +140,9 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Scene rendering (`scene-render`, 2026-11-07): `HostClient+Scenes` and `HostClient+Cards` (scenes,
   install, schema, images, the card manifest), `JSONValue` (documents passed through whole),
   `SceneDocument` and `LaidOutScene` (a document as a layout and back), `SchemaFacts` (placeable
-  cards, minimums, the grid's defaults), `DisplayShape`, `PanelScenes` (made by
+  cards, minimums, the grid's defaults, each card's `SettingGroup`), `SettingGroup` and
+  `SettingValues` (declarations in declared order, shared settings, effective values, off-standard
+  notes, numbers written to range and step; `card-settings`), `HexColour`, `DisplayShape`, `PanelScenes` (made by
   `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,
   2026-11-07): `Draft` (a scene's parse, its layout and its base revision; unsaved by layout, by a
   loaded version or as a copy), `HostClient+SceneWrites` (create, write, delete; `.stale`,

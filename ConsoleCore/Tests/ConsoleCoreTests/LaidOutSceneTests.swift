@@ -73,6 +73,70 @@ struct LaidOutSceneTests {
         )
     }
 
+    // MARK: Settings (`card-settings`, design D1)
+
+    private static func rta() throws -> LaidOutScene {
+        let file = URL(filePath: #filePath).deletingLastPathComponent()
+            .appending(path: "Fixtures/rta-scene.json")
+        let doc = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: file))
+        let document = SceneDocument(id: "rta", name: "RTA", builtIn: false, fixed: false, doc: doc)
+        return try LaidOutScene(document, defaultGrid: defaults)
+    }
+
+    @Test func aCardReadsItsParamsAsSettings() throws {
+        let card = try #require(Self.rta().layout.cards.first)
+        #expect(card.kind == "rta_bars")
+        #expect(card.settings.count == 6)
+        #expect(card.settings["floor_db"] == .integer(-80))
+        #expect(card.settings["major_color"] == .string("#2a3550"))
+    }
+
+    @Test func anUnchangedLayoutWritesTheDocumentAsRead() throws {
+        let laid = try Self.rta()
+        #expect(laid.doc(for: laid.layout) == laid.document.doc)
+    }
+
+    @Test func aChangedSettingIsWrittenBesideThePlateAndAlternate() throws {
+        let laid = try LaidOutScene(
+            Self.scene(
+                ##"{"cards": [{"card": "meter", "colspan": 8, "rowspan": 6, "plate": "#123456", "##
+                    + #""alternate": {"card": "logo"}, "params": {"floor_db": -60}}]}"#),
+            defaultGrid: Self.defaults)
+        let id = try #require(laid.layout.cards.first?.id)
+        let changed = laid.layout.setting("floor_db", to: .integer(-80), on: [id])
+        let entry = try #require(laid.doc(for: changed)["cards"]?.arrayValue?.first)
+        #expect(entry["params"] == .object(["floor_db": .integer(-80)]))
+        #expect(entry["plate"] == .string("#123456"))
+        #expect(entry["alternate"] == .object(["card": .string("logo")]))
+    }
+
+    @Test func emptyingACardsSettingsDropsItsParams() throws {
+        let laid = try LaidOutScene(
+            Self.scene(#"{"cards": [{"card": "meter", "params": {"floor_db": -60}}]}"#),
+            defaultGrid: Self.defaults)
+        let id = try #require(laid.layout.cards.first?.id)
+        let emptied = laid.layout.unsetting("floor_db", on: [id])
+        let entry = try #require(laid.doc(for: emptied)["cards"]?.arrayValue?.first)
+        #expect(entry["params"] == nil)
+    }
+
+    @Test func aCopyKeepsEachCardsSettings() throws {
+        let laid = try Self.rta()
+        let document = SceneDocument(
+            id: "copy", name: "Copy", builtIn: false, fixed: false, doc: laid.document.doc)
+        let copied = laid.copy(laid.layout, as: document)
+        #expect(copied.layout.cards.first?.settings == laid.layout.cards.first?.settings)
+        #expect(copied.doc(for: copied.layout)["cards"] == laid.document.doc["cards"])
+    }
+
+    @Test func paramsThatAreNotAnObject() throws {
+        #expect(throws: LayoutRefusal.unreadableCard) {
+            try LaidOutScene(
+                Self.scene(#"{"cards": [{"card": "meter", "params": [1]}]}"#),
+                defaultGrid: Self.defaults)
+        }
+    }
+
     @Test func aCardWithNoName() throws {
         #expect(throws: LayoutRefusal.unreadableCard) {
             try LaidOutScene(Self.scene(#"{"cards": [{"col": 0}]}"#), defaultGrid: Self.defaults)

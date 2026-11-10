@@ -69,4 +69,20 @@ struct PlateChangesTests {
         let new = try old.moving([meter.id], by: CellOffset(cols: 0, rows: 4))
         #expect(PlateChanges.between(old, new).redraw == [[meter.id, waveform.id]])
     }
+
+    /// `card-settings`, design D6: a settings change on one grouped card redraws its group alone.
+    @Test func aSettingsChangeInAGroupDrawsThatGroup() throws {
+        let old = try base().grouping([meter.id, waveform.id])
+        let new = old.setting("floor_db", to: .integer(-80), on: [meter.id])
+        let changes = PlateChanges.between(old, new)
+        #expect(changes.redraw == [[meter.id, waveform.id]])
+        #expect(changes.removed.isEmpty)
+    }
+
+    @Test func aMoveStillDrawsByCells() throws {
+        let old = try base().setting("floor_db", to: .integer(-80), on: [meter.id])
+        let new = try old.moving([logo.id], by: CellOffset(cols: 2, rows: 0))
+        #expect(PlateChanges.between(old, new).redraw == [[logo.id]])
+        #expect(PlateChanges.cells(of: new)[[logo.id]] == rect(32, 0, 8, 8))
+    }
 }

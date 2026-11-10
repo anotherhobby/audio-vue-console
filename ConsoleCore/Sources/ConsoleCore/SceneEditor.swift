@@ -143,6 +143,24 @@ public final class SceneEditor {
         commit("Delete") { () throws(LayoutRefusal) in layout.removing(selection) }
     }
 
+    /// Sets the setting `key`, declared as `label`, to `value` on the cards `ids`: the whole
+    /// selection from its shared settings, or one card from its own section (`card-settings`,
+    /// design D4). The cards need not still be selected, so a colour chosen just before the
+    /// selection changed still lands on the cards it was chosen for (design D8).
+    public func set(_ key: String, to value: JSONValue, label: String, on ids: Set<UUID>) {
+        commit("Change \(label)") { () throws(LayoutRefusal) in
+            layout.setting(key, to: value, on: ids)
+        }
+    }
+
+    /// Leaves the setting `key`, declared as `label`, unset on the cards `ids`, so each takes its
+    /// own default. Not called reset, which is the panel's measurement reset.
+    public func useDefault(_ key: String, label: String, on ids: Set<UUID>) {
+        commit("Use Default for \(label)") { () throws(LayoutRefusal) in
+            layout.unsetting(key, on: ids)
+        }
+    }
+
     /// Puts the scene back at `layout`, as the host holds it, as one undoable step named Revert
     /// (`scene-saving`, "Revert discards unsaved edits"). `layout` is of this editor's parse.
     public func revert(to layout: SceneLayout) {

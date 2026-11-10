@@ -69,8 +69,9 @@ default (or none), and a `Shape`: `.boolean`, `.number(range, step)`, `.integer(
 kind, parsed in the same pass as its other facts.
 
 Order comes from the card's `x-settings` (keys in declared order) and step from each setting's
-`x-step`, both asked of audio-vue (D7). Until audio-vue answers, the parse is built and tested on the
-trimmed fixture with both keywords added, and the inspector is not shipped (`tasks.md`, group 4).
+`x-step`, both asked of audio-vue (D7) and exported as asked (audio-vue `schema-step-and-order`;
+the panel's export read 2026-11-09 matched the fixture card for card). A key `x-settings` leaves out
+follows by name, so no declared setting is lost.
 
 Alternative: an order-preserving decode of the raw schema bytes. That would put a second JSON parser
 in the app to recover something the host can simply state.

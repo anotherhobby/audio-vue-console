@@ -217,3 +217,25 @@ struct SceneDraftsTests {
         #expect(drafts.copies.isEmpty)
     }
 }
+
+/// `card-settings`: a setting changed and undone leaves the draft as read, not unsaved.
+@MainActor struct SceneDraftsSettingsTests {
+    @Test func aSettingChangeThenItsUndoIsNotUnsaved() throws {
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        let drafts = SceneDrafts()
+        let draft = try drafts.draft(
+            for: try SceneDraftsTests.rta(), defaultGrid: SceneDraftsTests.grid)
+        let editor = SceneEditor(layout: draft.layout, undoManager: manager) {
+            drafts.keep($0, for: "rta")
+        }
+        let bars = try #require(draft.layout.cards.last)
+        editor.select(bars.id)
+        editor.set("floor_db", to: .integer(-80), label: "Floor", on: [bars.id])
+        #expect(drafts.draft("rta")?.isUnsaved == true)
+        let entry = drafts.draft("rta")?.doc["cards"]?.arrayValue?.last
+        #expect(entry?["params"] == .object(["floor_db": .integer(-80)]))
+        manager.undo()
+        #expect(drafts.draft("rta")?.isUnsaved == false)
+    }
+}

@@ -60,10 +60,12 @@ struct SceneEditorView: View {
             canvas.frame(minWidth: SceneMetrics.canvasMinWidth)
         }
         .inspector(isPresented: $showsInspector) {
-            SceneInspector(editor: editor, document: document)
-                .inspectorColumnWidth(
-                    min: SceneMetrics.inspectorMinWidth, ideal: SceneMetrics.inspectorIdealWidth,
-                    max: SceneMetrics.inspectorMaxWidth)
+            SceneInspector(
+                editor: editor, document: document, settings: scenes.facts?.settings ?? [:]
+            )
+            .inspectorColumnWidth(
+                min: SceneMetrics.inspectorMinWidth, ideal: SceneMetrics.inspectorIdealWidth,
+                max: SceneMetrics.inspectorMaxWidth)
         }
     }
 

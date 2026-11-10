@@ -265,3 +265,39 @@ struct PlacementTests {
         #expect(clamped == CellOffset(cols: 2, rows: -2))
     }
 }
+
+/// `card-settings`, design D4: a card's settings are changed and unset on the cards named, and no
+/// others.
+struct SceneLayoutSettingsTests {
+    @Test func settingAKeyChangesTheCardsNamedAndNothingElse() throws {
+        let first = card("peak_rms", rect(0, 0, 8, 4), group: "g")
+        let second = card("peak_rms", rect(8, 0, 8, 4), group: "g")
+        let third = card("peak_rms", rect(16, 0, 8, 4))
+        let scene = try layout([first, second, third])
+        let changed = scene.setting("peak_hold_s", to: .decimal(1.5), on: [first.id, second.id])
+        #expect(
+            changed.cards.map { $0.settings["peak_hold_s"] } == [.decimal(1.5), .decimal(1.5), nil])
+        #expect(changed.cards.map(\.cells) == scene.cards.map(\.cells))
+        #expect(changed.cards.map(\.group) == scene.cards.map(\.group))
+    }
+
+    @Test func settingOneCardOfAGroupLeavesItsGroupAlone() throws {
+        let first = card("vu_meter", rect(0, 0, 8, 4), group: "g")
+        let second = card("peak_rms", rect(8, 0, 8, 4), group: "g")
+        let changed = try layout([first, second]).setting(
+            "channel", to: .string("right"), on: [first.id])
+        #expect(changed.cards.map { $0.settings["channel"] } == [.string("right"), nil])
+    }
+
+    @Test func unsettingRemovesTheKeyFromEachCard() throws {
+        let first = LayoutCard(
+            kind: "peak_rms", cells: rect(0, 0, 8, 4), settings: ["floor_db": .integer(-80)])
+        let second = LayoutCard(
+            kind: "peak_rms", cells: rect(8, 0, 8, 4),
+            settings: ["floor_db": .integer(-60), "show_scale": .bool(false)])
+        let scene = try layout([first, second])
+        let unset = scene.unsetting("floor_db", on: [first.id, second.id])
+        #expect(unset.cards.map(\.settings) == [[:], ["show_scale": .bool(false)]])
+        #expect(try SceneLayout(grid: unset.grid, cards: unset.cards) == unset)
+    }
+}

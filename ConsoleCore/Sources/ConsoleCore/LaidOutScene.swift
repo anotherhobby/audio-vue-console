@@ -1,7 +1,8 @@
 import Foundation
 
 /// A scene document read as a layout the canvas edits, keeping each card's entry by its id, so
-/// writing the layout back changes only its cells and groups (design D6).
+/// writing the layout back changes only its cells, groups and settings (design D6; `card-settings`
+/// design D1).
 public struct LaidOutScene: Sendable, Equatable {
     public let document: SceneDocument
     public let layout: SceneLayout
@@ -47,7 +48,8 @@ public struct LaidOutScene: Sendable, Equatable {
     }
 
     /// The document's `doc` with its cards as `layout` places them, in its order: each card's
-    /// original entry with its cells and group replaced, and a new card's entry those alone.
+    /// original entry with its cells, group and `params` replaced, and a new card's entry those
+    /// alone. A card with no settings is written with no `params`.
     public func doc(for layout: SceneLayout) -> JSONValue {
         var fields = document.doc.objectValue ?? [:]
         fields["cards"] = .array(layout.cards.map(entry(for:)))
@@ -61,6 +63,7 @@ public struct LaidOutScene: Sendable, Equatable {
         fields["colspan"] = .integer(card.cells.cols)
         fields["rowspan"] = .integer(card.cells.rows)
         fields["group"] = card.group.map(JSONValue.string)
+        fields["params"] = card.settings.isEmpty ? nil : .object(card.settings)
         return .object(fields)
     }
 
@@ -73,7 +76,17 @@ public struct LaidOutScene: Sendable, Equatable {
             cols: try cell(entry["colspan"], unset: grid.cols),
             rows: try cell(entry["rowspan"], unset: grid.rows))
         let group = entry["group"]?.stringValue
-        return LayoutCard(id: id, kind: kind, cells: cells, group: group)
+        return LayoutCard(
+            id: id, kind: kind, cells: cells, group: group, settings: try settings(entry["params"]))
+    }
+
+    /// A card entry's `params`, none where it is missing or null.
+    private static func settings(_ value: JSONValue?) throws(LayoutRefusal) -> [String: JSONValue] {
+        switch value {
+        case nil, .null?: return [:]
+        case .object(let settings)?: return settings
+        default: throw .unreadableCard
+        }
     }
 
     /// A cell field's whole number, `unset` where it is missing or null.

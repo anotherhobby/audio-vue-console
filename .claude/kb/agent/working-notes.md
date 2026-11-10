@@ -113,7 +113,15 @@ Three changes, built in this order (maintainer, 2026-11-08):
    alike, then each card has a collapsed section of its own. A card's own chain setting carries no
    calibration warning. Colours use the system colour panel, stored as sRGB `#RRGGBB`. The
    information page comes later.
-2. `scene-settings` (planned, valid): the scene's blocks in the inspector when nothing is selected;
+   Built 2026-11-09; the maintainer ran task 5.1 on the proving host with no issue found, and it
+   was archived as `openspec/changes/archive/2026-11-09-card-settings` (its spec `card-settings`;
+   `scene-canvas` and `scene-rendering` updated). A card the app had not seen (`loudness_scope`'s
+   band colours, added to audio-vue that day) showed its settings with no app change. Open, raised
+   2026-11-09 and not yet ruled: an unset palette colour shows a black swatch, since the schema
+   says which palette colour it follows only in its help (and `loudness_scope`'s band 3 is a mix).
+   Proposed: audio-vue declares each fallback as data (`x-palette`), or the render helper reports
+   effective colours.
+2. `scene-settings` (planned, valid, now unblocked): the scene's blocks in the inspector when nothing is selected;
    backdrop as one source with gradient stops and image upload; grid gap and density at the scene's
    aspect. Calibration warning only where no calibration holds at the scene's rate (maintainer:
    users calibrate at several rates and switch scenes between them; audio-vue applies the newest
@@ -126,10 +134,12 @@ Three changes, built in this order (maintainer, 2026-11-08):
    ship with audio-vue; a Styles sidebar section previewing on a picked scene. Specs, design and
    tasks wait on audio-vue's answer.
 
-audio-vue asks, placed in its root 2026-11-08, awaiting replies: `card-settings-handoff.md`
-(`x-step`; `x-settings` on cards and blocks; a note on `settings-schema`'s chain wording),
-`scene-settings-handoff.md` (calibrated rates of the installed chain) and `styles-handoff.md` (a copy
-of `openspec/changes/styles/handoff.md`). audio-vue's open `loudness-scope` change renames
+audio-vue asks, placed in its root 2026-11-08: `card-settings-handoff.md` was answered by
+audio-vue's `schema-step-and-order` (`x-step` on every setting, `x-settings` on every card, block
+and install definition; the chain wording in "A scene sets no measured value" now accepts a card's
+channel choice), and the file is gone; the live panel's export matched on 2026-11-09.
+`scene-settings-handoff.md` was answered by `GET /v1/calibration` (see input-and-rates below).
+`styles-handoff.md` (a copy of `openspec/changes/styles/handoff.md`) awaits a reply. audio-vue's open `loudness-scope` change renames
 `loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
 not placeable.
 

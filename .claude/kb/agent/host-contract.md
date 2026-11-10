@@ -118,6 +118,16 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
     calibrated rate is fine (maintainer, 2026-11-08). A card's own chain setting, such as
     `vu_meter.channel`, carries no warning.
   - **Record** is what a run states about itself.
+- **Each setting's declaration** (Built, audio-vue `schema-step-and-order`; read live 2026-11-09):
+  under `properties`, `type` (`boolean`, `number`, `integer`, `string`) or `enum` (an `integer` may
+  carry one, as `install.input.rate` does), `minimum`/`maximum`, `pattern` `^#[0-9a-fA-F]{6}$` for a
+  colour, `default` (absent for a colour that follows the palette), and `x-label`, `x-help`,
+  `x-unit`, `x-class`, `x-standard` (`null` off the measurement class, `{document: null, values: []}`
+  where none governs it), `x-live` and `x-step` (always present, null for none, never a
+  constraint). Each `card.<name>`, `block.<name>` and `install.<name>` lists its keys in declared
+  order as `x-settings`, since a decoded JSON object keeps no order. Every card number has a range
+  and a step; block numbers mostly have neither. The app reads them into `SettingGroup`
+  (`SchemaFacts.settings`, by card).
 - **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
   `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and
   naming every card, placeable or not; each `card.<name>` also carries `x-category`. The app reads

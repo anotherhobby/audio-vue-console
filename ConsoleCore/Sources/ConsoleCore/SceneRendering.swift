@@ -22,10 +22,15 @@ public final class SceneRendering {
         case codeDiffers([String])
     }
 
-    /// A plate's layer and the cells its plate covered when it was drawn.
+    /// A plate's layer, the cells its plate covered when it was drawn, and the settings its cards
+    /// were drawn with, by card id.
     public struct PlacedLayer: Sendable {
         public let layer: RenderedLayer
         public let cells: CellRect
+        public let settings: [UUID: [String: JSONValue]]
+
+        /// What the plate was drawn from, to compare with what the layout wants now.
+        var state: PlateState { PlateState(cells: cells, settings: settings) }
     }
 
     public private(set) var backdrop: RenderedLayer?
@@ -98,7 +103,7 @@ public final class SceneRendering {
             await draw(layout, plates: nil, through: queue)
             return
         }
-        let changes = PlateChanges.needed(drawn: plates.mapValues(\.cells), for: layout)
+        let changes = PlateChanges.needed(drawn: plates.mapValues(\.state), for: layout)
         for removed in changes.removed { plates[removed] = nil }
         await withDiscardingTaskGroup { group in
             for plate in changes.redraw {
@@ -159,13 +164,14 @@ public final class SceneRendering {
         }
         notice = answer.header["notice"]?.stringValue
         let current = PlateChanges.cells(of: layout)
-        let drawnCells = PlateChanges.cells(of: drawn)
+        let drawnStates = PlateChanges.drawn(of: drawn)
         for layer in layers {
             let members = Set(layer.cardIDs)
             if layer.kind == .backdrop {
                 backdrop = layer
-            } else if current[members] != nil, let cells = drawnCells[members] {
-                plates[members] = PlacedLayer(layer: layer, cells: cells)
+            } else if current[members] != nil, let state = drawnStates[members] {
+                plates[members] = PlacedLayer(
+                    layer: layer, cells: state.cells, settings: state.settings)
             }
         }
     }

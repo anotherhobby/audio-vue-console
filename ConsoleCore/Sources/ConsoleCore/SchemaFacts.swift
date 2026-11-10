@@ -1,7 +1,7 @@
 /// What the app reads from the host's settings schema to lay scenes out: each card's minimum and
-/// whether a user may place it, the categories the library groups cards under, and the grid a
-/// scene that declares none is laid out on (audio-vue `card-layout`, `card-categories`,
-/// `scene-grid`).
+/// whether a user may place it, the categories the library groups cards under, the grid a scene
+/// that declares none is laid out on, and each card's settings (audio-vue `card-layout`,
+/// `card-categories`, `scene-grid`; `card-settings`).
 public struct SchemaFacts: Sendable, Equatable {
     /// One card as the schema declares it.
     public struct Card: Sendable, Equatable, Identifiable {
@@ -52,11 +52,18 @@ public struct SchemaFacts: Sendable, Equatable {
     /// The categories in the panel's order.
     public let categories: [Category]
     public let defaultGrid: CellSize
+    /// Each card's settings in declared order, by card name: every card the schema declares,
+    /// placeable or not.
+    public let settings: [String: SettingGroup]
 
-    public init(cards: [String: Card], categories: [Category], defaultGrid: CellSize) {
+    public init(
+        cards: [String: Card], categories: [Category], defaultGrid: CellSize,
+        settings: [String: SettingGroup] = [:]
+    ) {
         self.cards = cards
         self.categories = categories
         self.defaultGrid = defaultGrid
+        self.settings = settings
     }
 
     /// The facts in `schema`, the body of `/v1/schema`, or nil where it lacks the grid's defaults.
@@ -67,8 +74,10 @@ public struct SchemaFacts: Sendable, Equatable {
             let rows = grid["rows"]?["default"]?.intValue
         else { return nil }
         var cards: [String: Card] = [:]
+        var settings: [String: SettingGroup] = [:]
         for (key, definition) in definitions where key.hasPrefix(Self.cardPrefix) {
             let name = String(key.dropFirst(Self.cardPrefix.count))
+            settings[name] = SettingGroup(definition: definition)
             guard let minimum = Self.minimum(definition["x-min-cells"]) else { continue }
             cards[name] = Card(
                 name: name, minimum: minimum,
@@ -76,7 +85,7 @@ public struct SchemaFacts: Sendable, Equatable {
         }
         self.init(
             cards: cards, categories: Self.categories(schema["x-categories"]),
-            defaultGrid: CellSize(cols: cols, rows: rows))
+            defaultGrid: CellSize(cols: cols, rows: rows), settings: settings)
     }
 
     /// The placeable cards under their categories, both in the panel's order, leaving out a

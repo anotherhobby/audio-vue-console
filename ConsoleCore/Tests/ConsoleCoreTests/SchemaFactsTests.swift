@@ -67,4 +67,64 @@ struct SchemaFactsTests {
     @Test func aSchemaWithoutTheGridsDefaults() {
         #expect(SchemaFacts(schema: .object(["$defs": .object([:])])) == nil)
     }
+
+    // MARK: Settings (`card-settings`, design D2)
+
+    @Test func aVUMetersSettingsInDeclaredOrderWithTheirShapes() throws {
+        let vu = try #require(try Self.facts().settings["vu_meter"])
+        #expect(
+            vu.settings.map(\.key) == [
+                "channel", "alignment", "reference_dbfs", "lamp_hold_s", "show_face",
+            ])
+        #expect(
+            vu.settings.map(\.label) == [
+                "Channel", "Alignment", "0 VU at (custom)", "Lamp hold", "Scale and labels",
+            ])
+        #expect(vu["channel"]?.shape == .choice([.string("left"), .string("right")]))
+        #expect(vu["channel"]?.settingClass == "chain")
+        #expect(
+            vu["alignment"]?.standard
+                == .document("ITU-R BS.1726", values: [.string("ebu"), .string("smpte")]))
+        #expect(vu["reference_dbfs"]?.standard == .governedByNone)
+        #expect(
+            vu["lamp_hold_s"]?.shape
+                == .number(.init(minimum: 0.15, maximum: 5, step: 0.05)))
+        #expect(vu["lamp_hold_s"]?.unit == "s")
+        #expect(vu["lamp_hold_s"]?.defaultValue == .decimal(0.9))
+        #expect(vu["show_face"]?.shape == .boolean)
+        #expect(vu["show_face"]?.standard == .notApplicable)
+        #expect(vu["show_face"]?.help == "Show the scale and its labels.")
+    }
+
+    @Test func rtaBarsColoursHaveNoDefault() throws {
+        let bars = try #require(try Self.facts().settings["rta_bars"])
+        #expect(bars["major_color"]?.shape == .colour)
+        #expect(bars["major_color"]?.defaultValue == nil)
+        #expect(bars["major_weight_px"]?.shape == .integer(.init(minimum: 1, maximum: 8, step: 1)))
+        #expect(bars.settings.first?.key == "floor_db")
+        #expect(bars.settings.count == 11)
+    }
+
+    @Test func aCardWithNoSettingsReadsNone() throws {
+        #expect(try Self.facts().settings["logo"]?.settings.isEmpty == true)
+        #expect(SettingGroup(definition: .object(["type": .string("object")])).settings.isEmpty)
+    }
+
+    @Test func anUnknownShapeReadsAsOther() {
+        let colours = JSONValue.object([
+            "type": .string("array"), "items": .object(["type": .string("string")]),
+            "x-label": .string("Colours"),
+        ])
+        let definition = JSONValue.object(["properties": .object(["colours": colours])])
+        #expect(SettingGroup(definition: definition)["colours"]?.shape == .other)
+    }
+
+    @Test func aKeyLeftOutOfTheOrderStillFollows() {
+        let flag = JSONValue.object(["type": .string("boolean")])
+        let definition = JSONValue.object([
+            "properties": .object(["b": flag, "a": flag, "c": flag]),
+            "x-settings": .array([.string("c")]),
+        ])
+        #expect(SettingGroup(definition: definition).settings.map(\.key) == ["c", "a", "b"])
+    }
 }

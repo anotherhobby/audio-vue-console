@@ -39,9 +39,34 @@ public enum JSONValue: Sendable, Hashable {
         return nil
     }
 
+    /// An integer or a decimal, as a decimal.
+    public var numberValue: Double? {
+        switch self {
+        case .integer(let number): Double(number)
+        case .decimal(let number): number
+        default: nil
+        }
+    }
+
     public var boolValue: Bool? {
         if case .bool(let flag) = self { return flag }
         return nil
+    }
+
+    /// The value as a person reads it: text as itself, a number as written, a flag as On or Off, a
+    /// list and an object as their items: what the inspector shows for a choice or a setting it
+    /// cannot edit (`card-settings`).
+    public var text: String {
+        switch self {
+        case .null: "None"
+        case .bool(let flag): flag ? "On" : "Off"
+        case .integer(let number): String(number)
+        case .decimal(let number): String(number)
+        case .string(let text): text
+        case .array(let items): items.map(\.text).joined(separator: ", ")
+        case .object(let fields):
+            fields.keys.sorted().map { "\($0): \(fields[$0]?.text ?? "")" }.joined(separator: ", ")
+        }
     }
 
     /// The value as JSON text's bytes, keys sorted so the same value always writes the same bytes.

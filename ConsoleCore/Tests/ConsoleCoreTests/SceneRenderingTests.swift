@@ -119,6 +119,25 @@ struct SceneRenderingTests {
         #expect(fixture.rendering.plates.count == 3)
     }
 
+    /// `card-settings`, design D6: a settings change draws that plate alone, with its params.
+    @Test func aSettingsChangeDrawsOnlyThatPlate() async throws {
+        let fixture = try RenderingFixture()
+        await fixture.rendering.attach(fixture.queue)
+        let first = try #require(fixture.layout.cards.first)
+        let changed = fixture.layout.setting("floor_db", to: .integer(-80), on: [first.id])
+        await fixture.rendering.show(changed)
+        #expect(fixture.launcher.requests.count == 2)
+        let request = try #require(fixture.launcher.requests.last)
+        #expect(request["plates"] == .array([.integer(0)]))
+        #expect(request["backdrop"] == .bool(false))
+        let entry = request["scene"]?["cards"]?.arrayValue?.first
+        #expect(entry?["params"] == .object(["floor_db": .integer(-80)]))
+        #expect(
+            fixture.rendering.plates[[first.id]]?.settings[first.id] == ["floor_db": .integer(-80)])
+        await fixture.rendering.show(changed)
+        #expect(fixture.launcher.requests.count == 2)
+    }
+
     @Test func aDeleteSendsNoRequest() async throws {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)
