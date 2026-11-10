@@ -171,20 +171,19 @@ calibrated for the m2x4HD, and once the hold ended the panel captured at its ins
 the panel's hold (the last run's rate until audio returns) and offers Return to Scene, the panel's
 cancel, which keeps the record (task 4.6, design D11). Rate changes from the Input section work on the panel (2026-11-09).
 
-## This Mac's output on the Capture page (built 2026-11-09, archive held for audio-vue)
+## This Mac's output on the Capture page (archived 2026-11-09)
 
-Built and run by the maintainer on the proving host, a pass of every rate included. Held unarchived
-(maintainer, 2026-11-09) until audio-vue answers the handoff: task 5.3 then checks a calibration
-sets the D10s's bit depth, and the archive syncs the specs.
-
-`openspec/changes/mac-output`. Ruled (maintainer, 2026-11-09):
+Archived as `openspec/changes/archive/2026-11-09-mac-output`. Its spec is now `mac-output`, with
+`capture-input`, `calibration-run` and `calibration-player` updated. The maintainer ran it on the
+proving host: a pass of every rate, and a calibration taking the D10s from 24 to 32-bit with
+`cal-play` 0.2.0. Ruled (maintainer, 2026-11-09):
 - The Input section shows Capture Device, Rate and Format (audio-vue), Output Device, Rate and
   Format (this Mac), and Synchronize Rates.
 - The capture rate leads, and a change made elsewhere is shown as a mismatch, never followed.
 - Bit depth is shown and flagged below 24 bits, never synchronized.
 - The output is chosen in the Input section, not Calibrate….
 - A synchronized output returns to the capture rate after a pass.
-Its handoff, `../audio-vue/mac-output-handoff.md`, was placed 2026-11-09, awaiting a reply. It asks:
-- `cal-play rate` also sets the deepest integer format and settles on either change (task 5.3
-  waits on it).
-- `settings-schema` states that choices export as an `enum`.
+Its handoff, `../audio-vue/mac-output-handoff.md`, was answered 2026-11-09 by
+`mac-output-reply-handoff.md` at this repo's root (delete once read): `cal-play` 0.2.0 sets the
+deepest integer format and settles on either change, and `settings-schema` states that choices
+export as an `enum`.

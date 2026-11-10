@@ -25,10 +25,8 @@ The app SHALL set the output device to the run's rate, and to the deepest intege
 at that rate, with `cal-play`'s rate command, and wait for it to end, before it arms the panel. A
 change of either SHALL be left to settle for as long as `cal-play` holds it.
 
-Source: audio-vue `calibration-lifecycle`, "A calibration waits for the chain to settle after a rate
-change"; audio-vue `control-api`, "The contract states a calibration's order". `pitfalls.md`,
-"Calibration: set the rate, wait, then arm". Decision (maintainer, 2026-11-09): a calibration sets
-the bit depth too; `mac-output-handoff.md` asks `cal-play` for it.
+Source: audio-vue `calibration-lifecycle` (the settle, and the deepest integer format) and
+`control-api` (a calibration's order). `pitfalls.md`. Decision (maintainer, 2026-11-09).
 
 #### Scenario: The device at another rate
 

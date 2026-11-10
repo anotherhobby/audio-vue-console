@@ -313,3 +313,12 @@ a run would have calibrated the rate the panel no longer captured at (seen by th
 at 48 kHz, sheet at 96). Readiness now takes `PanelInput.rate`, the model that writes the block.
 Do not keep a second copy of an install value in another model.
 
+## `cal-play` sets the output's bit depth as well as its rate (2026-11-09)
+
+From `cal-play` 0.2.0 (audio-vue `mac-output`), `rate` and `play` set the output to its deepest
+integer, non-exclusive PCM format at the rate, and settle 12 s after a change of rate or format.
+So a calibration leaves the Mac's output at that format, usually 32-bit. Audio MIDI Setup's
+choice does not survive a run. The D10s offers only 24 and 32-bit integer, with no 16-bit, so
+Calibrate…'s 16-bit warning never shows for it (measured by audio-vue on the proving chain).
+`cal-play rate <name>` with no rate lists the formats offered.
+

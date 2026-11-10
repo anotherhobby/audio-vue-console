@@ -93,4 +93,5 @@ Out of scope:
   - `audio-vue:control-api`: `PUT /v1/install/{block}` and `GET /v1/schema`.
   - `audio-vue:calibration-record`: the newest valid record for device and rate is in force.
   - `audio-vue:calibration-lifecycle`: the hold after a run ends only on a held level, so a click
-    from a rate change does not end it; and the chain settles after a rate change.
+    from a rate change does not end it; the chain settles after a change of rate or format; and a
+    calibration plays at the output's deepest integer format.

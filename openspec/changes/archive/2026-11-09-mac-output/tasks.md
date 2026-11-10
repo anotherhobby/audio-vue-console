@@ -120,10 +120,12 @@ Every other task can be built now.
   - run a pass of every rate with Synchronize Rates on, and check that the output returns to the
     capture rate while the panel still holds the 192 kHz result
   - run one with Synchronize Rates off, and check the output stays at 192 kHz
-- [ ] 5.3 Once audio-vue answers the handoff in 1.1 and the app is rebuilt with its `cal-play`, set
-  the D10s to 16-bit Integer in Audio MIDI Setup and run a calibration. Verify the output reads 24-
-  or 32-bit Integer after it, and that `calibration-player`'s "The device at 16 bits" scenario
-  holds.
+- [x] 5.3 Once audio-vue answers the handoff in 1.1 and the app is rebuilt with its `cal-play`, set
+  the D10s to 24-bit Integer with Output Format and run a calibration. Verify Output Format reads
+  32-bit Integer after it. audio-vue measured that the D10s offers only 24 and 32-bit integer, so
+  "The device at 16 bits" is held on this chain by its 24-bit case: the device is set to its
+  deepest integer format before the arm. Answered 2026-11-09 (`mac-output-reply-handoff.md`):
+  the app bundles `cal-play` 0.2.0.
 - [x] 5.4 Update the KB:
   - `project-map.md`: `MacOutput`, `OutputControl` and `OutputFields`; `OutputDevices` gone from
     its ConsoleCore list; `CalibrateSheet` no longer picking the output; `InputSection` with the

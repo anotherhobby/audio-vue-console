@@ -28,21 +28,23 @@ and says so. audio-vue `control-commands`: an arm needs a running panel.
 
 ### Requirement: A run names the output device feeding the panel
 
-Calibrate… SHALL ask for the output device to play through, from this Mac's output devices, and SHALL
-remember the device chosen for each panel, offering it first the next time.
+Calibrate… SHALL play through the output device chosen for the panel in the Capture page's Input
+section, naming it. While none is chosen, Calibrate… SHALL say to choose one there, and the run
+SHALL not start.
 
 Source: Recommended. `product.md`, "The model": the app never assumes where a panel runs, so it
-cannot know which output feeds it.
+cannot know which output feeds it. Decision (maintainer, 2026-11-09): the output is chosen in the
+Input section.
 
 #### Scenario: The second run on a panel
 
-- **WHEN** a run on panel `audio-vue` played through `D10s`, and Calibrate… is chosen again
-- **THEN** `D10s` is chosen already
+- **WHEN** `D10s` is the output chosen for panel `audio-vue`, and Calibrate… is chosen
+- **THEN** Calibrate… names `D10s` as the output it plays through
 
 #### Scenario: The device remembered is gone
 
 - **WHEN** the device remembered for a panel is not among this Mac's outputs
-- **THEN** no device is chosen, and the run cannot start until one is
+- **THEN** Calibrate… says to choose the output in the Input section, and the run cannot start
 
 ### Requirement: A run is a calibration, or a calibration with a characterization
 

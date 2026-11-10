@@ -123,6 +123,18 @@ Pass 1, 2026-11-09:
   - Resolution: readiness takes `PanelInput.rate`. `CalibrationRuns` no longer reads the install
     block or the schema (`pitfalls.md`).
 
+- **F12. audio-vue's answer** (resolved, 2026-11-09)
+  - Plan: D10 asks `cal-play rate` to set the deepest integer format and settle on either change.
+  - Host: built as asked in audio-vue's `mac-output` (cal-play 0.2.0; `play` does the same).
+    `calibration-lifecycle` gains "A calibration plays at the output's deepest integer format",
+    and `settings-schema`'s export requirement names choices. The arm route's description names
+    the format. The saved contract already carries it, and nothing the app uses changed.
+    Measured there: the D10s offers only 24 and 32-bit integer, plus exclusive twins. A format
+    change alone settles in 0.5 s or less, but `cal-play` keeps the full 12 s.
+  - Goes to: task and spec source.
+  - Resolution: 5.3 checks 24 to 32-bit on the D10s. `calibration-player`'s source cites the new
+    requirement. The manual Output Format keeps no wait, as D3 says.
+
 ## Questions for the maintainer
 
 None open. The maintainer agreed every behavioural choice on 2026-11-09:
