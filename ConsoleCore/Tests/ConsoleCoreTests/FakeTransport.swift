@@ -44,6 +44,8 @@ actor FakeTransport: ClientTransport {
         static let devices = Route("GET", "/v1/host/devices")
         static let schema = Route("GET", "/v1/schema")
         static func image(_ id: String) -> Route { Route("GET", "/v1/images/\(id)") }
+        static let images = Route("GET", "/v1/images")
+        static let upload = Route("POST", "/v1/images")
         static let cardManifest = Route("GET", "/v1/cards/manifest")
         static let runs = Route("GET", "/v1/runs")
         static let calibrated = Route("GET", "/v1/calibration")

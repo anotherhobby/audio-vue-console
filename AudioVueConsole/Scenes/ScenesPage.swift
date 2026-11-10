@@ -13,6 +13,8 @@ struct ScenesPage: View {
     @Binding var isEditing: Bool
     @Environment(SceneStore.self) private var store
     @State private var scenes: PanelScenes?
+    /// The panel's input, for the calibrated rates the editor warns by.
+    @State private var input: PanelInput?
     @State private var path: [String] = []
 
     var body: some View {
@@ -61,7 +63,8 @@ struct ScenesPage: View {
         {
             SceneEditorView(
                 document: document, scenes: scenes, renderer: renderer, verdict: renderer.verdict,
-                panel: Self.shape(of: scenes), live: live, open: { path.append($0) },
+                panel: Self.shape(of: scenes), live: live, input: input,
+                open: { path.append($0) },
                 reopen: { path[path.count - 1] = $0 })
         }
     }
@@ -80,6 +83,8 @@ struct ScenesPage: View {
         scenes = connection.makeScenes()
         store.scenes = scenes
         await scenes?.load()
+        input = connection.makePanelInput()
+        await input?.load()
     }
 
     /// Once the scenes are read and the renderer has compared the card code with the panel's (the
@@ -94,8 +99,8 @@ struct ScenesPage: View {
         default: return
         }
         let laidOut = store.drafts.listing(scenes.scenes).compactMap { document in
-            if let draft = store.drafts.draft(document.id) { return (draft.laidOut, draft.layout) }
-            return Self.laidOut(document, facts: facts).map { ($0, $0.layout) }
+            if let draft = store.drafts.draft(document.id) { return (draft.laidOut, draft.content) }
+            return Self.laidOut(document, facts: facts).map { ($0, $0.content) }
         }
         await store.thumbnails.draw(laidOut, context: scenes.context, through: queue)
     }

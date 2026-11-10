@@ -1,34 +1,60 @@
 import Foundation
 import Observation
 
-/// One scene's layout being edited: the selection, the last refusal, and undo. The canvas turns
-/// pointer and key events into these calls and draws what they leave (`scene-canvas`).
+/// One scene being edited, its layout and its blocks: the selection, the last refusal, and undo.
+/// The canvas and the inspector turn events into these calls and draw what they leave
+/// (`scene-canvas`, `scene-settings`).
 @MainActor @Observable
 public final class SceneEditor {
-    public private(set) var layout: SceneLayout
+    /// The scene's layout and blocks, one undo history for both (`scene-settings`, design D1).
+    public private(set) var content: SceneContent
     /// The selected cards, always whole groups.
     public private(set) var selection: Set<UUID> = []
     /// Why the last edit was refused, until the next edit or selection change.
     public private(set) var refusal: LayoutRefusal?
     /// Why the scene cannot be edited here, or nil when it can.
     public let readOnly: ReadOnlyReason?
-    /// Each card's minimum on this scene's grid, by kind; a kind with none may go down to a cell.
-    public let minimums: [String: CellSize]
+    /// Each card's minimum on a grid `SchemaFacts.referenceRows` tall, by kind, as declared.
+    @ObservationIgnored private let declaredMinimums: [String: CellSize]
 
     @ObservationIgnored private let undoManager: UndoManager?
-    @ObservationIgnored private let onCommit: (SceneLayout) -> Void
+    @ObservationIgnored private let onCommit: (SceneContent) -> Void
 
-    /// An editor for `layout`. Each committed layout goes to `onCommit`, so the app can keep it,
-    /// and each edit is registered with `undoManager`.
+    /// An editor for `content`, each card's minimum in `minimums` as declared, on a grid
+    /// `SchemaFacts.referenceRows` tall. Each committed content goes to `onCommit`, so the app
+    /// can keep it, and each edit is registered with `undoManager`.
     public init(
-        layout: SceneLayout, readOnly: ReadOnlyReason? = nil, minimums: [String: CellSize] = [:],
-        undoManager: UndoManager? = nil, onCommit: @escaping (SceneLayout) -> Void = { _ in }
+        content: SceneContent, readOnly: ReadOnlyReason? = nil, minimums: [String: CellSize] = [:],
+        undoManager: UndoManager? = nil, onCommit: @escaping (SceneContent) -> Void = { _ in }
     ) {
-        self.layout = layout
+        self.content = content
         self.readOnly = readOnly
-        self.minimums = minimums
+        declaredMinimums = minimums
         self.undoManager = undoManager
         self.onCommit = onCommit
+    }
+
+    /// An editor for `layout`, a scene with no blocks.
+    public convenience init(
+        layout: SceneLayout, readOnly: ReadOnlyReason? = nil, minimums: [String: CellSize] = [:],
+        undoManager: UndoManager? = nil, onCommit: @escaping (SceneContent) -> Void = { _ in }
+    ) {
+        self.init(
+            content: SceneContent(layout: layout), readOnly: readOnly, minimums: minimums,
+            undoManager: undoManager, onCommit: onCommit)
+    }
+
+    /// The scene's cards on its grid.
+    public var layout: SceneLayout { content.layout }
+
+    /// Each card's minimum on the scene's grid as it is now, by kind; a kind with none may go
+    /// down to a cell.
+    public var minimums: [String: CellSize] {
+        minimums(onRows: layout.grid.rows)
+    }
+
+    private func minimums(onRows rows: Int) -> [String: CellSize] {
+        declaredMinimums.mapValues { SchemaFacts.scaled($0, toRows: rows) }
     }
 
     // MARK: Selection
@@ -161,18 +187,98 @@ public final class SceneEditor {
         }
     }
 
-    /// Puts the scene back at `layout`, as the host holds it, as one undoable step named Revert
-    /// (`scene-saving`, "Revert discards unsaved edits"). `layout` is of this editor's parse.
-    public func revert(to layout: SceneLayout) {
-        commit("Revert") { () throws(LayoutRefusal) in layout }
+    /// Makes the grid `grid`, at the scene's aspect, moving every card to the cells covering the
+    /// same part of the scene, as one step; refused where a card would fall below its minimum
+    /// (`scene-settings`, design D5).
+    public func setDensity(_ grid: CellSize) {
+        commit("Change Density") { () throws(LayoutRefusal) in
+            try GridDensity.relaid(layout, to: grid, minimums: minimums(onRows: grid.rows))
+        }
     }
 
-    /// Shows `layout`, a layout of another parse, with no undo step and none left from before:
-    /// undoing across a change of parse would pair one version's cards with another's document
+    /// What each backdrop source last held while this scene is edited (design D3).
+    public private(set) var backdropMemory = BackdropMemory()
+
+    /// Writes `source` as the scene's backdrop, as one step, remembering what the backdrop held,
+    /// and bringing back the remembered angle where a gradient returns and the remembered blur
+    /// where a source returns after None (design D3).
+    public func setBackdrop(_ source: BackdropSource) {
+        let block = content.blocks[Self.backdrop]
+        let held = BackdropSource(block: block).kind
+        backdropMemory.keep(block)
+        var fields = source.written(over: block)
+        if source.kind == .gradient, held != .gradient {
+            fields[BackdropSource.angleKey] = backdropMemory.angle
+        }
+        if source != .unset, held == .unset {
+            fields[BackdropSource.blurKey] = backdropMemory.blur
+        }
+        replace(block: Self.backdrop, with: fields, label: "Backdrop")
+    }
+
+    /// Switches the backdrop to `kind`, bringing back what that source last held, else starting
+    /// from what it shows and `background`, the palette's (design D3). False where an image has to
+    /// be chosen first, and nothing changes.
+    public func switchBackdrop(to kind: BackdropSource.Kind, background: String) -> Bool {
+        let block = content.blocks[Self.backdrop]
+        backdropMemory.keep(block)
+        guard
+            let next = BackdropSource(block: block).switched(
+                to: kind, background: background, memory: backdropMemory)
+        else { return false }
+        setBackdrop(next)
+        return true
+    }
+
+    private static let backdrop = "backdrop"
+
+    /// Sets the scene block `block`'s setting `key`, declared as `label`, to `value`
+    /// (`scene-settings`, design D2).
+    public func setBlock(_ block: String, _ key: String, to value: JSONValue, label: String) {
+        var fields = content.blocks[block]?.objectValue ?? [:]
+        fields[key] = value
+        replace(block: block, with: fields, label: label)
+    }
+
+    /// Leaves the scene block `block`'s setting `key`, declared as `label`, unset, so the scene
+    /// takes its default. A block left with no settings is removed.
+    public func useDefault(block: String, key: String, label: String) {
+        var fields = content.blocks[block]?.objectValue ?? [:]
+        fields[key] = nil
+        commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
+            blocks(content, with: block, as: fields)
+        }
+    }
+
+    /// Replaces the whole scene block `block` with `fields`, as one step named for `label`, as a
+    /// backdrop's change of source is (design D3). Empty `fields` remove the block.
+    public func replace(block: String, with fields: [String: JSONValue], label: String) {
+        commitContent("Change \(label)") { () throws(LayoutRefusal) in
+            blocks(content, with: block, as: fields)
+        }
+    }
+
+    /// `content` with the block `block` holding `fields`, or without it where they are empty.
+    private func blocks(_ content: SceneContent, with block: String, as fields: [String: JSONValue])
+        -> SceneContent
+    {
+        var edited = content
+        edited.blocks[block] = fields.isEmpty ? nil : .object(fields)
+        return edited
+    }
+
+    /// Puts the scene back at `content`, as the host holds it, as one undoable step named Revert
+    /// (`scene-saving`, "Revert discards unsaved edits"). `content` is of this editor's parse.
+    public func revert(to content: SceneContent) {
+        commitContent("Revert") { () throws(LayoutRefusal) in content }
+    }
+
+    /// Shows `content`, of another parse, with no undo step and none left from before: undoing
+    /// across a change of parse would pair one version's cards with another's document
     /// (design D9).
-    public func replace(with layout: SceneLayout) {
+    public func replace(with content: SceneContent) {
         detach()
-        show(layout, selection: [])
+        show(content, selection: [])
     }
 
     /// Removes this editor's undo actions, for when it leaves the screen and its window's
@@ -188,8 +294,8 @@ public final class SceneEditor {
         refusal = nil
     }
 
-    private func preview(_ edit: () throws(LayoutRefusal) -> SceneLayout)
-        -> Result<SceneLayout, LayoutRefusal>
+    private func preview<Edited>(_ edit: () throws(LayoutRefusal) -> Edited)
+        -> Result<Edited, LayoutRefusal>
     {
         if let readOnly { return .failure(.readOnly(readOnly)) }
         do {
@@ -199,38 +305,43 @@ public final class SceneEditor {
         }
     }
 
+    /// Applies `edit`, a layout edit, as one undoable step named `name` that keeps the blocks.
+    private func commit(_ name: String, _ edit: () throws(LayoutRefusal) -> SceneLayout) {
+        commitContent(name) { () throws(LayoutRefusal) in content.with(layout: try edit()) }
+    }
+
     /// Applies `edit` as one undoable step named `name`, or records its refusal. An edit that
     /// changes nothing adds no step.
-    private func commit(_ name: String, _ edit: () throws(LayoutRefusal) -> SceneLayout) {
+    private func commitContent(_ name: String, _ edit: () throws(LayoutRefusal) -> SceneContent) {
         switch preview(edit) {
         case .failure(let error):
             refusal = error
-        case .success(let next) where next == layout:
+        case .success(let next) where next == content:
             refusal = nil
         case .success(let next):
             registerUndo(name)
-            let kept = Set(next.cards.map(\.id))
+            let kept = Set(next.layout.cards.map(\.id))
             show(next, selection: selection.intersection(kept))
         }
     }
 
-    /// Registers the way back to the layout and selection as they are now. Registered while
+    /// Registers the way back to the content and selection as they are now. Registered while
     /// undoing, it becomes the redo.
     private func registerUndo(_ name: String) {
-        let (layout, selection) = (layout, selection)
+        let (content, selection) = (content, selection)
         undoManager?.beginUndoGrouping()
         undoManager?.registerUndo(withTarget: self) { editor in
             editor.registerUndo(name)
-            editor.show(layout, selection: selection)
+            editor.show(content, selection: selection)
         }
         undoManager?.setActionName(name)
         undoManager?.endUndoGrouping()
     }
 
-    private func show(_ layout: SceneLayout, selection: Set<UUID>) {
-        self.layout = layout
+    private func show(_ content: SceneContent, selection: Set<UUID>) {
+        self.content = content
         self.selection = selection
         refusal = nil
-        onCommit(layout)
+        onCommit(content)
     }
 }

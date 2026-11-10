@@ -41,9 +41,41 @@ struct LibraryTilesTests {
         _ tiles: LibraryTiles, _ scene: LaidOutScene, in fixture: RenderingFixture,
         cards: [SchemaFacts.Card] = cards, drift: CardDrift? = nil
     ) async {
+        await draw(tiles, Draft(scene), in: fixture, cards: cards, drift: drift)
+    }
+
+    private func draw(
+        _ tiles: LibraryTiles, _ draft: Draft, in fixture: RenderingFixture,
+        cards: [SchemaFacts.Card] = cards, drift: CardDrift? = nil
+    ) async {
         await tiles.draw(
-            for: scene, cards: cards, drift: drift, context: RenderRequestTests.context,
+            for: draft, cards: cards, drift: drift, context: RenderRequestTests.context,
             through: fixture.queue)
+    }
+
+    // MARK: The scene as edited (`scene-settings`, design D6)
+
+    @Test func anEditedPaletteDrawsTheTilesAgainInIt() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        var draft = Draft(try Self.scene("A"))
+        await draw(tiles, draft, in: fixture)
+        #expect(Self.renders(fixture).count == Self.cards.count)
+        draft.content.blocks["palette"] = .string("b")
+        await draw(tiles, draft, in: fixture)
+        #expect(Self.renders(fixture).count == 2 * Self.cards.count)
+        #expect(Self.renders(fixture).last?["scene"]?["palette"] == .string("b"))
+    }
+
+    @Test func aLayoutEditDrawsNoTile() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        var draft = Draft(try Self.scene("A"))
+        await draw(tiles, draft, in: fixture)
+        let meter = try #require(draft.layout.cards.first)
+        draft.content.layout = try draft.layout.moving([meter.id], by: CellOffset(cols: 4, rows: 0))
+        await draw(tiles, draft, in: fixture)
+        #expect(Self.renders(fixture).count == Self.cards.count)
     }
 
     @Test func aTileIsOneCardAtTheCornerInTheScenesSettings() async throws {

@@ -11,9 +11,9 @@ struct SceneThumbnailsTests {
         let thumbnails = SceneThumbnails()
         let scene = fixture.rendering.scene
         await thumbnails.draw(
-            [(scene, scene.layout)], context: RenderRequestTests.context, through: fixture.queue)
+            [(scene, scene.content)], context: RenderRequestTests.context, through: fixture.queue)
         await thumbnails.draw(
-            [(scene, scene.layout)], context: RenderRequestTests.context, through: fixture.queue)
+            [(scene, scene.content)], context: RenderRequestTests.context, through: fixture.queue)
         let image = try #require(thumbnails.images["s"])
         #expect(image.width == SceneThumbnails.width)
         #expect(fixture.launcher.requests.count == 1)
@@ -27,7 +27,7 @@ struct SceneThumbnailsTests {
         let thumbnails = SceneThumbnails()
         let scene = fixture.rendering.scene
         await thumbnails.draw(
-            [(scene, scene.layout)], context: RenderRequestTests.context, through: fixture.queue)
+            [(scene, scene.content)], context: RenderRequestTests.context, through: fixture.queue)
         #expect(thumbnails.images.isEmpty)
     }
 

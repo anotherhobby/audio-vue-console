@@ -15,9 +15,8 @@ enum SceneMetrics {
     static let tilePadding: CGFloat = 6
     static let tileCornerRadius: CGFloat = 8
     static let canvasMinWidth: CGFloat = 420
-    static let inspectorMinWidth: CGFloat = 220
-    static let inspectorIdealWidth: CGFloat = 260
-    static let inspectorMaxWidth: CGFloat = 340
+    /// The inspector's one width, its widest, whatever it shows.
+    static let inspectorWidth: CGFloat = 340
     static let canvasPadding: CGFloat = 24
     static let renameSheetWidth: CGFloat = 320
     static let nameFieldWidth: CGFloat = 320
@@ -30,4 +29,16 @@ enum SceneMetrics {
     /// How long the colour panel's colour rests before it is written as one step (`card-settings`,
     /// design D8).
     static let colourSettleSeconds: Double = 0.5
+    /// A swatch's chip in a menu of swatches.
+    static let swatchChipSide: CGFloat = 12
+    static let swatchChipRadius: CGFloat = 2
+    /// A palette colour's cell: its well and its name beneath.
+    static let swatchCellWidth: CGFloat = 64
+    /// A backdrop image's thumbnail in the picker.
+    static let imageThumbnailWidth: CGFloat = 140
+    static let imageThumbnailHeight: CGFloat = 80
+    static let imagePickerWidth: CGFloat = 520
+    static let imagePickerHeight: CGFloat = 420
+    /// A thumbnail's box while its image is fetched.
+    static let placeholderOpacity: Double = 0.15
 }

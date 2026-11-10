@@ -60,6 +60,8 @@ public enum HostFailure: Error, Sendable, Equatable {
     /// The host refused the request, saying why in words for a person, such as a delete of the
     /// scene on screen.
     case conflict(String)
+    /// The host refused an image upload, saying why.
+    case imageRefused(ImageRefusal)
 }
 
 /// One thing wrong with a document the host refused: where, the empty place being the document

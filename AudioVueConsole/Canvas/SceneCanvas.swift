@@ -52,16 +52,16 @@ struct SceneCanvas: View {
         .focusedSceneValue(\.sceneEditor, editor)
         // A resize draws its plate again at each cell step; everything else once it is committed,
         // and a refused gesture's plate as it was (`scene-rendering`).
-        .onChange(of: drawnLayout) { _, layout in
-            Task { await rendering?.show(layout) }
+        .onChange(of: drawnContent) { _, content in
+            Task { await rendering?.show(content) }
         }
     }
 
-    /// The layout the layers are drawn for: as a resize would leave it while one is under way, and
-    /// as the editor holds it otherwise.
-    private var drawnLayout: SceneLayout {
-        if case .resizing = gesture { return shownLayout }
-        return editor.layout
+    /// What the layers are drawn for: the scene's blocks as the editor holds them, and its cards
+    /// as a resize would leave them while one is under way.
+    private var drawnContent: SceneContent {
+        if case .resizing = gesture { return editor.content.with(layout: shownLayout) }
+        return editor.content
     }
 
     /// Whether the scene is drawn by the helper rather than as boxes.

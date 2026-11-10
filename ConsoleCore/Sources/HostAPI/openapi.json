@@ -3,7 +3,7 @@
   "info": {
     "title": "audio-vue host agent",
     "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.7.0"
+    "version": "2.7.1"
   },
   "paths": {
     "/v1/version": {
@@ -244,7 +244,7 @@
     "/v1/commands/arm": {
       "post": {
         "summary": "Arm",
-        "description": "Arms a calibration: the panel listens for the file. A client playing one sets the output's rate and lets the chain settle before it arms, since a wait after the arm spends its deadline, and plays once the arm is done. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
+        "description": "Arms a calibration: the panel listens for the file. A client playing one sets the output's rate and its deepest integer format, and lets the chain settle after a change of either, before it arms, since a wait after the arm spends its deadline, and plays once the arm is done. Ends the screensaver or sleep, even when it is refused. A read leaves the display as it is.",
         "operationId": "arm_v1_commands_arm_post",
         "requestBody": {
           "content": {

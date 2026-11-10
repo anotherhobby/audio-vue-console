@@ -68,6 +68,17 @@ struct PanelScenesTests {
         #expect(paths.contains("/v1/images/sky.png"))
     }
 
+    @Test func anUploadIsHeldForDrawingAtOnce() async throws {
+        var answers = Self.answers()
+        answers[.upload] = .status(201, #"{"id": "new.jpg"}"#)
+        answers[.image("new.jpg")] = .status(200, "JPG", headers: ["Content-Type": "image/jpeg"])
+        let scenes = try Self.scenes(FakeTransport(answers))
+        let id = try await scenes.upload(Data("JPG".utf8), type: .jpeg)
+        #expect(id == "new.jpg")
+        let file = try #require(try await scenes.imageFile("new.jpg"))
+        #expect(FileManager.default.fileExists(atPath: file.path))
+    }
+
     @Test func aPanelOfUnknownSizeIsDrawnAtTheStandIn() async throws {
         let scenes = try Self.scenes(FakeTransport(Self.answers()))
         #expect(scenes.display == nil)
@@ -129,7 +140,10 @@ struct PanelScenesTests {
         let document = try #require(scenes.scenes.first { $0.id == id })
         let draft = try drafts.draft(for: document, defaultGrid: CellSize(cols: 64, rows: 36))
         let card = try #require(draft.layout.cards.first)
-        drafts.keep(try draft.layout.moving([card.id], by: CellOffset(cols: 10, rows: 0)), for: id)
+        drafts.keep(
+            draft.content.with(
+                layout: try draft.layout.moving([card.id], by: CellOffset(cols: 10, rows: 0))),
+            for: id)
         return try #require(drafts.draft(id))
     }
 

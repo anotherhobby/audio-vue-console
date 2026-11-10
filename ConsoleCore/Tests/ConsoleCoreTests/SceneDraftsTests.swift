@@ -21,9 +21,10 @@ struct SceneDraftsTests {
     }
 
     /// The bars moved ten columns left, in `draft`'s own parse.
-    static func moveBars(_ draft: Draft) throws -> SceneLayout {
+    static func moveBars(_ draft: Draft) throws -> SceneContent {
         let bars = try #require(draft.layout.cards.last)
-        return try draft.layout.moving([bars.id], by: CellOffset(cols: -10, rows: 0))
+        return draft.content.with(
+            layout: try draft.layout.moving([bars.id], by: CellOffset(cols: -10, rows: 0)))
     }
 
     @Test func aDraftIsTheSameOnASecondAsk() throws {
@@ -50,7 +51,7 @@ struct SceneDraftsTests {
         #expect(!draft.isUnsaved)
         drafts.keep(try Self.moveBars(draft), for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == true)
-        drafts.keep(draft.layout, for: "rta")
+        drafts.keep(draft.content, for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == false)
         #expect(drafts.unsaved([try Self.rta()]).isEmpty)
     }
@@ -111,9 +112,10 @@ struct SceneDraftsTests {
         drafts.saved(try Self.mine(rev: 4, barsCol: 38), was: "u1")
         let saved = try #require(drafts.draft("u1"))
         #expect(!saved.isUnsaved && saved.rev == 4)
-        #expect(saved.layout == moved)
-        let bars = try #require(moved.cards.last)
-        drafts.keep(try moved.moving([bars.id], by: CellOffset(cols: -2, rows: 0)), for: "u1")
+        #expect(saved.content == moved)
+        let bars = try #require(moved.layout.cards.last)
+        let back = try moved.layout.moving([bars.id], by: CellOffset(cols: -2, rows: 0))
+        drafts.keep(moved.with(layout: back), for: "u1")
         let edited = try #require(drafts.draft("u1"))
         #expect(edited.isUnsaved)
         #expect(edited.doc["cards"]?.arrayValue?.first?["peak"] == .string("hold"))
@@ -140,7 +142,7 @@ struct SceneDraftsTests {
         drafts.keep(moved, for: "u1")
         drafts.renamed("u1", to: try Self.mine(rev: 4, name: "Studio"))
         let renamed = try #require(drafts.draft("u1"))
-        #expect(renamed.layout == moved && renamed.isUnsaved)
+        #expect(renamed.content == moved && renamed.isUnsaved)
         #expect(renamed.rev == 4)
         #expect(renamed.doc["name"] == .string("Studio"))
         #expect(renamed.doc["cards"]?.arrayValue?.last?["col"] == .integer(38))
@@ -195,7 +197,7 @@ struct SceneDraftsTests {
         let reverted = try #require(try drafts.revert("u1", to: current))
         #expect(reverted.newParse)
         #expect(drafts.draft("u1")?.isUnsaved == false)
-        #expect(reverted.layout.cards.last?.cells.col == 48)
+        #expect(reverted.content.layout.cards.last?.cells.col == 48)
     }
 
     @Test func aRevertAfterAnEditIsTheSameParse() throws {
@@ -205,7 +207,7 @@ struct SceneDraftsTests {
         drafts.keep(try Self.moveBars(draft), for: "u1")
         let reverted = try #require(try drafts.revert("u1", to: current))
         #expect(!reverted.newParse)
-        #expect(reverted.layout == draft.laidOut.layout)
+        #expect(reverted.content == draft.laidOut.content)
     }
 
     @Test func draftsAreKeptUntilForgotten() throws {
@@ -226,7 +228,7 @@ struct SceneDraftsTests {
         let drafts = SceneDrafts()
         let draft = try drafts.draft(
             for: try SceneDraftsTests.rta(), defaultGrid: SceneDraftsTests.grid)
-        let editor = SceneEditor(layout: draft.layout, undoManager: manager) {
+        let editor = SceneEditor(content: draft.content, undoManager: manager) {
             drafts.keep($0, for: "rta")
         }
         let bars = try #require(draft.layout.cards.last)
@@ -236,6 +238,19 @@ struct SceneDraftsTests {
         let entry = drafts.draft("rta")?.doc["cards"]?.arrayValue?.last
         #expect(entry?["params"] == .object(["floor_db": .integer(-80)]))
         manager.undo()
+        #expect(drafts.draft("rta")?.isUnsaved == false)
+    }
+
+    @Test func aBlockChangedAndChangedBackIsNotUnsaved() throws {
+        let drafts = SceneDrafts()
+        let draft = try drafts.draft(
+            for: try SceneDraftsTests.rta(), defaultGrid: SceneDraftsTests.grid)
+        var changed = draft.content
+        changed.blocks["palette"] = JSONValue.object(["signal": .string("#00FF88")])
+        drafts.keep(changed, for: "rta")
+        #expect(drafts.draft("rta")?.isUnsaved == true)
+        #expect(drafts.draft("rta")?.doc["palette"]?["signal"] == .string("#00FF88"))
+        drafts.keep(draft.content, for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == false)
     }
 }

@@ -88,7 +88,7 @@ import Testing
 
     @Test func committedLayoutsReachTheApp() throws {
         var committed: [SceneLayout] = []
-        let editor = SceneEditor(layout: scene) { committed.append($0) }
+        let editor = SceneEditor(layout: scene) { committed.append($0.layout) }
         editor.select(loose.id)
         editor.move(by: CellOffset(cols: 1, rows: 0))
         editor.move(by: CellOffset(cols: -30, rows: 0))

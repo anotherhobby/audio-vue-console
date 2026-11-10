@@ -39,6 +39,11 @@ for the backdrop. Decision (maintainer, 2026-11-08): card settings are edited in
 - **WHEN** the user changes a palette colour
 - **THEN** the backdrop and every plate are drawn again
 
+#### Scenario: Repointing an element
+
+- **WHEN** the user points the scene's Title element at another swatch
+- **THEN** the backdrop and every plate are drawn again
+
 ### Requirement: Library tiles follow the scene's settings, not its cards
 
 The library's tiles SHALL be drawn again only when the open scene's settings or grid, as edited,

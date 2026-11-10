@@ -72,12 +72,12 @@ import Testing
     }
 
     @Test func aRevertIsUndoneByName() throws {
-        let saved = editor.layout
+        let saved = editor.content
         editor.select(right.id)
         editor.move(by: CellOffset(cols: 2, rows: 0))
         let edited = editor.layout
         editor.revert(to: saved)
-        #expect(editor.layout == saved)
+        #expect(editor.content == saved)
         #expect(manager.undoActionName == "Revert")
         manager.undo()
         #expect(editor.layout == edited)
@@ -87,7 +87,7 @@ import Testing
         editor.select(right.id)
         editor.move(by: CellOffset(cols: 2, rows: 0))
         let other = try layout([card("c", rect(10, 0, 4, 4))])
-        editor.replace(with: other)
+        editor.replace(with: SceneContent(layout: other))
         #expect(editor.layout == other)
         #expect(editor.selection.isEmpty)
         #expect(!manager.canUndo)
@@ -176,6 +176,62 @@ import Testing
         readOnly.set("floor_db", to: .integer(-80), label: "Floor", on: [loose.id])
         readOnly.useDefault("floor_db", label: "Floor", on: [loose.id])
         #expect(readOnly.layout.card(loose.id)?.settings.isEmpty == true)
+        #expect(readOnly.refusal == .readOnly(.builtIn))
+    }
+}
+
+/// `scene-settings`, "A scene setting change is an edit to the open scene" and "A read-only
+/// scene's settings are shown, not changed" (design D1, D2).
+@MainActor struct SceneEditorBlockTests {
+    private let manager = UndoManager()
+    private let left = card("a", rect(0, 0, 4, 4))
+    private let editor: SceneEditor
+
+    init() throws {
+        manager.groupsByEvent = false
+        let palette = JSONValue.object(["signal": .string("#00FF88")])
+        editor = SceneEditor(
+            content: SceneContent(layout: try layout([left]), blocks: ["palette": palette]),
+            undoManager: manager)
+    }
+
+    @Test func undoingAcrossKindsOfEdit() throws {
+        editor.select(left.id)
+        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.setBlock("backdrop", "color", to: .string("#102030"), label: "Colour")
+        #expect(editor.content.blocks["backdrop"] == .object(["color": .string("#102030")]))
+        #expect(manager.undoActionName == "Change Colour")
+        manager.undo()
+        #expect(editor.content.blocks["backdrop"] == nil)
+        #expect(editor.layout.card(left.id)?.cells.col == 2)
+        manager.undo()
+        #expect(editor.layout.card(left.id)?.cells.col == 0)
+    }
+
+    @Test func useDefaultOnTheLastKeyRemovesTheBlock() throws {
+        editor.useDefault(block: "palette", key: "signal", label: "Signal")
+        #expect(editor.content.blocks["palette"] == nil)
+        #expect(manager.undoActionName == "Use Default for Signal")
+        manager.undo()
+        #expect(editor.content.blocks["palette"]?["signal"] == .string("#00FF88"))
+    }
+
+    @Test func aWholeBlockIsOneStep() throws {
+        let stops = JSONValue.array([.string("#000000"), .string("#FFFFFF")])
+        editor.replace(block: "backdrop", with: ["gradient": stops], label: "Backdrop")
+        editor.replace(block: "backdrop", with: [:], label: "Backdrop")
+        #expect(editor.content.blocks["backdrop"] == nil)
+        manager.undo()
+        #expect(editor.content.blocks["backdrop"]?["gradient"]?.arrayValue?.count == 2)
+    }
+
+    @Test func aReadOnlySceneRefusesBlockEdits() throws {
+        let readOnly = SceneEditor(
+            content: SceneContent(layout: try layout([left]), blocks: editor.content.blocks),
+            readOnly: .builtIn)
+        readOnly.setBlock("palette", "signal", to: .string("#FFFFFF"), label: "Signal")
+        readOnly.useDefault(block: "palette", key: "signal", label: "Signal")
+        #expect(readOnly.content.blocks == editor.content.blocks)
         #expect(readOnly.refusal == .readOnly(.builtIn))
     }
 }

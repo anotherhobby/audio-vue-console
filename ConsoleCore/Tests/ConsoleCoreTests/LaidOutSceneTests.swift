@@ -96,6 +96,38 @@ struct LaidOutSceneTests {
         #expect(laid.doc(for: laid.layout) == laid.document.doc)
     }
 
+    // MARK: Content (`scene-settings`, design D1)
+
+    @Test func theRTAsDocumentRoundTripsThroughItsContent() throws {
+        let laid = try Self.rta()
+        #expect(laid.content.blocks["cards"] == nil && laid.content.blocks["name"] == nil)
+        #expect(laid.doc(for: laid.content) == laid.document.doc)
+    }
+
+    @Test func aChangedBlockIsWrittenAndTheOthersKeptAsRead() throws {
+        let laid = try Self.rta()
+        var content = laid.content
+        content.blocks["backdrop"] = JSONValue.object(["color": .string("#102030")])
+        let doc = laid.doc(for: content)
+        #expect(doc["backdrop"] == .object(["color": .string("#102030")]))
+        #expect(doc["grid"] == laid.document.doc["grid"])
+        #expect(doc["cards"] == laid.document.doc["cards"])
+    }
+
+    @Test func aSceneWithNoGridIsWrittenWithNoneUntilItsGridChanges() throws {
+        let laid = try LaidOutScene(
+            Self.scene(#"{"name": "S", "cards": [{"card": "meter", "colspan": 8}]}"#),
+            defaultGrid: Self.defaults)
+        #expect(laid.doc(for: laid.content)["grid"] == nil)
+        var gapped = laid.content
+        gapped.blocks["grid"] = JSONValue.object(["gap": .decimal(0.5)])
+        #expect(laid.doc(for: gapped)["grid"] == .object(["gap": .decimal(0.5)]))
+        let finer = try SceneLayout(grid: CellSize(cols: 96, rows: 54), cards: [])
+        #expect(
+            laid.doc(for: gapped.with(layout: finer))["grid"]
+                == .object(["gap": .decimal(0.5), "cols": .integer(96), "rows": .integer(54)]))
+    }
+
     @Test func aChangedSettingIsWrittenBesideThePlateAndAlternate() throws {
         let laid = try LaidOutScene(
             Self.scene(

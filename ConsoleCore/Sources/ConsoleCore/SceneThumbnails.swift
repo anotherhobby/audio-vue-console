@@ -14,21 +14,21 @@ public final class SceneThumbnails {
 
     public init() {}
 
-    /// Draws each of `scenes` it has no thumbnail for, at the layout it shows, through `queue`.
+    /// Draws each of `scenes` it has no thumbnail for, as its content shows it, through `queue`.
     /// A scene the helper cannot draw keeps its plain boxes.
     public func draw(
-        _ scenes: [(scene: LaidOutScene, layout: SceneLayout)], context: RenderContext,
+        _ scenes: [(scene: LaidOutScene, content: SceneContent)], context: RenderContext,
         through queue: RenderQueue
     ) async {
-        for (scene, layout) in scenes where images[scene.document.id] == nil {
+        for (scene, content) in scenes where images[scene.document.id] == nil {
             let request = RenderRequest(
-                doc: scene.doc(for: layout), builtIn: scene.document.builtIn, context: context)
+                doc: scene.doc(for: content), builtIn: scene.document.builtIn, context: context)
             let result = await queue.submit(
                 request.message, lane: .thumbnails, key: "thumbnail:\(scene.document.id)")
             guard case .success(let answer)? = result else { continue }
             do throws(RenderFailure) {
                 let layers = try RenderedLayer.layers(
-                    of: answer, cardIDs: layout.cards.map(\.id))
+                    of: answer, cardIDs: content.layout.cards.map(\.id))
                 images[scene.document.id] = Thumbnail.flatten(
                     layers: layers, display: context.display, width: Self.width)
             } catch {

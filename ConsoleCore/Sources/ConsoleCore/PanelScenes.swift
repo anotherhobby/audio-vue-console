@@ -190,6 +190,41 @@ public final class PanelScenes {
         }
     }
 
+    // MARK: Backdrop images (`scene-settings`, design D4)
+
+    /// The host's images, as the backdrop picker lists them: shipped first, then uploads, newest
+    /// first.
+    public func listImages() async throws(HostFailure) -> [HostImage] {
+        do throws(HostFailure) {
+            return HostImage.listed(try await client.images(at: address, token: pairing.token))
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// Uploads `data`, a file's bytes untouched, and fetches the stored image into the app's
+    /// store, so it can be drawn at once. Answers its id.
+    public func upload(_ data: Data, type: ImageType) async throws(HostFailure) -> String {
+        do throws(HostFailure) {
+            let id = try await client.upload(data, type: type, at: address, token: pairing.token)
+            _ = try await images.fetch(id, at: address, token: pairing.token)
+            return id
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
+    /// The file of the image `id` in the app's store, fetched first where it is not held, or nil
+    /// where the host has no such image.
+    public func imageFile(_ id: String) async throws(HostFailure) -> URL? {
+        do throws(HostFailure) {
+            let held = try await images.fetch(id, at: address, token: pairing.token)
+            return held ? images.directory.appending(path: id) : nil
+        } catch {
+            throw unpairing(error)
+        }
+    }
+
     /// `name` trimmed, or nil where nothing is left: a scene needs a name.
     public static func name(_ name: String) -> String? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

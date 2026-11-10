@@ -1,7 +1,7 @@
 /// What the app reads from the host's settings schema to lay scenes out: each card's minimum and
 /// whether a user may place it, the categories the library groups cards under, the grid a scene
-/// that declares none is laid out on, and each card's settings (audio-vue `card-layout`,
-/// `card-categories`, `scene-grid`; `card-settings`).
+/// that declares none is laid out on, each card's settings, and the scene's blocks (audio-vue
+/// `card-layout`, `card-categories`, `scene-grid`; `card-settings`, `scene-settings`).
 public struct SchemaFacts: Sendable, Equatable {
     /// One card as the schema declares it.
     public struct Card: Sendable, Equatable, Identifiable {
@@ -33,6 +33,20 @@ public struct SchemaFacts: Sendable, Equatable {
         }
     }
 
+    /// One scene block and its settings, such as `palette`.
+    public struct Block: Sendable, Equatable, Identifiable {
+        /// The block's key in a scene document.
+        public let name: String
+        public let settings: SettingGroup
+
+        public var id: String { name }
+
+        public init(name: String, settings: SettingGroup) {
+            self.name = name
+            self.settings = settings
+        }
+    }
+
     /// One category's placeable cards, as the library shows them.
     public struct Shelf: Sendable, Equatable, Identifiable {
         public let category: Category
@@ -55,15 +69,28 @@ public struct SchemaFacts: Sendable, Equatable {
     /// Each card's settings in declared order, by card name: every card the schema declares,
     /// placeable or not.
     public let settings: [String: SettingGroup]
+    /// Every block the scene declares, in the inspector's order: the blocks the app knows in
+    /// `blockOrder`, then any other by name (`scene-settings`, design D2).
+    public let blocks: [Block]
+    /// The swatches and elements cards draw in, and how a scene resolves them (design D8).
+    public let colours: SceneColours
+
+    /// The blocks the app shows first, in this order.
+    public static let blockOrder = [
+        "backdrop", "palette", "elements", "glass", "type", "analysis", "display", "grid",
+    ]
 
     public init(
         cards: [String: Card], categories: [Category], defaultGrid: CellSize,
-        settings: [String: SettingGroup] = [:]
+        settings: [String: SettingGroup] = [:], blocks: [Block] = [],
+        colours: SceneColours = .none
     ) {
         self.cards = cards
         self.categories = categories
         self.defaultGrid = defaultGrid
         self.settings = settings
+        self.blocks = blocks
+        self.colours = colours
     }
 
     /// The facts in `schema`, the body of `/v1/schema`, or nil where it lacks the grid's defaults.
@@ -85,7 +112,13 @@ public struct SchemaFacts: Sendable, Equatable {
         }
         self.init(
             cards: cards, categories: Self.categories(schema["x-categories"]),
-            defaultGrid: CellSize(cols: cols, rows: rows), settings: settings)
+            defaultGrid: CellSize(cols: cols, rows: rows), settings: settings,
+            blocks: Self.blocks(definitions), colours: SceneColours(schema: schema))
+    }
+
+    /// The block `name`, or nil where the scene declares none by it.
+    public func block(_ name: String) -> Block? {
+        blocks.first { $0.name == name }
     }
 
     /// The placeable cards under their categories, both in the panel's order, leaving out a
@@ -139,6 +172,25 @@ public struct SchemaFacts: Sendable, Equatable {
     }
 
     private static let cardPrefix = "card."
+    private static let blockReference = "#/$defs/block."
+
+    /// The blocks `scene`'s properties refer to, each read from its definition, in the
+    /// inspector's order.
+    private static func blocks(_ definitions: [String: JSONValue]) -> [Block] {
+        let properties = definitions["scene"]?["properties"]?.objectValue ?? [:]
+        let names = properties.values.compactMap { property -> String? in
+            guard let reference = property["$ref"]?.stringValue,
+                reference.hasPrefix(blockReference)
+            else { return nil }
+            return String(reference.dropFirst(blockReference.count))
+        }
+        let rank = { (name: String) in blockOrder.firstIndex(of: name) ?? blockOrder.count }
+        return names.sorted { (rank($0), $0) < (rank($1), $1) }.compactMap { name in
+            definitions["block.\(name)"].map {
+                Block(name: name, settings: SettingGroup(definition: $0))
+            }
+        }
+    }
 
     private static func roundedUp(_ cellsTimesRows: Int) -> Int {
         (cellsTimesRows + referenceRows - 1) / referenceRows

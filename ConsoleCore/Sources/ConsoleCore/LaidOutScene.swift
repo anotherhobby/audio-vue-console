@@ -47,13 +47,34 @@ public struct LaidOutScene: Sendable, Equatable {
             entries: Dictionary(uniqueKeysWithValues: layout.cards.map { ($0.id, entry(for: $0)) }))
     }
 
-    /// The document's `doc` with its cards as `layout` places them, in its order: each card's
-    /// original entry with its cells, group and `params` replaced, and a new card's entry those
-    /// alone. A card with no settings is written with no `params`.
-    public func doc(for layout: SceneLayout) -> JSONValue {
-        var fields = document.doc.objectValue ?? [:]
-        fields["cards"] = .array(layout.cards.map(entry(for:)))
+    /// The scene as read: its layout and its blocks.
+    public var content: SceneContent {
+        SceneContent(layout: layout, blocks: SceneContent.blocks(of: document.doc))
+    }
+
+    /// The document's `doc` with its blocks as `content` holds them and its cards as its layout
+    /// places them, in its order: each card's original entry with its cells, group and `params`
+    /// replaced, and a new card's entry those alone. A card with no settings is written with no
+    /// `params`. The grid's `cols` and `rows` are written where the layout's grid is not the one
+    /// read, so a scene that declares no grid is written with none until its grid changes
+    /// (`scene-settings`, design D1).
+    public func doc(for content: SceneContent) -> JSONValue {
+        var fields = content.blocks
+        fields["name"] = document.doc["name"]
+        fields["cards"] = .array(content.layout.cards.map(entry(for:)))
+        if content.layout.grid != layout.grid {
+            var grid = fields["grid"]?.objectValue ?? [:]
+            grid["cols"] = .integer(content.layout.grid.cols)
+            grid["rows"] = .integer(content.layout.grid.rows)
+            fields["grid"] = .object(grid)
+        }
         return .object(fields)
+    }
+
+    /// The document with the blocks as read and the cards as `layout` places them, as a library
+    /// tile is drawn.
+    public func doc(for layout: SceneLayout) -> JSONValue {
+        doc(for: content.with(layout: layout))
     }
 
     private func entry(for card: LayoutCard) -> JSONValue {

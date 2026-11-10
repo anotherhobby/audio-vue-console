@@ -6,11 +6,97 @@ import Testing
 /// `card-settings`: shared settings across a selection, the values and notes the inspector shows,
 /// and the values it writes (design D3 to D5), read from the trimmed copy of audio-vue's schema.
 struct SettingGroupTests {
-    private static func groups() throws -> [String: SettingGroup] {
+    private static func facts() throws -> SchemaFacts {
         let file = URL(filePath: #filePath).deletingLastPathComponent()
             .appending(path: "Fixtures/schema-trimmed.json")
         let schema = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: file))
-        return try #require(SchemaFacts(schema: schema)).settings
+        return try #require(SchemaFacts(schema: schema))
+    }
+
+    private static func groups() throws -> [String: SettingGroup] {
+        try facts().settings
+    }
+
+    @Test func aColourIsSharedOnlyWhereItOverridesTheSameElement() throws {
+        let shared = try Self.shared("rta_bars", "loudness_scope")
+        #expect(shared.contains("minor_color"))
+        #expect(!shared.contains("major_color"))
+    }
+
+    // MARK: Settings with no effect (`scene-settings`, design D9)
+
+    private static func meter(_ settings: [String: JSONValue]) -> LayoutCard {
+        LayoutCard(
+            kind: "meter", cells: CellRect(col: 0, row: 0, cols: 8, rows: 6), settings: settings)
+    }
+
+    @Test func aZonedFieldLeavesTheBarColoursUnused() throws {
+        let groups = try Self.groups()
+        let crest = Self.meter(["field": .string("crest_peak")])
+        let reason = SettingGroup.unusedReason(
+            of: "bar_body_color", across: [crest], declaredBy: groups)
+        #expect(reason?.contains("thresholds") == true)
+        let plain = Self.meter(["field": .string("crest_rms")])
+        #expect(
+            SettingGroup.unusedReason(of: "bar_body_color", across: [plain], declaredBy: groups)
+                == nil)
+    }
+
+    @Test func oneCardWithAnEffectKeepsTheSettingInUse() throws {
+        let groups = try Self.groups()
+        let cards = [
+            Self.meter(["field": .string("crest_peak")]),
+            Self.meter(["field": .string("crest_rms")]),
+        ]
+        #expect(
+            SettingGroup.unusedReason(of: "bar_tip_color", across: cards, declaredBy: groups) == nil
+        )
+    }
+
+    @Test func aTickLeavesOnlyTheBodyUnused() throws {
+        let groups = try Self.groups()
+        let tick = [Self.meter(["style": .string("tick")])]
+        #expect(
+            SettingGroup.unusedReason(of: "bar_body_color", across: tick, declaredBy: groups) != nil
+        )
+        #expect(
+            SettingGroup.unusedReason(of: "bar_tip_color", across: tick, declaredBy: groups) == nil)
+    }
+
+    @Test func theRTAsMajorLinesNeedBothSettingsOff() throws {
+        let groups = try Self.groups()
+        let card = { (settings: [String: JSONValue]) in
+            LayoutCard(
+                kind: "rta_bars", cells: CellRect(col: 0, row: 0, cols: 8, rows: 6),
+                settings: settings)
+        }
+        let gridOff = [card(["major_grid": .bool(false)])]
+        #expect(
+            SettingGroup.unusedReason(of: "major_color", across: gridOff, declaredBy: groups) == nil
+        )
+        let bothOff = [card(["major_grid": .bool(false), "show_labels": .bool(false)])]
+        #expect(
+            SettingGroup.unusedReason(of: "major_color", across: bothOff, declaredBy: groups) != nil
+        )
+    }
+
+    // MARK: Scene blocks (`scene-settings`, task 2.4)
+
+    @Test func theRTAWeightingIsNeverOffItsStandard() throws {
+        let weighting = try #require(try Self.facts().block("analysis")?.settings["rta_weighting"])
+        guard case .choice(let choices) = weighting.shape else {
+            Issue.record("rta_weighting is not a choice")
+            return
+        }
+        #expect(choices == [.string("F"), .string("S"), .string("I")])
+        #expect(choices.allSatisfy { weighting.note(for: $0) == nil })
+        #expect(weighting.note(for: weighting.defaultValue) == nil)
+    }
+
+    @Test func theCaptureRateHasNoNoteOfItsOwn() throws {
+        let rate = try #require(try Self.facts().block("analysis")?.settings["capture_rate"])
+        #expect(rate.note(for: .integer(44_100)) == nil)
+        #expect(rate.note(for: nil) == nil)
     }
 
     private static func declaration(_ kind: String, _ key: String) throws -> SettingDeclaration {

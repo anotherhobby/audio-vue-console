@@ -114,7 +114,8 @@ enum ReadFailureText {
         case .notFound: "the host no longer has it."
         case .tokenRefused: "the host no longer takes this app's pairing. Pair again."
         case .conflict(let reason): reason
-        case .refused, .unexpectedAnswer, .pairingRefused, .unknownClient, .stale, .invalid:
+        case .refused, .unexpectedAnswer, .pairingRefused, .unknownClient, .stale, .invalid,
+            .imageRefused:
             "the host answered in a way this app didn't expect."
         }
     }

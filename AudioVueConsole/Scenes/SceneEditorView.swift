@@ -12,6 +12,8 @@ struct SceneEditorView: View {
     let panel: DisplayShape
     /// The panel's live state, which says the scene on screen.
     let live: LiveState?
+    /// The panel's input: its installed rate and the rates it is calibrated at.
+    let input: PanelInput?
     /// Opens a scene by id, as Duplicate does with its copy.
     let open: (String) -> Void
     /// Shows the scene by id in place of this one, as a copy's first save does.
@@ -38,7 +40,11 @@ struct SceneEditorView: View {
             .writeFailureAlert(failure, saveOver: { save(overRev: $0) }, discardMine: discardMine)
             .onAppear(perform: make)
             .onChange(of: session?.parses) { drawNewParse() }
-            .onChange(of: editor?.layout) { session?.note = nil }
+            .onChange(of: editor?.content) { session?.note = nil }
+            // Tiles are drawn in the scene's settings as edited, so a block or the grid changing
+            // draws them again (`scene-settings`, design D6).
+            .onChange(of: editor?.content.blocks) { Task { await drawTiles() } }
+            .onChange(of: editor?.layout.grid) { Task { await drawTiles() } }
             .onDisappear { editor?.detach() }
             .task(id: Drawing(phase: renderer.phase, made: made)) { await follow(renderer.phase) }
             .onChange(of: verdict) { _, verdict in
@@ -60,12 +66,9 @@ struct SceneEditorView: View {
             canvas.frame(minWidth: SceneMetrics.canvasMinWidth)
         }
         .inspector(isPresented: $showsInspector) {
-            SceneInspector(
-                editor: editor, document: document, settings: scenes.facts?.settings ?? [:]
-            )
-            .inspectorColumnWidth(
-                min: SceneMetrics.inspectorMinWidth, ideal: SceneMetrics.inspectorIdealWidth,
-                max: SceneMetrics.inspectorMaxWidth)
+            SceneInspector(editor: editor, document: document, scenes: scenes, input: input)
+                // One fixed width, so the column does not jump between scene and card settings.
+                .inspectorColumnWidth(SceneMetrics.inspectorWidth)
         }
     }
 
@@ -106,8 +109,8 @@ struct SceneEditorView: View {
             : panel.matches(scene)
                 ? nil : .shape(scene: scene.description, panel: panel.description)
         let editor = SceneEditor(
-            layout: draft.layout, readOnly: readOnly,
-            minimums: facts.minimums(forRows: grid.rows), undoManager: undoManager
+            content: draft.content, readOnly: readOnly,
+            minimums: facts.minimums(forRows: SchemaFacts.referenceRows), undoManager: undoManager
         ) { [store, document] in store.drafts.keep($0, for: document.id) }
         let session = SceneSession(id: document.id, writes: store.writes(to: scenes))
         session.attach(editor)
@@ -134,7 +137,7 @@ struct SceneEditorView: View {
     /// Draws once the renderer is ready, and says why not where it failed.
     private func follow(_ phase: Renderer.Phase) async {
         guard let rendering, let editor else { return }
-        await rendering.show(editor.layout)
+        await rendering.show(editor.content)
         switch phase {
         case .ready:
             if let queue = renderer.queue {
@@ -150,7 +153,8 @@ struct SceneEditorView: View {
     /// drawing, where the panel's code lets cards be drawn, as the gallery's thumbnails are
     /// (`library-render` design D4). Where no card can be drawn, the tiles are boxes.
     private func drawTiles() async {
-        guard let rendering, let queue = renderer.queue, let cards = scenes.facts?.placeable
+        guard rendering != nil, let draft = store.drafts.draft(document.id),
+            let queue = renderer.queue, let cards = scenes.facts?.placeable
         else { return }
         let drift: CardDrift?
         switch verdict {
@@ -162,8 +166,7 @@ struct SceneEditorView: View {
             return
         }
         await store.tiles.draw(
-            for: rendering.scene, cards: cards, drift: drift, context: scenes.context,
-            through: queue)
+            for: draft, cards: cards, drift: drift, context: scenes.context, through: queue)
     }
 
     /// The scene's tools in the middle of the toolbar, Reset set apart after them, as it acts on the

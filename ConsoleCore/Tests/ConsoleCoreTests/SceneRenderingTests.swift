@@ -80,6 +80,11 @@ struct RenderingFixture {
     }
 
     var layout: SceneLayout { rendering.scene.layout }
+
+    /// The fixture's scene, its blocks as read, with its cards as `layout` places them.
+    func content(_ layout: SceneLayout) -> SceneContent {
+        rendering.scene.content.with(layout: layout)
+    }
 }
 
 /// `scene-rendering`: the first drawing, what an edit draws again, and what the canvas says.
@@ -109,7 +114,7 @@ struct SceneRenderingTests {
         await fixture.rendering.attach(fixture.queue)
         let last = try #require(fixture.layout.cards.last)
         await fixture.rendering.show(
-            try fixture.layout.moving([last.id], by: CellOffset(cols: 4, rows: 0)))
+            fixture.content(try fixture.layout.moving([last.id], by: CellOffset(cols: 4, rows: 0))))
         #expect(fixture.launcher.requests.count == 2)
         let request = try #require(fixture.launcher.requests.last)
         #expect(request["plates"] == .array([.integer(2)]))
@@ -125,7 +130,7 @@ struct SceneRenderingTests {
         await fixture.rendering.attach(fixture.queue)
         let first = try #require(fixture.layout.cards.first)
         let changed = fixture.layout.setting("floor_db", to: .integer(-80), on: [first.id])
-        await fixture.rendering.show(changed)
+        await fixture.rendering.show(fixture.content(changed))
         #expect(fixture.launcher.requests.count == 2)
         let request = try #require(fixture.launcher.requests.last)
         #expect(request["plates"] == .array([.integer(0)]))
@@ -134,7 +139,7 @@ struct SceneRenderingTests {
         #expect(entry?["params"] == .object(["floor_db": .integer(-80)]))
         #expect(
             fixture.rendering.plates[[first.id]]?.settings[first.id] == ["floor_db": .integer(-80)])
-        await fixture.rendering.show(changed)
+        await fixture.rendering.show(fixture.content(changed))
         #expect(fixture.launcher.requests.count == 2)
     }
 
@@ -142,7 +147,7 @@ struct SceneRenderingTests {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)
         let gone = try #require(fixture.layout.cards.first)
-        await fixture.rendering.show(fixture.layout.removing([gone.id]))
+        await fixture.rendering.show(fixture.content(fixture.layout.removing([gone.id])))
         #expect(fixture.launcher.requests.count == 1)
         #expect(fixture.rendering.plates[[gone.id]] == nil)
         #expect(fixture.rendering.plates.count == 2)
@@ -152,10 +157,40 @@ struct SceneRenderingTests {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)
         let pair = Set(fixture.layout.cards.prefix(2).map(\.id))
-        await fixture.rendering.show(try fixture.layout.grouping(pair))
+        await fixture.rendering.show(fixture.content(try fixture.layout.grouping(pair)))
         #expect(fixture.launcher.requests.count == 2)
         #expect(fixture.rendering.plates[pair] != nil)
         #expect(fixture.rendering.plates.count == 2)
+    }
+
+    // MARK: Scene settings (`scene-settings`, design D6)
+
+    @Test func aGradientChangeDrawsTheBackdropAlone() async throws {
+        let fixture = try RenderingFixture()
+        await fixture.rendering.attach(fixture.queue)
+        var content = fixture.content(fixture.layout)
+        let stops = JSONValue.array([.string("#000000"), .string("#FFFFFF")])
+        content.blocks["backdrop"] = .object(["gradient": stops])
+        await fixture.rendering.show(content)
+        #expect(fixture.launcher.requests.count == 2)
+        let request = try #require(fixture.launcher.requests.last)
+        #expect(request["plates"] == .array([]))
+        #expect(request["backdrop"] == .bool(true))
+        #expect(request["scene"]?["backdrop"]?["gradient"] == stops)
+        #expect(fixture.rendering.plates.count == 3)
+    }
+
+    @Test func aPaletteChangeDrawsEverything() async throws {
+        let fixture = try RenderingFixture()
+        await fixture.rendering.attach(fixture.queue)
+        var content = fixture.content(fixture.layout)
+        content.blocks["palette"] = .object(["signal": .string("#00FF88")])
+        await fixture.rendering.show(content)
+        #expect(fixture.launcher.requests.count == 2)
+        let request = try #require(fixture.launcher.requests.last)
+        #expect(request["plates"] == nil || request["plates"] == .null)
+        #expect(request["backdrop"] == .bool(true))
+        #expect(request["scene"]?["palette"]?["signal"] == .string("#00FF88"))
     }
 
     @Test func aRefusedSceneIsBoxesWithTheReason() async throws {
@@ -179,7 +214,7 @@ struct SceneRenderingTests {
         await fixture.rendering.attach(fixture.queue)
         #expect(fixture.rendering.status == .failed)
         #expect(fixture.rendering.showsBoxes)
-        await fixture.rendering.show(fixture.layout)
+        await fixture.rendering.show(fixture.content(fixture.layout))
         #expect(fixture.rendering.status == .drawn)
         #expect(fixture.launcher.launches == 2)
     }
@@ -212,7 +247,7 @@ struct SceneRenderingTests {
         let launcher = ScriptedLauncher { FakeRender.reply(to: $0) }
         let rendering = SceneRendering(
             scene: reopened.laidOut, context: RenderRequestTests.context, displayKnown: true)
-        await rendering.show(reopened.layout)
+        await rendering.show(reopened.content)
         await rendering.attach(RenderQueue(helper: RenderHelper(launcher: launcher)))
         let cards = try #require(launcher.requests.last?["scene"]?["cards"]?.arrayValue)
         #expect(cards.first?["peak"] == .string("hold"))

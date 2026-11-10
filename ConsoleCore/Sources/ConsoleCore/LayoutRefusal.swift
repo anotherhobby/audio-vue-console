@@ -12,6 +12,8 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     case alreadyAGroup
     case notARectangle
     case cardInTheWay
+    /// A change of grid would leave a card of this kind below its minimum, or with no cells.
+    case tooSmall(String)
     case readOnly(ReadOnlyReason)
 
     public var description: String {
@@ -25,6 +27,7 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
         case .alreadyAGroup: "These cards are already a group."
         case .notARectangle: "These cards don't fill a rectangle."
         case .cardInTheWay: "Another card is in the way."
+        case .tooSmall(let kind): "The \(kind) card would be smaller than its minimum on that grid."
         case .readOnly(let reason): reason.description
         }
     }

@@ -9,16 +9,28 @@ struct CardSettingsList: View {
     let cards: [LayoutCard]
     /// Every card kind's settings, so each card is read by its own declaration.
     let groups: [String: SettingGroup]
+    let colours: SceneColours
     let editor: SceneEditor
 
     var body: some View {
         ForEach(declared.settings) { declaration in
+            let value = SettingGroup.value(of: declaration.key, across: cards, declaredBy: groups)
             SettingRow(
-                declaration: declaration,
-                value: SettingGroup.value(of: declaration.key, across: cards, declaredBy: groups),
+                declaration: declaration, value: value,
                 note: SettingGroup.note(of: declaration.key, across: cards, declaredBy: groups),
-                edit: edit(declaration))
+                edit: edit(declaration), inherited: inherited(declaration, value),
+                unused: SettingGroup.unusedReason(
+                    of: declaration.key, across: cards, declaredBy: groups))
         }
+    }
+
+    /// The colour an unset colour is drawn in, from the scene's blocks as edited (`scene-settings`,
+    /// design D8); nil for any other value.
+    private func inherited(_ declaration: SettingDeclaration, _ value: SettingValue)
+        -> InheritedColour?
+    {
+        guard case .same(nil, isSet: false) = value else { return nil }
+        return declaration.inheritedColour(in: editor.content.blocks, colours: colours)
     }
 
     /// The row's changes as editor steps on these cards, or nil where the scene is read-only.
@@ -37,48 +49,75 @@ struct SettingEdit {
     let useDefault: () -> Void
 }
 
-/// One setting: its label and control, its help, the standard it is off, and whether it is the
-/// default, mixed, or set with Use Default beside it (design D5). Nothing here says Reset, which
-/// is the panel's measurement reset.
+/// How a choice is shown: its words, and the colour of the swatch it names where it names one.
+struct ChoiceLabel {
+    let text: String
+    let colour: HexColour?
+}
+
+/// One setting, compact: its label, its control with Use Default beside it where the scene sets it,
+/// its help on hover, and under it only what needs saying: the standard it is off, that the cards
+/// differ, or the element and swatch an unset colour is drawn in (design D5; `scene-settings`).
+/// Nothing here says Reset, which is the panel's measurement reset.
 struct SettingRow: View {
     let declaration: SettingDeclaration
     let value: SettingValue
     let note: SettingNote?
     let edit: SettingEdit?
+    /// Where an unset colour comes from, shown in its well and said under it.
+    var inherited: InheritedColour?
+    /// How each choice is shown, where not by its value.
+    var choiceLabel: ((JSONValue) -> ChoiceLabel)?
+    /// Why the setting has no effect as the card's other settings stand, which greys it out
+    /// (`scene-settings`, design D9).
+    var unused: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: SceneMetrics.settingSpacing) {
             LabeledContent(declaration.label) {
-                SettingControl(declaration: declaration, value: value, edit: edit)
+                HStack(spacing: SceneMetrics.settingSpacing) {
+                    SettingControl(
+                        declaration: declaration, value: value,
+                        edit: unused == nil ? edit : nil, inheritedHex: inherited?.colour.hex,
+                        choiceLabel: choiceLabel)
+                    if value.isSet, let edit { UseDefaultButton(action: edit.useDefault) }
+                }
             }
-            if !declaration.help.isEmpty {
-                Text(declaration.help).font(.caption).foregroundStyle(.secondary)
-            }
+            .foregroundStyle(unused == nil ? .primary : .secondary)
             if case .offStandard(let document)? = note {
                 Label("Outside \(document)", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption).foregroundStyle(.orange)
             }
-            footer
-        }
-    }
-
-    @ViewBuilder private var footer: some View {
-        HStack {
-            if let state { Text(state).font(.caption).foregroundStyle(.secondary) }
-            if value.isSet, let edit {
-                Button("Use Default", action: edit.useDefault).controlSize(.small)
+            if let unused {
+                Text(unused).font(.caption).foregroundStyle(.secondary)
+            } else if let state {
+                Text(state).font(.caption).foregroundStyle(.secondary)
             }
         }
+        .help(declaration.help)
     }
 
-    /// What the value is when the scene does not set it alone: mixed, the default, or the palette.
+    /// What needs saying of a value the scene does not set alone: that the cards differ, or the
+    /// element and swatch an unset colour is drawn in.
     private var state: String? {
         switch value {
         case .mixed: "Mixed"
-        case .same(nil, isSet: false): declaration.shape == .colour ? "Uses the palette" : "Unset"
-        case .same(_, isSet: false): "Default"
-        case .same(_, isSet: true): nil
+        case .same(nil, isSet: false): inherited?.caption
+        case .same: nil
         }
+    }
+}
+
+/// Use Default, as a small button beside a setting the scene sets: it removes the setting, so the
+/// default applies. Never called Reset, the panel's measurement reset.
+struct UseDefaultButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button("Use Default", systemImage: "arrow.uturn.backward", action: action)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .help("Use Default")
     }
 }
 
@@ -88,6 +127,9 @@ struct SettingControl: View {
     let declaration: SettingDeclaration
     let value: SettingValue
     let edit: SettingEdit?
+    /// The colour an unset colour is drawn in, shown in its well.
+    var inheritedHex: String?
+    var choiceLabel: ((JSONValue) -> ChoiceLabel)?
 
     var body: some View {
         Group {
@@ -96,14 +138,14 @@ struct SettingControl: View {
                 Toggle(declaration.label, isOn: flag).labelsHidden()
             case .choice(let choices):
                 Picker(declaration.label, selection: choice) {
-                    ForEach(choices, id: \.self) { Text($0.text).tag(Optional($0)) }
+                    ForEach(choices, id: \.self) { item($0).tag(Optional($0)) }
                 }
                 .labelsHidden()
             case .colour:
-                ColourWell(hex: shown?.stringValue, set: edit?.set)
+                ColourWell(hex: shown?.stringValue ?? inheritedHex, set: edit?.set)
             case .number, .integer:
                 NumberField(declaration: declaration, value: shown, set: edit?.set)
-            case .other:
+            case .other, .colours:
                 Text(shown?.text ?? "None").foregroundStyle(.secondary)
             }
         }
@@ -122,6 +164,42 @@ struct SettingControl: View {
 
     private var choice: Binding<JSONValue?> {
         Binding(get: { shown }, set: { picked in picked.map { edit?.set($0) } })
+    }
+
+    /// A choice as its menu item: its words, with a chip of its swatch where it names one.
+    @ViewBuilder private func item(_ choice: JSONValue) -> some View {
+        if let label = choiceLabel?(choice) {
+            if let colour = label.colour {
+                Label {
+                    Text(label.text)
+                } icon: {
+                    Image(nsImage: SwatchChip.image(colour))
+                }
+            } else {
+                Text(label.text)
+            }
+        } else {
+            Text(choice.text)
+        }
+    }
+}
+
+/// A small square of a colour for a menu item, drawn as an image since a menu does not draw
+/// views or tint symbols.
+enum SwatchChip {
+    static func image(_ colour: HexColour) -> NSImage {
+        let side = SceneMetrics.swatchChipSide
+        return NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
+            let radius = SceneMetrics.swatchChipRadius
+            let chip = NSBezierPath(
+                roundedRect: rect.insetBy(dx: 1, dy: 1), xRadius: radius, yRadius: radius)
+            NSColor(srgbRed: colour.red, green: colour.green, blue: colour.blue, alpha: 1)
+                .setFill()
+            chip.fill()
+            NSColor.separatorColor.setStroke()
+            chip.stroke()
+            return true
+        }
     }
 }
 
@@ -164,7 +242,8 @@ struct NumberField: View {
 /// panel sends a change for every movement, so a run of changes is held and written once the
 /// colour has rested, or the well goes, as one step and one redraw (design D8).
 struct ColourWell: View {
-    /// The stored colour, or nil for a colour left to the palette or one that differs.
+    /// The colour shown: the stored one, or the one an unset colour is drawn in; nil for colours
+    /// that differ. A colour chosen equal to it is not written (`scene-settings`, design D8).
     let hex: String?
     let set: ((JSONValue) -> Void)?
     @State private var pending: String?
@@ -176,7 +255,7 @@ struct ColourWell: View {
             .onDisappear(perform: commit)
     }
 
-    /// The stored colour, as `HexColour` writes it.
+    /// The colour shown, as `HexColour` writes it.
     private var stored: String? {
         hex.flatMap { HexColour($0) }?.hex
     }

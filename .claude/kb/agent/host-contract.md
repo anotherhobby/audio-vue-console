@@ -121,13 +121,29 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - **Each setting's declaration** (Built, audio-vue `schema-step-and-order`; read live 2026-11-09):
   under `properties`, `type` (`boolean`, `number`, `integer`, `string`) or `enum` (an `integer` may
   carry one, as `install.input.rate` does), `minimum`/`maximum`, `pattern` `^#[0-9a-fA-F]{6}$` for a
-  colour, `default` (absent for a colour that follows the palette), and `x-label`, `x-help`,
+  colour, `default` (absent on a card's colour setting, which resolves through its element,
+  below), and `x-label`, `x-help`,
   `x-unit`, `x-class`, `x-standard` (`null` off the measurement class, `{document: null, values: []}`
   where none governs it), `x-live` and `x-step` (always present, null for none, never a
   constraint). Each `card.<name>`, `block.<name>` and `install.<name>` lists its keys in declared
   order as `x-settings`, since a decoded JSON object keeps no order. Every card number has a range
   and a step; block numbers mostly have neither. The app reads them into `SettingGroup`
   (`SchemaFacts.settings`, by card).
+- **Settings with no effect** (Built, audio-vue `unused-settings`, 2026-11-09): a card setting may
+  carry `x-unused-when`, a list of `{when: {setting: [values]}, reason}`. It has no effect where any
+  case matches; a case matches where every named setting holds one of its values (the console
+  matches set-or-default). Display only: a scene setting it is still accepted. Read it from the
+  export each time; never keep a copy of the field lists.
+- **Colours** (Built, audio-vue `card-colours`, archived 2026-11-09; the app's lookup is planned in
+  `scene-settings`): the palette (`block.palette`) holds concrete swatches in families, each with
+  a literal default; `grid` was renamed `track`, and a scene setting `grid` is refused. Cards draw
+  through elements; a scene's `elements:` block points any element at a swatch. The root lists
+  `x-swatches` (each swatch's family) and `x-elements` (each element's family and default swatch),
+  in declared order. A card's colour setting has no default and names the element it overrides as
+  `x-element`; one key can name different elements on different cards (`major_color`). An unset
+  card colour is: the scene's `elements:` entry for its element, else the element's swatch, then
+  the scene's `palette:` entry for that swatch, else its default (audio-vue `Card.colour`). Status
+  elements are never card settings. Blocks declare no `x-label`.
 - **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
   `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and
   naming every card, placeable or not; each `card.<name>` also carries `x-category`. The app reads
@@ -153,6 +169,10 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   and a stale one is refused with the current revision. 20 earlier revisions are kept
   (`KEPT_REVISIONS`, `src/host_store.py`); a revert stores one as a new revision. `/validate` routes
   check a document without storing it, with every failure by place and key.
+- **A backdrop** holds exactly one of `color`, `gradient` (two or more stops) and `image`. The host
+  also refuses `angle` without a gradient ("angle: applies only to a gradient",
+  `src/schema/scene.py`), which its `scene-backdrop` spec does not say (found 2026-11-09). `blur`
+  goes with any source.
 - **Backdrop images** (`/v1/images`): PNG or JPEG, at most 16 MiB and 4,096 px a side, named by their
   SHA-256; a scene names an image by id, never a path. A delete is refused while a stored scene names
   it.
@@ -189,6 +209,10 @@ calls them:
   and `card.<name>` with `x-placeable`, `x-min-cells` (on a 36-row grid), `x-sizing`, `x-aspect`.
 - **`GET /v1/images/{id}`** (token) serves uploads and shipped images alike, PNG or JPEG; a 404 is
   `HostFailure.notFound`. An id is a file name with no separator (audio-vue `images.FORM`).
+- **`GET /v1/images`** (token) lists `{images: [{id, shipped, format?, bytes?, width?, height?,
+  added_at?}]}`, uploads then shipped. **`POST /v1/images`** takes the raw bytes as `image/png` or
+  `image/jpeg` and answers 201 `{id}`, or 413, 415 or 422 with a `Refusal` `{detail}`, read as
+  `HostFailure.imageRefused` (`scene-settings`, 2026-11-09).
 - The display's pixel size is `/v1/host`'s, null while the panel is down.
 
 Layers are 8-bit RGBA, premultiplied, rects in display pixels from the top left. The app stacks

@@ -25,18 +25,19 @@ public final class LibraryTiles {
         public var unfit: [String] { layer.unfit }
     }
 
-    /// The settings tiles are drawn in: the scene's doc with its cards and name removed, and its
-    /// grid, which a doc declaring none takes from the schema.
+    /// The settings tiles are drawn in: the scene's doc as edited with its cards and name removed,
+    /// and its grid, which a doc declaring none takes from the schema (`scene-settings`, design
+    /// D6).
     struct Key: Hashable {
         let settings: JSONValue
         let grid: CellSize
 
-        init(_ laidOut: LaidOutScene) {
-            var fields = laidOut.document.doc.objectValue ?? [:]
+        init(_ laidOut: LaidOutScene, _ content: SceneContent) {
+            var fields = laidOut.doc(for: content).objectValue ?? [:]
             fields["cards"] = nil
             fields["name"] = nil
             settings = .object(fields)
-            grid = laidOut.layout.grid
+            grid = content.layout.grid
         }
     }
 
@@ -50,15 +51,16 @@ public final class LibraryTiles {
 
     public init() {}
 
-    /// Draws a tile for each of `cards` in `laidOut`'s settings through `queue`, all at once in the
-    /// library's lane, skipping those already asked for and the cards `drift` boxes, whose tiles are
+    /// Draws a tile for each of `cards` in the settings of `draft`, the scene as edited, through
+    /// `queue`, all at once in the library's lane, skipping those already asked for and the cards `drift` boxes, whose tiles are
     /// dropped. Tiles drawn for other settings, and the backdrop with them, are dropped first. The
     /// caller draws only where the code is the panel's, or differs without shared code (design D4).
     public func draw(
-        for laidOut: LaidOutScene, cards: [SchemaFacts.Card], drift: CardDrift?,
-        context: RenderContext, through queue: RenderQueue
+        for draft: Draft, cards: [SchemaFacts.Card], drift: CardDrift?, context: RenderContext,
+        through queue: RenderQueue
     ) async {
-        let key = Key(laidOut)
+        let (laidOut, content) = (draft.laidOut, draft.content)
+        let key = Key(laidOut, content)
         if key != self.key {
             self.key = key
             tiles = [:]
@@ -73,7 +75,7 @@ public final class LibraryTiles {
         asked.formUnion(wanted.map(\.name))
         let requests = wanted.compactMap { card in
             Self.request(
-                for: laidOut, card: card.name,
+                for: laidOut, as: content, card: card.name,
                 minimum: SchemaFacts.scaled(card.minimum, toRows: key.grid.rows), context: context
             ).map { (card: card.name, message: $0.message) }
         }
@@ -107,22 +109,24 @@ public final class LibraryTiles {
         asked = []
     }
 
-    /// A tile's request: a copy of `laidOut` holding only `card` at `minimum` at the grid's
-    /// top-left corner, naming its one plate and no backdrop, or nil where the card is off the grid.
+    /// A tile's request: `content`, an edit of `laidOut`, holding only `card` at `minimum` at the
+    /// grid's top-left corner, naming its one plate and no backdrop, or nil where the card is off
+    /// the grid.
     static func request(
-        for laidOut: LaidOutScene, card: String, minimum: CellSize, context: RenderContext
+        for laidOut: LaidOutScene, as content: SceneContent, card: String, minimum: CellSize,
+        context: RenderContext
     ) -> RenderRequest? {
         let cells = CellRect(col: 0, row: 0, cols: minimum.cols, rows: minimum.rows)
         let layout: SceneLayout
         do throws(LayoutRefusal) {
             layout = try SceneLayout(
-                grid: laidOut.layout.grid, cards: [LayoutCard(kind: card, cells: cells)])
+                grid: content.layout.grid, cards: [LayoutCard(kind: card, cells: cells)])
         } catch {
             return nil
         }
         return RenderRequest(
-            doc: laidOut.doc(for: layout), builtIn: laidOut.document.builtIn, context: context,
-            plates: [0], backdrop: false)
+            doc: laidOut.doc(for: content.with(layout: layout)), builtIn: laidOut.document.builtIn,
+            context: context, plates: [0], backdrop: false)
     }
 
     /// Keeps a drawn plate as `card`'s tile, unless the settings changed while it was drawn. A

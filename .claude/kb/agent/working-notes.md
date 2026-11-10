@@ -116,12 +116,18 @@ Three changes, built in this order (maintainer, 2026-11-08):
    Built 2026-11-09; the maintainer ran task 5.1 on the proving host with no issue found, and it
    was archived as `openspec/changes/archive/2026-11-09-card-settings` (its spec `card-settings`;
    `scene-canvas` and `scene-rendering` updated). A card the app had not seen (`loudness_scope`'s
-   band colours, added to audio-vue that day) showed its settings with no app change. Open, raised
-   2026-11-09 and not yet ruled: an unset palette colour shows a black swatch, since the schema
-   says which palette colour it follows only in its help (and `loudness_scope`'s band 3 is a mix).
-   Proposed: audio-vue declares each fallback as data (`x-palette`), or the render helper reports
-   effective colours.
-2. `scene-settings` (planned, valid, now unblocked): the scene's blocks in the inspector when nothing is selected;
+   band colours, added to audio-vue that day) showed its settings with no app change. An unset
+   card colour showed a black swatch; audio-vue's `card-colours` (archived 2026-11-09) made it
+   resolvable by lookup (`host-contract.md`, Colours), and `scene-settings` now shows the colour and
+   its element (maintainer, 2026-11-09).
+2. `scene-settings` (built 2026-11-09, 15 of 16 tasks; task 5.1, the maintainer's run on the
+   proving host, is next, then verify and archive. Reconciled the same day with card-settings as
+   built and with audio-vue's `card-colours`: an Elements section after Palette, the palette by
+   family, and the card inspector's unset colour by lookup. The calibration note words the rate as
+   `RateText` does, "44.1 kHz". Ruled on the maintainer's first look, 2026-11-09: the scene's
+   settings go in inspector tabs, Look, Colours, Analysis and Grid, and rows are compact for card
+   and scene settings alike, help on hover, Use Default a small button; a backdrop source chosen
+   again comes back as it was): the scene's blocks in the inspector when nothing is selected;
    backdrop as one source with gradient stops and image upload; grid gap and density at the scene's
    aspect. Calibration warning only where no calibration holds at the scene's rate (maintainer:
    users calibrate at several rates and switch scenes between them; audio-vue applies the newest
@@ -139,6 +145,8 @@ audio-vue's `schema-step-and-order` (`x-step` on every setting, `x-settings` on 
 and install definition; the chain wording in "A scene sets no measured value" now accepts a card's
 channel choice), and the file is gone; the live panel's export matched on 2026-11-09.
 `scene-settings-handoff.md` was answered by `GET /v1/calibration` (see input-and-rates below).
+`meter-colours-handoff.md` (placed 2026-11-09 for `scene-settings` task 4.5) was answered the same
+day by audio-vue's `unused-settings` (`x-unused-when`, `host-contract.md`), built in task 4.5.
 `styles-handoff.md` (a copy of `openspec/changes/styles/handoff.md`) awaits a reply. audio-vue's open `loudness-scope` change renames
 `loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
 not placeable.

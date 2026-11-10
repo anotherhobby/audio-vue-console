@@ -24,7 +24,7 @@ struct SceneSessionTests {
                 for: mine, defaultGrid: CellSize(cols: 64, rows: 36))
             manager = UndoManager()
             manager.groupsByEvent = false
-            editor = SceneEditor(layout: draft.layout, undoManager: manager) {
+            editor = SceneEditor(content: draft.content, undoManager: manager) {
                 writes.drafts.keep($0, for: "u1")
             }
             session = SceneSession(id: "u1", writes: writes)

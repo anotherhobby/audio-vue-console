@@ -23,6 +23,7 @@ enum WriteFailureText {
             change with this one. Discard Mine drops this edit and shows the panel's version.
             """
         case .conflict(let reason): reason
+        case .imageRefused(let refusal): refusal.description
         case .unreachable: "The host couldn't be reached. Your edits are kept."
         case .notFound: "The host no longer has this scene."
         case .tokenRefused: "The host no longer takes this app's pairing. Pair again."

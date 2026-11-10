@@ -27,9 +27,9 @@ public final class SceneDrafts {
         return draft
     }
 
-    /// Keeps `layout` as the scene `id`'s, an edit of its draft's parse.
-    public func keep(_ layout: SceneLayout, for id: String) {
-        drafts[id]?.layout = layout
+    /// Keeps `content` as the scene `id`'s, an edit of its draft's parse.
+    public func keep(_ content: SceneContent, for id: String) {
+        drafts[id]?.content = content
     }
 
     /// The host's `scenes` with the app's copies after them.
@@ -60,7 +60,8 @@ public final class SceneDrafts {
             doc: .object(doc))
         copies.append(copy)
         drafts[copy.id] = Draft(
-            draft.laidOut.copy(draft.layout, as: copy), layout: draft.layout, name: name, rev: nil)
+            draft.laidOut.copy(draft.layout, as: copy), content: draft.content, name: name, rev: nil
+        )
         return copy
     }
 
@@ -102,17 +103,17 @@ public final class SceneDrafts {
         drafts[id] = draft
     }
 
-    /// Reverts the scene `id` to `base`, the host's current document: the layout to show, and
+    /// Reverts the scene `id` to `base`, the host's current document: the content to show, and
     /// whether it is of a new parse, as after a version was loaded, when the editor's undo cannot
     /// reach it. Of the same parse, the draft is left for the editor's undoable Revert to keep.
     public func revert(_ id: String, to base: SceneDocument) throws(LayoutRefusal)
-        -> (layout: SceneLayout, newParse: Bool)?
+        -> (content: SceneContent, newParse: Bool)?
     {
         guard let old = drafts[id] else { return nil }
-        guard old.source != old.rev else { return (old.laidOut.layout, false) }
+        guard old.source != old.rev else { return (old.laidOut.content, false) }
         let draft = Draft(try LaidOutScene(base, defaultGrid: old.layout.grid))
         drafts[id] = draft
-        return (draft.layout, true)
+        return (draft.content, true)
     }
 
     /// Renames the copy `id`, never saved, in the app alone.

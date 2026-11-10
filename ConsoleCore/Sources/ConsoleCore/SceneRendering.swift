@@ -44,24 +44,63 @@ public final class SceneRendering {
     public let displayKnown: Bool
     public let context: RenderContext
 
-    /// The scene as read, its document and the layout it opened with.
+    /// What one request draws.
+    private enum Target: Sendable {
+        /// The backdrop and every plate.
+        case everything
+        /// The backdrop alone, after a change to the scene's backdrop alone.
+        case backdrop
+        /// One plate, by its cards.
+        case plate(Set<UUID>)
+
+        /// The plates asked for, by their index among `ids`, the layout's cards in order: nil for
+        /// every plate.
+        func plates(among ids: [UUID]) -> [Int]? {
+            switch self {
+            case .everything: nil
+            case .backdrop: []
+            case .plate(let members): ids.firstIndex(where: members.contains).map { [$0] }
+            }
+        }
+
+        var drawsBackdrop: Bool {
+            switch self {
+            case .everything, .backdrop: true
+            case .plate: false
+            }
+        }
+
+        /// The queue's key, so a newer request for the same thing replaces one not yet sent.
+        var key: String {
+            switch self {
+            case .everything: "scene"
+            case .backdrop: "backdrop"
+            case .plate(let members):
+                "plate:" + members.map(\.uuidString).sorted().joined(separator: ",")
+            }
+        }
+    }
+
+    /// The scene as read, its document and the content it opened with.
     public let scene: LaidOutScene
     private var queue: RenderQueue?
-    private var layout: SceneLayout
+    private var content: SceneContent
     private var inFlight = 0
 
     public init(scene: LaidOutScene, context: RenderContext, displayKnown: Bool) {
         self.scene = scene
         self.context = context
         self.displayKnown = displayKnown
-        layout = scene.layout
+        content = scene.content
     }
+
+    private var layout: SceneLayout { content.layout }
 
     /// Starts drawing with `queue`, once the renderer has made its first run.
     public func attach(_ queue: RenderQueue) async {
         if case .codeDiffers = status { return }
         self.queue = queue
-        await show(layout)
+        await show(content)
     }
 
     /// No renderer will draw this scene, for `reason`.
@@ -95,21 +134,35 @@ public final class SceneRendering {
         return Set(layout.cards.filter { drift.boxes($0.kind) }.map(\.id))
     }
 
-    /// Draws again whatever `layout` changed, dropping the layers of plates it no longer has.
-    public func show(_ layout: SceneLayout) async {
-        self.layout = layout
+    /// Draws again whatever `content` changed, dropping the layers of plates it no longer has: a
+    /// change to the backdrop block alone draws the backdrop, a change to any other block draws
+    /// everything, and a layout edit draws the plates it changed (`scene-settings`, design D6).
+    public func show(_ content: SceneContent) async {
+        let changedBlocks = Self.changedBlocks(from: self.content.blocks, to: content.blocks)
+        self.content = content
         guard let queue else { return }
-        guard backdrop != nil else {
-            await draw(layout, plates: nil, through: queue)
+        let changes = PlateChanges.needed(drawn: plates.mapValues(\.state), for: content.layout)
+        for removed in changes.removed { plates[removed] = nil }
+        guard backdrop != nil, changedBlocks.isSubset(of: [Self.backdropBlock]) else {
+            await draw(content, .everything, through: queue)
             return
         }
-        let changes = PlateChanges.needed(drawn: plates.mapValues(\.state), for: layout)
-        for removed in changes.removed { plates[removed] = nil }
+        let targets =
+            changes.redraw.map(Target.plate) + (changedBlocks.isEmpty ? [] : [Target.backdrop])
         await withDiscardingTaskGroup { group in
-            for plate in changes.redraw {
-                group.addTask { await self.draw(layout, plates: plate, through: queue) }
+            for target in targets {
+                group.addTask { await self.draw(content, target, through: queue) }
             }
         }
+    }
+
+    private static let backdropBlock = "backdrop"
+
+    /// The blocks that differ between `old` and `new`, by name.
+    private static func changedBlocks(
+        from old: [String: JSONValue], to new: [String: JSONValue]
+    ) -> Set<String> {
+        Set(old.keys).union(new.keys).filter { old[$0] != new[$0] }
     }
 
     /// The names of the cards that cannot show their reading at the size drawn.
@@ -130,18 +183,15 @@ public final class SceneRendering {
         }
     }
 
-    /// Draws `plate`, or every plate and the backdrop when nil, as `layout` places them.
-    private func draw(_ layout: SceneLayout, plates plate: Set<UUID>?, through queue: RenderQueue)
-        async
-    {
+    /// Draws `target` as `content` holds the scene.
+    private func draw(_ content: SceneContent, _ target: Target, through queue: RenderQueue) async {
+        let layout = content.layout
         let ids = layout.cards.map(\.id)
-        let chosen = plate.flatMap { members in ids.firstIndex(where: members.contains) }
         let request = RenderRequest(
-            doc: scene.doc(for: layout), builtIn: scene.document.builtIn, context: context,
-            plates: chosen.map { [$0] }, backdrop: plate == nil)
-        let key = plate.map { "plate:" + $0.map(\.uuidString).sorted().joined(separator: ",") }
+            doc: scene.doc(for: content), builtIn: scene.document.builtIn, context: context,
+            plates: target.plates(among: ids), backdrop: target.drawsBackdrop)
         begin()
-        let result = await queue.submit(request.message, lane: .canvas, key: key ?? "scene")
+        let result = await queue.submit(request.message, lane: .canvas, key: target.key)
         defer { end() }
         // A verdict or a failure that stopped drawing while this was under way wins over its answer.
         guard self.queue != nil else { return }

@@ -5,7 +5,9 @@
 Pass 1, 2026-11-08, on `dev` at `a5b6576`, with `card-settings` planned and not built. Pass 2, the
 same day, after the maintainer ruled on calibration across rates (F7): the calibration requirement,
 D7 and tasks 1.2, 2.4, 4.3 and 5.1 re-read. Reads against
-code card-settings will change are marked (planned), and are re-read in task 1.1.
+code card-settings will change are marked (planned), and are re-read in task 1.1. Pass 3,
+2026-11-09, on `dev` at `433126d` (task 1.1): card-settings as built and archived, and audio-vue's
+`card-colours`, built and archived, folded in at the maintainer's ruling.
 
 - `SceneEditor.swift`: `layout`, `commit`, `preview`, `registerUndo`, `show`, `onCommit`.
 - `Draft.swift`: `layout`, `isUnsaved`, `doc`. `SceneDrafts.swift`: `keep(_:for:)`, `duplicate`,
@@ -32,6 +34,17 @@ code card-settings will change are marked (planned), and are re-read in task 1.1
   `scene-render` ("A request may name its plates", "The backdrop is one layer"), `settings-store`
   (images, writes). `openspec list --store audio-vue`: no active changes.
 - `card-settings` (planned): its `scene-canvas` and `scene-rendering` deltas, D1 to D8.
+- Pass 3: `SettingGroup.swift` (`SettingDeclaration`, `Shape`, `declaresAlike`, `SettingGroup`),
+  `SettingValues.swift` (`SettingValue`, `effectiveValue`), `CardSettings.swift` (the "Uses the
+  palette" state), `SceneLayout.swift` (`LayoutCard.settings`), `SceneEditor.swift` (`set`,
+  `useDefault`); `HostClient+Calibration.swift` (`CalibratedRate`) and `PanelInput.calibrations`;
+  the archived `card-settings` design and the standing `card-settings`, `scene-canvas` and
+  `scene-rendering` specs.
+- Pass 3, audio-vue: `card-colours` (spec, and design D1 to D4), `settings-schema` ("The
+  declarations export as JSON Schema", "A colour setting says what it overrides"), and
+  `json_schema()` read live: `scene`'s keys now include `elements`; `block.palette` 21 colours;
+  `block.elements` 35 choices with labels; `x-swatches`, `x-elements`; every card colour setting's
+  `x-element`; no block declares `x-label`. `openspec list --store audio-vue`: `mac-output` open.
 
 ## Findings
 
@@ -74,7 +87,7 @@ code card-settings will change are marked (planned), and are re-read in task 1.1
   - Resolution: `SceneContent.blocks` holds every top-level key but `cards` and `name`, so `fixed`
     passes through; only declared `block.*` refs get sections.
 
-- **F7. The host reports calibration for the running rate only** (resolved, waits on audio-vue)
+- **F7. The host reports calibration for the running rate only** (resolved, answered by audio-vue)
   - Plan: the scene warns only where no calibration holds at its rate (maintainer, 2026-11-08: a
     user may calibrate at every rate and switch scenes between them).
   - Code: audio-vue applies `record.active(chain)`, the newest record valid for the device and rate
@@ -82,20 +95,79 @@ code card-settings will change are marked (planned), and are re-read in task 1.1
     `calibration_status`). The contract's `state.sections.calibration` describes the running rate
     alone; `RunEntry` carries no rate. The console cannot tell whether another rate is calibrated.
   - Goes to: requirement (ruled), design D7, tasks 1.2 and 4.3.
-  - Resolution: `scene-settings-handoff.md` asks for every calibrated rate of the installed chain;
-    the note waits on the answer and nothing else does.
+  - Resolution: `scene-settings-handoff.md` asked for every calibrated rate of the installed chain.
+    Answered by `GET /v1/calibration` (audio-vue `input-and-rates`), read as `CalibratedRate` and
+    held in `PanelInput.calibrations` since the console's `input-and-rates`; task 4.3 no longer
+    waits (pass 3).
+- **F8. The palette is 21 swatches, and `grid` is gone** (resolved)
+  - Plan: 13 palette colours; tests and the fixture assume them.
+  - Code: audio-vue `card-colours` D1: identity, sequence, status, text, structure and highlight
+    families; `grid` renamed `track`, a scene setting `grid` refused. The trimmed fixture is from an
+    export before it.
+  - Goes to: proposal, spec, design, task 2.3.
+  - Resolution: the palette is every declared swatch, grouped by family; 2.3 refreshes the fixture.
+- **F9. A new scene block, `elements`** (resolved)
+  - Code: `block.elements`, one `enum` of swatch names per element, its default the element's
+    swatch; status elements included, which a scene may set and a card may not.
+  - Goes to: proposal, spec, design D2 and D8, tasks 2.3 and 4.1.
+  - Resolution: an Elements section after Palette, each choice shown in its swatch's colour.
+- **F10. One key overrides different elements on different cards** (resolved)
+  - Code: `major_color` is `grid_major` on `rta_bars`, `outline` on `loudness_scope`;
+    `declaresAlike` would share it, with two different unset colours.
+  - Goes to: the card-settings delta, design D8, task 2.5.
+  - Resolution: `declaresAlike` also compares the element.
+- **F11. A block declares no label** (resolved)
+  - Plan: an unknown block's section "by its label".
+  - Code: no `block.*` carries `x-label`.
+  - Goes to: spec and design D2.
+  - Resolution: by its key.
+- **F13. The host refuses an angle without a gradient** (resolved; found on the maintainer's run)
+  - Plan: the angle survives every switch of source (design D3, spec).
+  - Code: audio-vue `src/schema/scene.py` refuses `angle` where the backdrop holds no gradient;
+    its `scene-backdrop` spec does not say so. Every switch from a gradient with an angle to Colour
+    or Image was refused, and the canvas fell back to boxes.
+  - Goes to: spec, design D3, task 3.2.
+  - Resolution: the angle is written only with a gradient; `BackdropMemory` brings back the stops
+    and angle when Gradient is chosen again (maintainer, 2026-11-09: switching back must not lose
+    the gradient). audio-vue's spec could state the rule.
+- **F15. A card setting can have no effect, and the export does not say so** (resolved)
+  - Plan: every declared setting can be set to effect.
+  - Code: audio-vue's meter colours a field with a caution or over threshold by zone, and
+    correlation by phase (`src/cards/fields.py`, `src/cards/meter/card.py`), so `bar_body_color`
+    and `bar_tip_color` change nothing for `true_peak_max`, `crest_peak`, `ppm_peak`,
+    `sample_peak` and `correlation`. The export has no keyword for it.
+  - Goes to: card-settings delta, design D9, tasks 1.3 and 4.5.
+  - Resolution: `meter-colours-handoff.md` asked audio-vue to declare it (maintainer, 2026-11-09:
+    declared by audio-vue, not copied; folded into this change). Answered the same day by
+    `x-unused-when`, a list of cases each needing every named setting to hold (audio-vue
+    `settings-schema`, "A setting says when it has no effect"); built in task 4.5.
+- **F14. A backdrop of blur alone is refused** (resolved; found on the maintainer's run)
+  - Plan: None keeps `{blur}` where a blur was set (design D3, task 3.2).
+  - Code: audio-vue `scene-backdrop`, "A malformed backdrop is refused": a `backdrop:` holding none
+    of `color`, `gradient` and `image` is refused, blur or not. The plan misread it.
+  - Goes to: design D3, task 3.2.
+  - Resolution: None removes the whole block; the Blur row hides under None; `BackdropMemory` keeps
+    the blur and brings it back with the next source.
+- **F12. audio-vue's open `mac-output` modifies a relied-on requirement** (resolved, no effect)
+  - Code: its `settings-schema` delta to "The declarations export as JSON Schema" adds "choices",
+    which this plan already reads as an `enum`. Its Impact names no spec this change modifies.
+  - Goes to: nothing.
 
 ## Questions for the maintainer
 
 None open. Ruled (maintainer, 2026-11-08): scene settings as their own change after card-settings;
 the grid's gap and density at the scene's aspect; a calibration warning only where none holds at the
-scene's rate (F7).
+scene's rate (F7). Ruled 2026-11-09: a card's unset colour shown by lookup is part of this change
+(F8 to F10).
 
 ## Confirmed
 
 - Every scene block is declared in the schema with labels, help, defaults and classes, so the
   sections need no names from the app beyond their order.
-- Image list and upload routes exist in the saved contract; no host work.
+- Image list and upload routes, and `GET /v1/calibration`, exist in the saved contract; no host
+  work.
+- Every card colour setting names an element and no status one (audio-vue `card-colours`), so the
+  lookup covers every card colour the export declares.
 - A scene write never changes the screen; Apply reloads it (`audio-vue:settings-store`).
 - A gradient needs two stops (`minItems` 2, `scene-backdrop`), so the stop list refuses removal at
   two.

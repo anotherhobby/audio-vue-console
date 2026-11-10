@@ -1,833 +1,3700 @@
 {
- "$defs": {
-  "block.grid": {
-   "additionalProperties": false,
-   "properties": {
-    "cols": {
-     "default": 64,
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "appearance",
-     "x-help": "Grid columns across the scene's region.",
-     "x-label": "Columns",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-schema-version": 11,
+  "x-categories": [
+    {
+      "cards": [
+        "vu_meter",
+        "peak_rms_vertical"
+      ],
+      "id": "level",
+      "label": "Level"
     },
-    "gap": {
-     "default": 8.0,
-     "minimum": 0.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Space between cards, in pixels at a region 1,080 px tall.",
-     "x-label": "Gap",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": "px"
+    {
+      "cards": [
+        "waveform"
+      ],
+      "id": "waveform",
+      "label": "Waveform"
     },
-    "rows": {
-     "default": 36,
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "appearance",
-     "x-help": "Grid rows down the scene's region.",
-     "x-label": "Rows",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    {
+      "cards": [
+        "calibration"
+      ],
+      "id": "calibration",
+      "label": "Calibration"
+    },
+    {
+      "cards": [
+        "logo"
+      ],
+      "id": "audio-vue",
+      "label": "audio-vue"
     }
-   },
-   "type": "object",
-   "x-settings": [
-    "cols",
-    "rows",
-    "gap"
-   ]
-  },
-  "card.calibration": {
-   "additionalProperties": false,
-   "properties": {},
-   "type": "object",
-   "x-category": "calibration",
-   "x-min-cells": [
-    29,
-    36
-   ],
-   "x-placeable": false,
-   "x-settings": [],
-   "x-sizing": "free"
-  },
-  "card.dynamics_gauge": {
-   "additionalProperties": false,
-   "properties": {
-    "crushed_below_db": {
-     "default": 9.0,
-     "maximum": 14.0,
-     "minimum": 4.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Readings below this show as crushed, by mastering convention.",
-     "x-label": "Crushed below",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.5,
-     "x-unit": "dB"
+  ],
+  "x-elements": {
+    "title": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "max_db": {
-     "default": 20.0,
-     "maximum": 30.0,
-     "minimum": 10.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The top of the printed dB scale.",
-     "x-label": "Scale top",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 5.0,
-     "x-unit": "dB"
+    "label": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "open_above_db": {
-     "default": 13.0,
-     "maximum": 20.0,
-     "minimum": 8.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Readings above this show as open, by mastering convention.",
-     "x-label": "Open above",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.5,
-     "x-unit": "dB"
+    "value": {
+      "family": "text",
+      "swatch": "text"
     },
-    "show_readout": {
-     "default": false,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Print the three readings as numbers too.",
-     "x-label": "Numeric readout",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "value_secondary": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "show_scale": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Show the scale and the legend.",
-     "x-label": "Scale and legend",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    }
-   },
-   "type": "object",
-   "x-aspect": 1.4,
-   "x-category": "dynamics",
-   "x-min-cells": [
-    14,
-    11
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "max_db",
-    "crushed_below_db",
-    "open_above_db",
-    "show_readout",
-    "show_scale"
-   ],
-   "x-sizing": "aspect"
-  },
-  "card.logo": {
-   "additionalProperties": false,
-   "properties": {},
-   "type": "object",
-   "x-category": "audio-vue",
-   "x-min-cells": [
-    6,
-    4
-   ],
-   "x-placeable": true,
-   "x-settings": [],
-   "x-sizing": "free"
-  },
-  "card.peak_rms": {
-   "additionalProperties": false,
-   "properties": {
-    "caution_db": {
-     "default": -6.0,
-     "maximum": 0.0,
-     "minimum": -24.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Bars above this show in the caution colour.",
-     "x-label": "Caution above",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 1.0,
-     "x-unit": "dBFS"
+    "unit": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "floor_db": {
-     "default": -60.0,
-     "maximum": -20.0,
-     "minimum": -100.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The bottom of the dB scale.",
-     "x-label": "Floor",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 10.0,
-     "x-unit": "dBFS"
+    "scale": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "hold_fall_db_s": {
-     "default": 15.0,
-     "maximum": 60.0,
-     "minimum": 1.0,
-     "type": "number",
-     "x-class": "measurement",
-     "x-help": "How fast the peak hold falls once its time is up.",
-     "x-label": "Hold fall",
-     "x-live": true,
-     "x-standard": {
-      "document": null,
-      "values": []
-     },
-     "x-step": 1.0,
-     "x-unit": "dB/s"
+    "caption": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "hold_s": {
-     "default": 1.5,
-     "maximum": 10.0,
-     "minimum": 0.0,
-     "type": "number",
-     "x-class": "measurement",
-     "x-help": "How long the peak hold keeps its maximum before it falls.",
-     "x-label": "Peak hold",
-     "x-live": true,
-     "x-standard": {
-      "document": null,
-      "values": []
-     },
-     "x-step": 0.5,
-     "x-unit": "s"
+    "notice": {
+      "family": "text",
+      "swatch": "text_muted"
     },
-    "over_db": {
-     "default": -3.0,
-     "maximum": 0.0,
-     "minimum": -12.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Bars above this show in the over colour.",
-     "x-label": "Over above",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.5,
-     "x-unit": "dBFS"
+    "grid_major": {
+      "family": "structure",
+      "swatch": "line"
     },
-    "show_readout": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Print peak, RMS and crest as numbers.",
-     "x-label": "Numeric readout",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "grid_minor": {
+      "family": "structure",
+      "swatch": "line"
     },
-    "show_scale": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Show the scale and its labels.",
-     "x-label": "Scale and labels",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    }
-   },
-   "type": "object",
-   "x-category": "level",
-   "x-min-cells": [
-    15,
-    10
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "floor_db",
-    "caution_db",
-    "over_db",
-    "hold_s",
-    "hold_fall_db_s",
-    "show_readout",
-    "show_scale"
-   ],
-   "x-sizing": "free"
-  },
-  "card.peak_rms_vertical": {
-   "additionalProperties": false,
-   "properties": {
-    "caution_db": {
-     "default": -6.0,
-     "maximum": 0.0,
-     "minimum": -24.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Bars above this show in the caution colour.",
-     "x-label": "Caution above",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 1.0,
-     "x-unit": "dBFS"
+    "outline": {
+      "family": "structure",
+      "swatch": "line"
     },
-    "floor_db": {
-     "default": -60.0,
-     "maximum": -20.0,
-     "minimum": -100.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The bottom of the dB scale.",
-     "x-label": "Floor",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 10.0,
-     "x-unit": "dBFS"
+    "tick": {
+      "family": "structure",
+      "swatch": "line"
     },
-    "hold_fall_db_s": {
-     "default": 15.0,
-     "maximum": 60.0,
-     "minimum": 1.0,
-     "type": "number",
-     "x-class": "measurement",
-     "x-help": "How fast the peak hold falls once its time is up.",
-     "x-label": "Hold fall",
-     "x-live": true,
-     "x-standard": {
-      "document": null,
-      "values": []
-     },
-     "x-step": 1.0,
-     "x-unit": "dB/s"
+    "beam": {
+      "family": "structure",
+      "swatch": "line"
     },
-    "hold_s": {
-     "default": 1.5,
-     "maximum": 10.0,
-     "minimum": 0.0,
-     "type": "number",
-     "x-class": "measurement",
-     "x-help": "How long the peak hold keeps its maximum before it falls.",
-     "x-label": "Peak hold",
-     "x-live": true,
-     "x-standard": {
-      "document": null,
-      "values": []
-     },
-     "x-step": 0.5,
-     "x-unit": "s"
+    "track": {
+      "family": "structure",
+      "swatch": "track"
     },
-    "over_db": {
-     "default": -3.0,
-     "maximum": 0.0,
-     "minimum": -12.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "Bars above this show in the over colour.",
-     "x-label": "Over above",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.5,
-     "x-unit": "dBFS"
+    "series_1": {
+      "family": "identity",
+      "swatch": "signal"
     },
-    "show_readout": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Print peak, RMS and crest as numbers.",
-     "x-label": "Numeric readout",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "series_2": {
+      "family": "identity",
+      "swatch": "signal_alt"
     },
-    "show_scale": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Show the scale and its labels.",
-     "x-label": "Scale and labels",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    }
-   },
-   "type": "object",
-   "x-category": "level",
-   "x-min-cells": [
-    13,
-    15
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "floor_db",
-    "caution_db",
-    "over_db",
-    "hold_s",
-    "hold_fall_db_s",
-    "show_readout",
-    "show_scale"
-   ],
-   "x-sizing": "free"
-  },
-  "card.rta_bars": {
-   "additionalProperties": false,
-   "properties": {
-    "ceiling_db": {
-     "default": -10.0,
-     "maximum": 0.0,
-     "minimum": -40.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The top of the dBFS scale.",
-     "x-label": "Ceiling",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 5.0,
-     "x-unit": "dBFS"
+    "series_3": {
+      "family": "identity",
+      "swatch": "signal_3"
     },
-    "floor_db": {
-     "default": -60.0,
-     "maximum": -20.0,
-     "minimum": -160.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The bottom of the dBFS scale.",
-     "x-label": "Floor",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 5.0,
-     "x-unit": "dBFS"
+    "bar_body": {
+      "family": "identity",
+      "swatch": "signal"
     },
-    "gap": {
-     "default": 0.14,
-     "maximum": 0.5,
-     "minimum": 0.0,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "The space between bars, as a fraction of each band's width.",
-     "x-label": "Bar gap",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.02,
-     "x-unit": ""
+    "bar_tip": {
+      "family": "identity",
+      "swatch": "signal_alt"
     },
-    "major_color": {
-     "pattern": "^#[0-9a-fA-F]{6}$",
-     "type": "string",
-     "x-class": "appearance",
-     "x-help": "The major lines' colour; unset uses the palette's grid colour.",
-     "x-label": "Major line colour",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "sequence_1": {
+      "family": "sequence",
+      "swatch": "sequence_1"
     },
-    "major_grid": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Draw a line at each major level.",
-     "x-label": "Major level lines",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "sequence_2": {
+      "family": "sequence",
+      "swatch": "sequence_2"
     },
-    "major_weight_px": {
-     "default": 1,
-     "maximum": 8,
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "appearance",
-     "x-help": "How thick the major level lines are.",
-     "x-label": "Major line weight",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 1,
-     "x-unit": "px"
+    "sequence_3": {
+      "family": "sequence",
+      "swatch": "sequence_3"
     },
-    "minor_color": {
-     "pattern": "^#[0-9a-fA-F]{6}$",
-     "type": "string",
-     "x-class": "appearance",
-     "x-help": "The minor lines' colour; unset uses the palette's grid colour.",
-     "x-label": "Minor line colour",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "sequence_4": {
+      "family": "sequence",
+      "swatch": "sequence_4"
     },
-    "minor_grid": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Draw a line halfway between the major levels.",
-     "x-label": "Minor level lines",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "good": {
+      "family": "status",
+      "swatch": "good"
     },
-    "minor_weight_px": {
-     "default": 1,
-     "maximum": 8,
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "appearance",
-     "x-help": "How thick the minor level lines are.",
-     "x-label": "Minor line weight",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 1,
-     "x-unit": "px"
+    "caution": {
+      "family": "status",
+      "swatch": "caution"
+    },
+    "over": {
+      "family": "status",
+      "swatch": "over"
     },
     "peak_hold": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Show each band's held peak.",
-     "x-label": "Peak hold",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+      "family": "status",
+      "swatch": "peak_hold"
     },
-    "show_labels": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Label the level and frequency axes.",
-     "x-label": "Axis labels",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "centred": {
+      "family": "status",
+      "swatch": "centred"
+    },
+    "wide": {
+      "family": "status",
+      "swatch": "wide"
+    },
+    "anti_phase": {
+      "family": "status",
+      "swatch": "anti_phase"
+    },
+    "active": {
+      "family": "identity",
+      "swatch": "signal"
+    },
+    "note": {
+      "family": "identity",
+      "swatch": "signal_alt"
+    },
+    "highlight": {
+      "family": "highlight",
+      "swatch": "accent"
+    },
+    "shadow": {
+      "family": "structure",
+      "swatch": "shadow"
+    },
+    "plate": {
+      "family": "structure",
+      "swatch": "background"
     }
-   },
-   "type": "object",
-   "x-category": "spectrum",
-   "x-min-cells": [
-    17,
-    10
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "floor_db",
-    "ceiling_db",
-    "major_grid",
-    "minor_grid",
-    "major_weight_px",
-    "minor_weight_px",
-    "major_color",
-    "minor_color",
-    "show_labels",
-    "peak_hold",
-    "gap"
-   ],
-   "x-sizing": "free"
   },
-  "card.vu_meter": {
-   "additionalProperties": false,
-   "properties": {
-    "alignment": {
-     "default": "smpte",
-     "enum": [
-      "ebu",
-      "smpte",
-      "custom"
-     ],
-     "x-class": "measurement",
-     "x-help": "Where 0 VU sits: EBU R 68 (-18 dBFS), SMPTE RP 155 (-20 dBFS), or custom.",
-     "x-label": "Alignment",
-     "x-live": true,
-     "x-standard": {
-      "document": "ITU-R BS.1726",
-      "values": [
-       "ebu",
-       "smpte"
+  "x-swatches": {
+    "signal": {
+      "family": "identity"
+    },
+    "signal_alt": {
+      "family": "identity"
+    },
+    "signal_3": {
+      "family": "identity"
+    },
+    "sequence_1": {
+      "family": "sequence"
+    },
+    "sequence_2": {
+      "family": "sequence"
+    },
+    "sequence_3": {
+      "family": "sequence"
+    },
+    "sequence_4": {
+      "family": "sequence"
+    },
+    "good": {
+      "family": "status"
+    },
+    "caution": {
+      "family": "status"
+    },
+    "over": {
+      "family": "status"
+    },
+    "peak_hold": {
+      "family": "status"
+    },
+    "centred": {
+      "family": "status"
+    },
+    "wide": {
+      "family": "status"
+    },
+    "anti_phase": {
+      "family": "status"
+    },
+    "text": {
+      "family": "text"
+    },
+    "text_muted": {
+      "family": "text"
+    },
+    "line": {
+      "family": "structure"
+    },
+    "track": {
+      "family": "structure"
+    },
+    "background": {
+      "family": "structure"
+    },
+    "shadow": {
+      "family": "structure"
+    },
+    "accent": {
+      "family": "highlight"
+    }
+  },
+  "$defs": {
+    "block.analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rta_weighting": {
+          "enum": [
+            "F",
+            "S",
+            "I"
+          ],
+          "default": "F",
+          "x-class": "measurement",
+          "x-standard": {
+            "document": "IEC 61672-1",
+            "values": [
+              "F",
+              "S",
+              "I"
+            ]
+          },
+          "x-help": "The RTA bars' time weighting: F (fast), S (slow) or I (impulse).",
+          "x-label": "RTA time weighting",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "rta_hold_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 2.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How long each RTA band holds its peak before the hold falls.",
+          "x-label": "RTA peak hold",
+          "x-unit": "s",
+          "x-live": false,
+          "x-step": null
+        },
+        "rta_peak_fall_db_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How fast a held RTA peak falls; unset drops it straight to the bar.",
+          "x-label": "RTA hold fall",
+          "x-unit": "dB/s",
+          "x-live": false,
+          "x-step": null
+        },
+        "capture_rate": {
+          "type": "integer",
+          "minimum": 1,
+          "enum": [
+            44100,
+            48000,
+            88200,
+            96000,
+            192000
+          ],
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "The rate this scene captures at; unset uses the installed rate.",
+          "x-label": "Capture rate",
+          "x-unit": "Hz",
+          "x-live": false,
+          "x-step": null
+        },
+        "crest_window_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 1.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "The span crest factor's peak and RMS are measured over.",
+          "x-label": "Crest window",
+          "x-unit": "s",
+          "x-live": false,
+          "x-step": null
+        },
+        "stereo_average_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.3,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "The time constant the correlation and balance readings average over.",
+          "x-label": "Stereo averaging",
+          "x-unit": "s",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "rta_weighting",
+        "rta_hold_s",
+        "rta_peak_fall_db_s",
+        "capture_rate",
+        "crest_window_s",
+        "stereo_average_s"
       ]
-     },
-     "x-step": null,
-     "x-unit": ""
     },
-    "channel": {
-     "default": "left",
-     "enum": [
-      "left",
-      "right"
-     ],
-     "x-class": "chain",
-     "x-help": "Which channel the needle reads.",
-     "x-label": "Channel",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "block.backdrop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "One colour behind the plates.",
+          "x-label": "Colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "gradient": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "minItems": 2,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Two or more colour stops, blended across the display.",
+          "x-label": "Gradient",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "angle": {
+          "type": "number",
+          "default": 180.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The gradient's direction in degrees, as CSS: 180 runs top to bottom.",
+          "x-label": "Gradient angle",
+          "x-unit": "°",
+          "x-live": false,
+          "x-step": null
+        },
+        "image": {
+          "type": "string",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "An image behind the plates, by its id: one uploaded to the host, or one that ships with audio-vue.",
+          "x-label": "Image",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "blur": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "How far the backdrop is blurred, in pixels at a region 1,080 px tall.",
+          "x-label": "Blur",
+          "x-unit": "px",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "color",
+        "gradient",
+        "angle",
+        "image",
+        "blur"
+      ]
     },
-    "lamp_hold_s": {
-     "default": 0.9,
-     "maximum": 5.0,
-     "minimum": 0.15,
-     "type": "number",
-     "x-class": "appearance",
-     "x-help": "How long the over lamp stays lit after a true-peak over.",
-     "x-label": "Lamp hold",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 0.05,
-     "x-unit": "s"
+    "block.display": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "saver_after_min": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Minutes without signal before the screensaver; 0 skips it.",
+          "x-label": "Screensaver after",
+          "x-unit": "min",
+          "x-live": false,
+          "x-step": null
+        },
+        "sleep_after_min": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Minutes from the screensaver's start before the display sleeps; 0 never.",
+          "x-label": "Sleep after",
+          "x-unit": "min",
+          "x-live": false,
+          "x-step": null
+        },
+        "threshold_lufs": {
+          "type": "number",
+          "default": -70.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Momentary loudness at or below this counts as no signal.",
+          "x-label": "Signal threshold",
+          "x-unit": "LUFS",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "saver_after_min",
+        "sleep_after_min",
+        "threshold_lufs"
+      ]
     },
-    "reference_dbfs": {
-     "default": -20.0,
-     "maximum": 0.0,
-     "minimum": -30.0,
-     "type": "number",
-     "x-class": "measurement",
-     "x-help": "0 VU in dBFS, used only when the alignment is custom.",
-     "x-label": "0 VU at (custom)",
-     "x-live": true,
-     "x-standard": {
-      "document": null,
-      "values": []
-     },
-     "x-step": 1.0,
-     "x-unit": "dBFS"
+    "block.elements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Card titles.",
+          "x-label": "Title",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "label": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Names of readings and rows.",
+          "x-label": "Label",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "value": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The number a card leads with.",
+          "x-label": "Value",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "value_secondary": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A card's other readings.",
+          "x-label": "Value secondary",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "unit": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Units.",
+          "x-label": "Unit",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "scale": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Scale numerals and axis labels.",
+          "x-label": "Scale",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "caption": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Captions under a scale or a reading.",
+          "x-label": "Caption",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "notice": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "text_muted",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The too-small notice.",
+          "x-label": "Notice",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "grid_major": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "line",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Major grid lines.",
+          "x-label": "Grid major",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "grid_minor": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "line",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Minor grid lines.",
+          "x-label": "Grid minor",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "outline": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "line",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A dial's or a shape's boundary.",
+          "x-label": "Outline",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "tick": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "line",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Scale ticks.",
+          "x-label": "Tick",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "beam": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "line",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A scope's sweeping beam.",
+          "x-label": "Beam",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "track": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "track",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "An unfilled bar, arc or progress track.",
+          "x-label": "Track",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "series_1": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The first trace, needle or legend.",
+          "x-label": "Series 1",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "series_2": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal_alt",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The second trace, needle or legend.",
+          "x-label": "Series 2",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "series_3": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal_3",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The third trace, needle or legend.",
+          "x-label": "Series 3",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "bar_body": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A plain bar's body, at its foot.",
+          "x-label": "Bar body",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "bar_tip": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal_alt",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A plain bar's tip, at its top.",
+          "x-label": "Bar tip",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_1": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "sequence_1",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The first, quietest, ordered band.",
+          "x-label": "Sequence 1",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_2": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "sequence_2",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The second ordered band.",
+          "x-label": "Sequence 2",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_3": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "sequence_3",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The third ordered band.",
+          "x-label": "Sequence 3",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_4": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "sequence_4",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The fourth, loudest, ordered band.",
+          "x-label": "Sequence 4",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "good": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "good",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading inside its limits.",
+          "x-label": "Good",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "caution": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "caution",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading approaching a limit.",
+          "x-label": "Caution",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "over": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "over",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading clipped, over or out of range.",
+          "x-label": "Over",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "peak_hold": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "peak_hold",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Held peaks.",
+          "x-label": "Peak hold",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "centred": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "centred",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Correlated stereo.",
+          "x-label": "Centred",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "wide": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "wide",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Uncorrelated stereo.",
+          "x-label": "Wide",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "anti_phase": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "anti_phase",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Inverted stereo.",
+          "x-label": "Anti phase",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "active": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The calibration step under way.",
+          "x-label": "Active",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "note": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "signal_alt",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The calibration card's title note.",
+          "x-label": "Note",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "highlight": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "accent",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Arming and progress.",
+          "x-label": "Highlight",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "shadow": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "shadow",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Shadows, at their opacity.",
+          "x-label": "Shadow",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "plate": {
+          "enum": [
+            "signal",
+            "signal_alt",
+            "signal_3",
+            "sequence_1",
+            "sequence_2",
+            "sequence_3",
+            "sequence_4",
+            "good",
+            "caution",
+            "over",
+            "peak_hold",
+            "centred",
+            "wide",
+            "anti_phase",
+            "text",
+            "text_muted",
+            "line",
+            "track",
+            "background",
+            "shadow",
+            "accent"
+          ],
+          "default": "background",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A mark drawn in the plate's colour.",
+          "x-label": "Plate",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "title",
+        "label",
+        "value",
+        "value_secondary",
+        "unit",
+        "scale",
+        "caption",
+        "notice",
+        "grid_major",
+        "grid_minor",
+        "outline",
+        "tick",
+        "beam",
+        "track",
+        "series_1",
+        "series_2",
+        "series_3",
+        "bar_body",
+        "bar_tip",
+        "sequence_1",
+        "sequence_2",
+        "sequence_3",
+        "sequence_4",
+        "good",
+        "caution",
+        "over",
+        "peak_hold",
+        "centred",
+        "wide",
+        "anti_phase",
+        "active",
+        "note",
+        "highlight",
+        "shadow",
+        "plate"
+      ]
     },
-    "show_face": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Show the scale and its labels.",
-     "x-label": "Scale and labels",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
+    "block.glass": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 1.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "How solid the plates under the cards are, from 0 (clear) to 1 (solid).",
+          "x-label": "Opacity",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 12.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Plate corner radius, in pixels at a region 1,080 px tall.",
+          "x-label": "Corner radius",
+          "x-unit": "px",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "opacity",
+        "radius"
+      ]
+    },
+    "block.grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cols": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 64,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Grid columns across the scene's region.",
+          "x-label": "Columns",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 36,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Grid rows down the scene's region.",
+          "x-label": "Rows",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0.0,
+          "default": 8.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Space between cards, in pixels at a region 1,080 px tall.",
+          "x-label": "Gap",
+          "x-unit": "px",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "cols",
+        "rows",
+        "gap"
+      ]
+    },
+    "block.palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "signal": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#1ad9cc",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The first series: a trace, a needle, a bar's body.",
+          "x-label": "Signal",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "signal_alt": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#f2528c",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The second series, or a bar's tip.",
+          "x-label": "Signal alt",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "signal_3": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#7aa2ff",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The third series.",
+          "x-label": "Signal 3",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_1": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#7aa2ff",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The first, quietest, of four ordered bands.",
+          "x-label": "Sequence 1",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_2": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#1ad9cc",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The second of four ordered bands.",
+          "x-label": "Sequence 2",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_3": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#8cce8c",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The third of four ordered bands.",
+          "x-label": "Sequence 3",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "sequence_4": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ffc24d",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The fourth, loudest, of four ordered bands.",
+          "x-label": "Sequence 4",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "good": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#1ad9cc",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading inside its limits.",
+          "x-label": "Good",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "caution": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ffc24d",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading approaching a limit.",
+          "x-label": "Caution",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "over": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ff5940",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading clipped, over or out of range.",
+          "x-label": "Over",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "peak_hold": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#fff2c7",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Held peaks.",
+          "x-label": "Peak hold",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "centred": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ffc247",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Correlated stereo, which survives a mono sum.",
+          "x-label": "Centred",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "wide": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#299ea8",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Uncorrelated stereo.",
+          "x-label": "Wide",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "anti_phase": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ff3d33",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Inverted stereo, which cancels in a mono sum.",
+          "x-label": "Anti phase",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#d4dcea",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Readings.",
+          "x-label": "Text",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "text_muted": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#a8bad6",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Titles, labels, units and scales.",
+          "x-label": "Text muted",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "line": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#6d7485",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Grid lines, outlines and ticks.",
+          "x-label": "Line",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "track": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#1e2944",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Unfilled bars, arcs and tracks.",
+          "x-label": "Track",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#04060e",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Card backgrounds and plates.",
+          "x-label": "Background",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "shadow": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#000000",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Shadows, drawn at their opacity.",
+          "x-label": "Shadow",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#7aa2ff",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Highlights: arming and progress.",
+          "x-label": "Accent",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "signal",
+        "signal_alt",
+        "signal_3",
+        "sequence_1",
+        "sequence_2",
+        "sequence_3",
+        "sequence_4",
+        "good",
+        "caution",
+        "over",
+        "peak_hold",
+        "centred",
+        "wide",
+        "anti_phase",
+        "text",
+        "text_muted",
+        "line",
+        "track",
+        "background",
+        "shadow",
+        "accent"
+      ]
+    },
+    "block.type": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "enum": [
+            "S",
+            "M",
+            "L"
+          ],
+          "default": "M",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The size every card's title takes.",
+          "x-label": "Title size",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "label": {
+          "enum": [
+            "S",
+            "M"
+          ],
+          "default": "S",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The size every card's labels take, a table row's value among them.",
+          "x-label": "Label size",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "value": {
+          "enum": [
+            "M",
+            "L",
+            "XL"
+          ],
+          "default": "L",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The size of the number a card leads with.",
+          "x-label": "Value size",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "title",
+        "label",
+        "value"
+      ]
+    },
+    "card.calibration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "x-settings": [],
+      "x-min-cells": [
+        29,
+        36
+      ],
+      "x-sizing": "free",
+      "x-placeable": false,
+      "x-category": "calibration"
+    },
+    "card.dynamics_gauge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_db": {
+          "type": "number",
+          "minimum": 10.0,
+          "maximum": 30.0,
+          "default": 20.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The top of the printed dB scale.",
+          "x-label": "Scale top",
+          "x-unit": "dB",
+          "x-live": true,
+          "x-step": 5.0
+        },
+        "crushed_below_db": {
+          "type": "number",
+          "minimum": 4.0,
+          "maximum": 14.0,
+          "default": 9.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Readings below this show as crushed, by mastering convention.",
+          "x-label": "Crushed below",
+          "x-unit": "dB",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "open_above_db": {
+          "type": "number",
+          "minimum": 8.0,
+          "maximum": 20.0,
+          "default": 13.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Readings above this show as open, by mastering convention.",
+          "x-label": "Open above",
+          "x-unit": "dB",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "show_readout": {
+          "type": "boolean",
+          "default": false,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Print the three readings as numbers too.",
+          "x-label": "Numeric readout",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "show_scale": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Show the scale and the legend.",
+          "x-label": "Scale and legend",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "max_db",
+        "crushed_below_db",
+        "open_above_db",
+        "show_readout",
+        "show_scale"
+      ],
+      "x-min-cells": [
+        14,
+        11
+      ],
+      "x-sizing": "aspect",
+      "x-placeable": true,
+      "x-aspect": 1.4,
+      "x-category": "dynamics"
+    },
+    "card.logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "x-settings": [],
+      "x-min-cells": [
+        6,
+        4
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "audio-vue"
+    },
+    "card.loudness_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "window_s": {
+          "enum": [
+            30.0,
+            60.0,
+            180.0
+          ],
+          "default": 60.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "How long one turn of the beam takes, and so how much history the face holds.",
+          "x-label": "Window",
+          "x-unit": "s",
+          "x-live": false,
+          "x-step": null
+        },
+        "band1_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Loudness from −30 to −24 LUFS; unset uses the scene's sequence 1.",
+          "x-label": "Band 1 colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "sequence_1"
+        },
+        "band2_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Loudness from −24 to −18 LUFS; unset uses the scene's sequence 2.",
+          "x-label": "Band 2 colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "sequence_2"
+        },
+        "band3_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Loudness from −18 to −12 LUFS; unset uses the scene's sequence 3.",
+          "x-label": "Band 3 colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "sequence_3"
+        },
+        "band4_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Loudness from −12 to −6 LUFS; unset uses the scene's sequence 4.",
+          "x-label": "Band 4 colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "sequence_4"
+        },
+        "major_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The dial's outer circle; unset uses the scene's outline.",
+          "x-label": "Major line colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "outline"
+        },
+        "minor_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The dial's inner circles and spokes; unset uses the scene's minor grid line.",
+          "x-label": "Minor line colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "grid_minor"
+        }
+      },
+      "x-settings": [
+        "window_s",
+        "band1_color",
+        "band2_color",
+        "band3_color",
+        "band4_color",
+        "major_color",
+        "minor_color"
+      ],
+      "x-min-cells": [
+        21,
+        16
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "loudness"
+    },
+    "card.meter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "program_loudness",
+            "true_peak_max",
+            "short_term_loudness",
+            "momentary_loudness",
+            "loudness_range",
+            "short_term_max",
+            "short_term_min",
+            "peak_to_loudness",
+            "crest_factor",
+            "psr",
+            "crest_peak",
+            "crest_rms",
+            "dynamic_range_bits",
+            "adc_bits_used",
+            "correlation",
+            "ppm_peak",
+            "sample_peak",
+            "rms_peak",
+            "balance",
+            "mid_level",
+            "side_level",
+            "mono_deviation"
+          ],
+          "default": "program_loudness",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Which reading the bar shows.",
+          "x-label": "Field",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "bar": {
+          "enum": [
+            "thin",
+            "thick"
+          ],
+          "default": "thin",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The bar's thickness: thick fills a short slot with signal.",
+          "x-label": "Bar",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "style": {
+          "enum": [
+            "fill",
+            "tick"
+          ],
+          "default": "fill",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Fill from the neutral point, or a single tick at the value.",
+          "x-label": "Style",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "bar_body_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A plain bar's colour at the neutral point; unset uses the scene's bar body.",
+          "x-label": "Bar body colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "bar_body",
+          "x-unused-when": [
+            {
+              "when": {
+                "field": [
+                  "true_peak_max",
+                  "crest_peak",
+                  "ppm_peak",
+                  "sample_peak"
+                ]
+              },
+              "reason": "This field is coloured by its thresholds: Good, Caution and Over."
+            },
+            {
+              "when": {
+                "field": [
+                  "correlation"
+                ]
+              },
+              "reason": "This field is coloured by its reading: Wide, Centred and Anti-phase."
+            },
+            {
+              "when": {
+                "style": [
+                  "tick"
+                ]
+              },
+              "reason": "A tick is drawn in the tip colour alone."
+            }
+          ]
+        },
+        "bar_tip_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A plain bar's colour at the reading; unset uses the scene's bar tip.",
+          "x-label": "Bar tip colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "bar_tip",
+          "x-unused-when": [
+            {
+              "when": {
+                "field": [
+                  "true_peak_max",
+                  "crest_peak",
+                  "ppm_peak",
+                  "sample_peak"
+                ]
+              },
+              "reason": "This field is coloured by its thresholds: Good, Caution and Over."
+            },
+            {
+              "when": {
+                "field": [
+                  "correlation"
+                ]
+              },
+              "reason": "This field is coloured by its reading: Wide, Centred and Anti-phase."
+            }
+          ]
+        }
+      },
+      "x-settings": [
+        "field",
+        "bar",
+        "style",
+        "bar_body_color",
+        "bar_tip_color"
+      ],
+      "x-min-cells": [
+        15,
+        8
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "readouts"
+    },
+    "card.peak_rms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "floor_db": {
+          "type": "number",
+          "minimum": -100.0,
+          "maximum": -20.0,
+          "default": -60.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The bottom of the dB scale.",
+          "x-label": "Floor",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 10.0
+        },
+        "caution_db": {
+          "type": "number",
+          "minimum": -24.0,
+          "maximum": 0.0,
+          "default": -6.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Bars above this show in the caution colour.",
+          "x-label": "Caution above",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 1.0
+        },
+        "over_db": {
+          "type": "number",
+          "minimum": -12.0,
+          "maximum": 0.0,
+          "default": -3.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Bars above this show in the over colour.",
+          "x-label": "Over above",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "hold_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 10.0,
+          "default": 1.5,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How long the peak hold keeps its maximum before it falls.",
+          "x-label": "Peak hold",
+          "x-unit": "s",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "hold_fall_db_s": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 60.0,
+          "default": 15.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How fast the peak hold falls once its time is up.",
+          "x-label": "Hold fall",
+          "x-unit": "dB/s",
+          "x-live": true,
+          "x-step": 1.0
+        },
+        "show_readout": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Print peak, RMS and crest as numbers.",
+          "x-label": "Numeric readout",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "show_scale": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Show the scale and its labels.",
+          "x-label": "Scale and labels",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "floor_db",
+        "caution_db",
+        "over_db",
+        "hold_s",
+        "hold_fall_db_s",
+        "show_readout",
+        "show_scale"
+      ],
+      "x-min-cells": [
+        15,
+        10
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "level"
+    },
+    "card.peak_rms_vertical": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "floor_db": {
+          "type": "number",
+          "minimum": -100.0,
+          "maximum": -20.0,
+          "default": -60.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The bottom of the dB scale.",
+          "x-label": "Floor",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 10.0
+        },
+        "caution_db": {
+          "type": "number",
+          "minimum": -24.0,
+          "maximum": 0.0,
+          "default": -6.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Bars above this show in the caution colour.",
+          "x-label": "Caution above",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 1.0
+        },
+        "over_db": {
+          "type": "number",
+          "minimum": -12.0,
+          "maximum": 0.0,
+          "default": -3.0,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Bars above this show in the over colour.",
+          "x-label": "Over above",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "hold_s": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 10.0,
+          "default": 1.5,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How long the peak hold keeps its maximum before it falls.",
+          "x-label": "Peak hold",
+          "x-unit": "s",
+          "x-live": true,
+          "x-step": 0.5
+        },
+        "hold_fall_db_s": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 60.0,
+          "default": 15.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "How fast the peak hold falls once its time is up.",
+          "x-label": "Hold fall",
+          "x-unit": "dB/s",
+          "x-live": true,
+          "x-step": 1.0
+        },
+        "show_readout": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Print peak, RMS and crest as numbers.",
+          "x-label": "Numeric readout",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "show_scale": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Show the scale and its labels.",
+          "x-label": "Scale and labels",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "floor_db",
+        "caution_db",
+        "over_db",
+        "hold_s",
+        "hold_fall_db_s",
+        "show_readout",
+        "show_scale"
+      ],
+      "x-min-cells": [
+        13,
+        15
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "level"
+    },
+    "card.rta_bars": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "floor_db": {
+          "type": "number",
+          "minimum": -160.0,
+          "maximum": -20.0,
+          "default": -60.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The bottom of the dBFS scale.",
+          "x-label": "Floor",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 5.0
+        },
+        "ceiling_db": {
+          "type": "number",
+          "minimum": -40.0,
+          "maximum": 0.0,
+          "default": -10.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The top of the dBFS scale.",
+          "x-label": "Ceiling",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 5.0
+        },
+        "major_grid": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Draw a line at each major level.",
+          "x-label": "Major level lines",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "minor_grid": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Draw a line halfway between the major levels.",
+          "x-label": "Minor level lines",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "major_weight_px": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 1,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "How thick the major level lines are.",
+          "x-label": "Major line weight",
+          "x-unit": "px",
+          "x-live": true,
+          "x-step": 1,
+          "x-unused-when": [
+            {
+              "when": {
+                "major_grid": [
+                  false
+                ],
+                "show_labels": [
+                  false
+                ]
+              },
+              "reason": "Major level lines and axis labels are both off."
+            }
+          ]
+        },
+        "minor_weight_px": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 1,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "How thick the minor level lines are.",
+          "x-label": "Minor line weight",
+          "x-unit": "px",
+          "x-live": true,
+          "x-step": 1,
+          "x-unused-when": [
+            {
+              "when": {
+                "minor_grid": [
+                  false
+                ]
+              },
+              "reason": "Minor level lines are off."
+            }
+          ]
+        },
+        "major_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The major lines', baseline's and octave ticks' colour; unset uses the scene's major grid.",
+          "x-label": "Major line colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "grid_major",
+          "x-unused-when": [
+            {
+              "when": {
+                "major_grid": [
+                  false
+                ],
+                "show_labels": [
+                  false
+                ]
+              },
+              "reason": "Major level lines and axis labels are both off."
+            }
+          ]
+        },
+        "minor_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The minor lines' colour; unset uses the scene's minor grid line.",
+          "x-label": "Minor line colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "grid_minor",
+          "x-unused-when": [
+            {
+              "when": {
+                "minor_grid": [
+                  false
+                ]
+              },
+              "reason": "Minor level lines are off."
+            }
+          ]
+        },
+        "bar_body_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Each bar's colour at its foot; unset uses the scene's bar body.",
+          "x-label": "Bar body colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "bar_body"
+        },
+        "bar_tip_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Each bar's colour at its top; unset uses the scene's bar tip.",
+          "x-label": "Bar tip colour",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-element": "bar_tip"
+        },
+        "show_labels": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Label the level and frequency axes.",
+          "x-label": "Axis labels",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "peak_hold": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Show each band's held peak.",
+          "x-label": "Peak hold",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 0.5,
+          "default": 0.14,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The space between bars, as a fraction of each band's width.",
+          "x-label": "Bar gap",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": 0.02
+        }
+      },
+      "x-settings": [
+        "floor_db",
+        "ceiling_db",
+        "major_grid",
+        "minor_grid",
+        "major_weight_px",
+        "minor_weight_px",
+        "major_color",
+        "minor_color",
+        "bar_body_color",
+        "bar_tip_color",
+        "show_labels",
+        "peak_hold",
+        "gap"
+      ],
+      "x-min-cells": [
+        17,
+        10
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "spectrum"
+    },
+    "card.vu_meter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "channel": {
+          "enum": [
+            "left",
+            "right"
+          ],
+          "default": "left",
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "Which channel the needle reads.",
+          "x-label": "Channel",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "alignment": {
+          "enum": [
+            "ebu",
+            "smpte",
+            "custom"
+          ],
+          "default": "smpte",
+          "x-class": "measurement",
+          "x-standard": {
+            "document": "ITU-R BS.1726",
+            "values": [
+              "ebu",
+              "smpte"
+            ]
+          },
+          "x-help": "Where 0 VU sits: EBU R 68 (-18 dBFS), SMPTE RP 155 (-20 dBFS), or custom.",
+          "x-label": "Alignment",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "reference_dbfs": {
+          "type": "number",
+          "minimum": -30.0,
+          "maximum": 0.0,
+          "default": -20.0,
+          "x-class": "measurement",
+          "x-standard": {
+            "document": null,
+            "values": []
+          },
+          "x-help": "0 VU in dBFS, used only when the alignment is custom.",
+          "x-label": "0 VU at (custom)",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 1.0,
+          "x-unused-when": [
+            {
+              "when": {
+                "alignment": [
+                  "ebu",
+                  "smpte"
+                ]
+              },
+              "reason": "Used only when the alignment is Custom."
+            }
+          ]
+        },
+        "lamp_hold_s": {
+          "type": "number",
+          "minimum": 0.15,
+          "maximum": 5.0,
+          "default": 0.9,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "How long the over lamp stays lit after a true-peak over.",
+          "x-label": "Lamp hold",
+          "x-unit": "s",
+          "x-live": true,
+          "x-step": 0.05
+        },
+        "show_face": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Show the scale and its labels.",
+          "x-label": "Scale and labels",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "channel",
+        "alignment",
+        "reference_dbfs",
+        "lamp_hold_s",
+        "show_face"
+      ],
+      "x-min-cells": [
+        20,
+        14
+      ],
+      "x-sizing": "aspect",
+      "x-placeable": true,
+      "x-aspect": 1.5,
+      "x-category": "level"
+    },
+    "card.waveform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "span_s": {
+          "enum": [
+            5,
+            10,
+            20,
+            30
+          ],
+          "default": 10,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "How many seconds of the waveform the card shows.",
+          "x-label": "Time span",
+          "x-unit": "s",
+          "x-live": true,
+          "x-step": null
+        },
+        "ceiling_db": {
+          "type": "number",
+          "minimum": -40.0,
+          "maximum": 0.0,
+          "default": -6.0,
+          "x-class": "display_range",
+          "x-standard": null,
+          "x-help": "The level drawn at full lane height.",
+          "x-label": "Full height at",
+          "x-unit": "dBFS",
+          "x-live": true,
+          "x-step": 1.0
+        },
+        "show_grid": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Draw the level gridlines.",
+          "x-label": "Gridlines",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        },
+        "show_labels": {
+          "type": "boolean",
+          "default": true,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Label the level and time axes.",
+          "x-label": "Axis labels",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "span_s",
+        "ceiling_db",
+        "show_grid",
+        "show_labels"
+      ],
+      "x-min-cells": [
+        12,
+        7
+      ],
+      "x-sizing": "free",
+      "x-placeable": true,
+      "x-category": "waveform"
+    },
+    "install.input": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "type": "string",
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "The capture device, as ALSA names it; unset uses the default device.",
+          "x-label": "Device",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "fmt": {
+          "enum": [
+            "S16_LE",
+            "S32_LE"
+          ],
+          "default": "S16_LE",
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "The device's sample format: S16_LE, or S32_LE for 24 bits in 32.",
+          "x-label": "Sample format",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "stream_channels": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2,
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "How many channels the device streams; `pair` picks the two measured.",
+          "x-label": "Stream channels",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "pair": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [
+            0,
+            1
+          ],
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "Which two of the stream's channels are measured, as left and right.",
+          "x-label": "Channel pair",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null
+        },
+        "rate": {
+          "type": "integer",
+          "minimum": 1,
+          "enum": [
+            44100,
+            48000,
+            88200,
+            96000,
+            192000
+          ],
+          "default": 48000,
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "The rate the panel captures at.",
+          "x-label": "Rate",
+          "x-unit": "Hz",
+          "x-live": false,
+          "x-step": null
+        }
+      },
+      "x-settings": [
+        "device",
+        "fmt",
+        "stream_channels",
+        "pair",
+        "rate"
+      ]
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-help": "The scene's label on screen."
+        },
+        "fixed": {
+          "type": "boolean",
+          "x-help": "A built-in scene for a process, drawn at the shipped sizes whatever the host sets, and not offered to pick or copy."
+        },
+        "grid": {
+          "$ref": "#/$defs/block.grid"
+        },
+        "glass": {
+          "$ref": "#/$defs/block.glass"
+        },
+        "backdrop": {
+          "$ref": "#/$defs/block.backdrop"
+        },
+        "palette": {
+          "$ref": "#/$defs/block.palette"
+        },
+        "elements": {
+          "$ref": "#/$defs/block.elements"
+        },
+        "type": {
+          "$ref": "#/$defs/block.type"
+        },
+        "analysis": {
+          "$ref": "#/$defs/block.analysis"
+        },
+        "display": {
+          "$ref": "#/$defs/block.display"
+        },
+        "cards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/placement"
+          }
+        }
+      },
+      "required": [
+        "cards"
+      ]
+    },
+    "placement": {
+      "allOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "card": {
+              "enum": [
+                "balance_meter",
+                "calibration",
+                "calibration_faults",
+                "dynamics",
+                "dynamics_gauge",
+                "goniometer",
+                "logo",
+                "loudness_scope",
+                "loudness_table",
+                "meter",
+                "narrowband",
+                "peak_rms",
+                "peak_rms_vertical",
+                "readout",
+                "rta_bars",
+                "vu_meter",
+                "waveform"
+              ],
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "Which card this slot shows.",
+              "x-label": "Card",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "col": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "The slot's first column, counted from 0 at the left.",
+              "x-label": "Column",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "row": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "The slot's first row, counted from 0 at the top.",
+              "x-label": "Row",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "colspan": {
+              "type": "integer",
+              "minimum": 1,
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "How many columns the slot spans; unset spans the grid.",
+              "x-label": "Columns spanned",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "rowspan": {
+              "type": "integer",
+              "minimum": 1,
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "How many rows the slot spans; unset spans the grid.",
+              "x-label": "Rows spanned",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "group": {
+              "type": "string",
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "A name shared by slots that together tile one plate.",
+              "x-label": "Group",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "plate": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "This slot's plate colour; unset uses the palette's background.",
+              "x-label": "Plate colour",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "params": {
+              "type": "object",
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "The card's own settings.",
+              "x-label": "Settings",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            },
+            "alternate": {
+              "$ref": "#/$defs/alternate",
+              "x-class": "appearance",
+              "x-standard": null,
+              "x-help": "A card drawn in this slot instead while a condition holds.",
+              "x-label": "Alternate",
+              "x-unit": "",
+              "x-live": false,
+              "x-step": null
+            }
+          },
+          "x-settings": [
+            "card",
+            "col",
+            "row",
+            "colspan",
+            "rowspan",
+            "group",
+            "plate",
+            "params",
+            "alternate"
+          ],
+          "required": [
+            "card"
+          ]
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "balance_meter"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.balance_meter"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "calibration"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.calibration"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "calibration_faults"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.calibration_faults"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "dynamics"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.dynamics"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "dynamics_gauge"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.dynamics_gauge"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "goniometer"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.goniometer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "logo"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.logo"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "loudness_scope"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.loudness_scope"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "loudness_table"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.loudness_table"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "meter"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.meter"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "narrowband"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.narrowband"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "peak_rms"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.peak_rms"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "peak_rms_vertical"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.peak_rms_vertical"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "readout"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.readout"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "rta_bars"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.rta_bars"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "vu_meter"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.vu_meter"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "card": {
+                "const": "waveform"
+              }
+            },
+            "required": [
+              "card"
+            ]
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "$ref": "#/$defs/card.waveform"
+              }
+            }
+          }
+        }
+      ]
     }
-   },
-   "type": "object",
-   "x-aspect": 1.5,
-   "x-category": "level",
-   "x-min-cells": [
-    20,
-    14
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "channel",
-    "alignment",
-    "reference_dbfs",
-    "lamp_hold_s",
-    "show_face"
-   ],
-   "x-sizing": "aspect"
-  },
-  "card.waveform": {
-   "additionalProperties": false,
-   "properties": {
-    "ceiling_db": {
-     "default": -6.0,
-     "maximum": 0.0,
-     "minimum": -40.0,
-     "type": "number",
-     "x-class": "display_range",
-     "x-help": "The level drawn at full lane height.",
-     "x-label": "Full height at",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": 1.0,
-     "x-unit": "dBFS"
-    },
-    "show_grid": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Draw the level gridlines.",
-     "x-label": "Gridlines",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    },
-    "show_labels": {
-     "default": true,
-     "type": "boolean",
-     "x-class": "appearance",
-     "x-help": "Label the level and time axes.",
-     "x-label": "Axis labels",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    },
-    "span_s": {
-     "default": 10,
-     "enum": [
-      5,
-      10,
-      20,
-      30
-     ],
-     "x-class": "display_range",
-     "x-help": "How many seconds of the waveform the card shows.",
-     "x-label": "Time span",
-     "x-live": true,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": "s"
-    }
-   },
-   "type": "object",
-   "x-category": "waveform",
-   "x-min-cells": [
-    12,
-    7
-   ],
-   "x-placeable": true,
-   "x-settings": [
-    "span_s",
-    "ceiling_db",
-    "show_grid",
-    "show_labels"
-   ],
-   "x-sizing": "free"
-  },
-  "install.input": {
-   "additionalProperties": false,
-   "properties": {
-    "device": {
-     "type": "string",
-     "x-class": "chain",
-     "x-help": "The capture device, as ALSA names it; unset uses the default device.",
-     "x-label": "Device",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    },
-    "fmt": {
-     "default": "S16_LE",
-     "enum": [
-      "S16_LE",
-      "S32_LE"
-     ],
-     "x-class": "chain",
-     "x-help": "The device's sample format: S16_LE, or S32_LE for 24 bits in 32.",
-     "x-label": "Sample format",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    },
-    "pair": {
-     "default": [
-      0,
-      1
-     ],
-     "items": {
-      "minimum": 0,
-      "type": "integer"
-     },
-     "maxItems": 2,
-     "minItems": 2,
-     "type": "array",
-     "x-class": "chain",
-     "x-help": "Which two of the stream's channels are measured, as left and right.",
-     "x-label": "Channel pair",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    },
-    "rate": {
-     "default": 48000,
-     "enum": [
-      44100,
-      48000,
-      88200,
-      96000,
-      192000
-     ],
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "chain",
-     "x-help": "The rate the panel captures at.",
-     "x-label": "Rate",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": "Hz"
-    },
-    "stream_channels": {
-     "default": 2,
-     "minimum": 1,
-     "type": "integer",
-     "x-class": "chain",
-     "x-help": "How many channels the device streams; `pair` picks the two measured.",
-     "x-label": "Stream channels",
-     "x-live": false,
-     "x-standard": null,
-     "x-step": null,
-     "x-unit": ""
-    }
-   },
-   "type": "object",
-   "x-settings": [
-    "device",
-    "fmt",
-    "stream_channels",
-    "pair",
-    "rate"
-   ]
   }
- },
- "$schema": "https://json-schema.org/draft/2020-12/schema",
- "x-categories": [
-  {
-   "cards": [
-    "vu_meter",
-    "peak_rms_vertical"
-   ],
-   "id": "level",
-   "label": "Level"
-  },
-  {
-   "cards": [
-    "waveform"
-   ],
-   "id": "waveform",
-   "label": "Waveform"
-  },
-  {
-   "cards": [
-    "calibration"
-   ],
-   "id": "calibration",
-   "label": "Calibration"
-  },
-  {
-   "cards": [
-    "logo"
-   ],
-   "id": "audio-vue",
-   "label": "audio-vue"
-  }
- ],
- "x-schema-version": 8
 }

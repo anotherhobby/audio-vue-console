@@ -24,8 +24,24 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         case choice([JSONValue])
         /// `#rrggbb`.
         case colour
+        /// A list of `#rrggbb` colours holding at least `minimum`, such as a gradient's stops.
+        case colours(minimum: Int)
         /// A shape the inspector shows but does not edit, such as a list of colours.
         case other
+    }
+
+    /// One case in which a setting has no effect: where every setting `when` names holds one of the
+    /// values listed for it (audio-vue `settings-schema`, "A setting says when it has no effect").
+    public struct UnusedCase: Sendable, Equatable {
+        /// The card's other settings, by key, each with the values that make up the case.
+        public let when: [String: [JSONValue]]
+        /// Why the setting has no effect, written for a person.
+        public let reason: String
+
+        public init(when: [String: [JSONValue]], reason: String) {
+            self.when = when
+            self.reason = reason
+        }
     }
 
     /// The standard governing a measurement setting (audio-vue `settings-schema`).
@@ -50,13 +66,20 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
     /// none: a colour that follows the palette.
     public let defaultValue: JSONValue?
     public let shape: Shape
+    /// The element a card's colour setting overrides (audio-vue `x-element`), or nil for any
+    /// other setting (`scene-settings`, design D8).
+    public let element: String?
+    /// The cases in which the setting has no effect, in declared order; none where it always has
+    /// one (audio-vue `x-unused-when`; `scene-settings` design D9).
+    public let unusedWhen: [UnusedCase]
 
     public var id: String { key }
 
     public init(
         key: String, label: String, help: String = "", unit: String = "",
         settingClass: String? = nil, standard: Standard = .notApplicable,
-        defaultValue: JSONValue? = nil, shape: Shape
+        defaultValue: JSONValue? = nil, shape: Shape, element: String? = nil,
+        unusedWhen: [UnusedCase] = []
     ) {
         self.key = key
         self.label = label
@@ -66,6 +89,8 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         self.standard = standard
         self.defaultValue = defaultValue
         self.shape = shape
+        self.element = element
+        self.unusedWhen = unusedWhen
     }
 
     /// The setting `key` as `property` declares it.
@@ -76,14 +101,18 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
             unit: property["x-unit"]?.stringValue ?? "",
             settingClass: property["x-class"]?.stringValue,
             standard: Self.standard(property["x-standard"]),
-            defaultValue: property["default"], shape: Self.shape(property))
+            defaultValue: property["default"], shape: Self.shape(property),
+            element: property["x-element"]?.stringValue,
+            unusedWhen: Self.unusedCases(property["x-unused-when"]))
     }
 
-    /// Whether `other` takes the same values and means the same thing: its shape, unit, class and
-    /// standard, whatever its label, help and default (design D3).
+    /// Whether `other` takes the same values and means the same thing: its shape, unit, class,
+    /// standard and the element it overrides, whatever its label, help and default (design D3;
+    /// `scene-settings` design D8).
     func declaresAlike(_ other: SettingDeclaration) -> Bool {
         key == other.key && shape == other.shape && unit == other.unit
             && settingClass == other.settingClass && standard == other.standard
+            && element == other.element
     }
 
     private static let colourPattern = "^#[0-9a-fA-F]{6}$"
@@ -98,7 +127,20 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         case "number": return .number(limits)
         case "integer": return .integer(limits)
         case "string" where property["pattern"]?.stringValue == colourPattern: return .colour
+        case "array" where property["items"]?["pattern"]?.stringValue == colourPattern:
+            return .colours(minimum: property["minItems"]?.intValue ?? 0)
         default: return .other
+        }
+    }
+
+    /// The export's `x-unused-when`: a list of `{when: {setting: [values]}, reason}`.
+    private static func unusedCases(_ value: JSONValue?) -> [UnusedCase] {
+        (value?.arrayValue ?? []).compactMap { entry in
+            guard let reason = entry["reason"]?.stringValue,
+                let when = entry["when"]?.objectValue?.compactMapValues(\.arrayValue),
+                !when.isEmpty
+            else { return nil }
+            return UnusedCase(when: when, reason: reason)
         }
     }
 

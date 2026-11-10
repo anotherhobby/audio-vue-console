@@ -116,7 +116,44 @@ struct SchemaFactsTests {
         #expect(bars["major_color"]?.defaultValue == nil)
         #expect(bars["major_weight_px"]?.shape == .integer(.init(minimum: 1, maximum: 8, step: 1)))
         #expect(bars.settings.first?.key == "floor_db")
-        #expect(bars.settings.count == 11)
+        #expect(bars.settings.count == 13)
+    }
+
+    // MARK: Scene blocks (`scene-settings`, design D2)
+
+    @Test func theScenesBlocksInTheInspectorsOrder() throws {
+        let names = try Self.facts().blocks.map(\.name)
+        #expect(names == SchemaFacts.blockOrder)
+        #expect(names.first == "backdrop" && names.last == "grid")
+    }
+
+    @Test func thePaletteHoldsEverySwatchWithItsDefault() throws {
+        let palette = try #require(try Self.facts().block("palette")?.settings)
+        #expect(palette.settings.count == 21)
+        #expect(palette.settings.allSatisfy { $0.shape == .colour && $0.defaultValue != nil })
+        #expect(palette["track"]?.defaultValue == .string("#1e2944"))
+        #expect(palette["grid"] == nil)
+    }
+
+    @Test func anElementIsAChoiceOfSwatch() throws {
+        let title = try #require(try Self.facts().block("elements")?.settings["title"])
+        #expect(title.defaultValue == .string("text_muted"))
+        guard case .choice(let swatches) = title.shape else {
+            Issue.record("title is not a choice")
+            return
+        }
+        #expect(swatches.count == 21 && swatches.contains(.string("line")))
+    }
+
+    @Test func aGradientIsAListOfAtLeastTwoColours() throws {
+        let backdrop = try #require(try Self.facts().block("backdrop")?.settings)
+        #expect(backdrop["gradient"]?.shape == .colours(minimum: 2))
+    }
+
+    @Test func theCaptureRateIsAChainSettingWithNoDefault() throws {
+        let rate = try #require(try Self.facts().block("analysis")?.settings["capture_rate"])
+        #expect(rate.settingClass == "chain")
+        #expect(rate.defaultValue == nil)
     }
 
     @Test func aCardWithNoSettingsReadsNone() throws {

@@ -34,6 +34,9 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   "build-phase": { "build-phase": "frameworks" } }]` (written by Xcode's Add Local, 2026-11-03).
   `INFOPLIST_FILE` is `AudioVueConsole-Info.plist` at the root, a partial plist Xcode merges with
   the generated one (ATS only); it sits outside the synchronized folder so it is not a resource.
+- App icon (2026-11-10): `Assets.xcassets/AppIcon.appiconset` holds the ten macOS sizes, made
+  with `sips -z` from the 1024×1024 `Icon.png` at the root; the target sets
+  `ASSETCATALOG_COMPILER_APPICON_NAME` to `AppIcon`. A new `Icon.png` means regenerating them.
 - `AudioVueConsole/`: the app target's sources (`panel-client`, 2026-11-05). `AudioVueConsoleApp.swift`
   (the `App`: its `init` makes the one `PanelDiscovery` and the `HostConnection` given it, starts the
   browse, and browses again on activation while denied (`discovery`, 2026-11-06); the single
@@ -60,8 +63,11 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Duplicate),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
   `SceneInspector` (a card's place and settings; several cards' Group/Ungroup, shared settings,
-  then a collapsed section per card) and `SceneSettingsPanel`, `CardSettings` (`CardSettingsList`,
-  `SettingRow`, `SettingControl`, `NumberField`, `ColourWell`; `card-settings` 2026-11-09),
+  then a collapsed section per card), `CardSettings` (`CardSettingsList`,
+  `SettingRow`, `SettingControl`, `NumberField`, `ColourWell`, `SwatchChip`; `card-settings`
+  2026-11-09; an unset colour shows its `InheritedColour`), `SceneSettings` (`SceneSettingsPanel`,
+  `BlockSection`, `BlockSettingRow`, `GridEditor`), `BackdropEditor` (`GradientStops`) and
+  `ImagePicker` (`ImageTile`) (`scene-settings`, built 2026-11-09),
   `CardLibrary` (the schema's placeable cards under the
   panel's categories, from `SchemaFacts.library`, `gallery-sections` 2026-11-08), and
   `SceneMetrics`. From `scene-save` (2026-11-07): `SceneCommands` (File ▸ Save and Revert to Saved
@@ -120,7 +126,11 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   errors. It must not import SwiftUI or AppKit.
   Its scene layout (`SceneLayout`, `SceneLayoutEdits`, `LayoutRefusal`, `GridGeometry`,
   `SceneEditor`) holds every canvas rule: a layout value is always one the panel would load, each
-  edit returns a new one or a refusal, and the editor owns selection and undo.
+  edit returns a new one or a refusal, and the editor owns selection and undo. Since
+  `scene-settings` (2026-11-09) the editor's undoable state is a `SceneContent` (layout plus the
+  scene's blocks), which `Draft`, `SceneDrafts`, `SceneRendering` and `SceneThumbnails` hold too;
+  `GridDensity`, `BackdropSource`, `SceneColours` (swatches, elements, the colour lookup) and
+  `CalibrationCoverage` are its pure parts, and `HostClient+Images` lists and uploads images.
   Its host side (`panel-client`, 2026-11-05): the `HostAPI` target holds `openapi.json`, the host
   contract as `tools/refresh-contract.sh` writes it, and `swift-openapi-generator`'s build plugin
   generates the client from it at `package` access, so only `ConsoleCore` reaches it; its

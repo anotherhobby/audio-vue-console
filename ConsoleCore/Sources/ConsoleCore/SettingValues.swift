@@ -13,6 +13,12 @@ public enum SettingValue: Sendable, Equatable {
         case .same(_, let isSet), .mixed(let isSet): isSet
         }
     }
+
+    /// The value every card takes, or nil where they differ or none is set or declared.
+    public var shown: JSONValue? {
+        if case .same(let value, _) = self { return value }
+        return nil
+    }
 }
 
 /// What the inspector says under a setting beside its help (design D5).
@@ -59,6 +65,22 @@ extension SettingDeclaration {
         }
         guard let step, let current = (value ?? defaultValue)?.numberValue else { return nil }
         return written(current + Double(steps) * step)
+    }
+
+    /// Why this setting has no effect on a card whose entry sets `settings`, its other settings
+    /// declared in `group`: the reason of the first declared case in which every setting named
+    /// holds one of its values, set or else its default; nil where the setting has an effect.
+    public func unusedReason(in settings: [String: JSONValue], declaredBy group: SettingGroup)
+        -> String?
+    {
+        unusedWhen.first { unused in
+            unused.when.allSatisfy { key, values in
+                guard let held = group[key]?.effectiveValue(in: settings) ?? settings[key] else {
+                    return false
+                }
+                return values.contains { Self.same($0, held) }
+            }
+        }?.reason
     }
 
     private static let measurementClass = "measurement"
@@ -124,6 +146,20 @@ extension SettingGroup {
         return .same(first, isSet: isSet)
     }
 
+    /// Why `key` has no effect across `cards`, each read by its own kind's declaration: the first
+    /// card's reason, where every card has one; nil where it has an effect on any of them.
+    public static func unusedReason(
+        of key: String, across cards: [LayoutCard], declaredBy groups: [String: SettingGroup]
+    ) -> String? {
+        let reasons = cards.compactMap { card in
+            groups[card.kind].flatMap { group in
+                group[key]?.unusedReason(in: card.settings, declaredBy: group)
+            }
+        }
+        guard !cards.isEmpty, reasons.count == cards.count else { return nil }
+        return reasons.first
+    }
+
     /// The note for `key` across `cards`: off its standard where any card's value is.
     public static func note(
         of key: String, across cards: [LayoutCard], declaredBy groups: [String: SettingGroup]
@@ -131,5 +167,26 @@ extension SettingGroup {
         cards.lazy.compactMap { card in
             groups[card.kind]?[key].flatMap { $0.note(for: $0.effectiveValue(in: card.settings)) }
         }.first
+    }
+}
+
+extension SettingDeclaration {
+    /// This setting's value in `block`, a scene block as the scene holds it: its own where set,
+    /// else the declared default (`scene-settings`, design D2).
+    public func value(in block: JSONValue?) -> SettingValue {
+        let own = block?[key]
+        return .same(own ?? defaultValue, isSet: own != nil)
+    }
+
+    /// The colour a card draws this setting's element in where the card leaves it unset, in a
+    /// scene with `blocks`; nil for a setting that names no element (`scene-settings`, design D8).
+    public func inheritedColour(in blocks: [String: JSONValue], colours: SceneColours)
+        -> InheritedColour?
+    {
+        guard let name = element, let element = colours.element(name),
+            let swatch = colours.swatch(of: name, in: blocks),
+            let colour = colours.colour(ofSwatch: swatch.name, in: blocks)
+        else { return nil }
+        return InheritedColour(element: element, swatch: swatch, colour: colour)
     }
 }

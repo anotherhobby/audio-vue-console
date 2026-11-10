@@ -131,7 +131,7 @@ public final class SceneSession {
             if reverted.newParse {
                 newParse()
             } else {
-                editor?.revert(to: reverted.layout)
+                editor?.revert(to: reverted.content)
             }
         } catch {
             failure = .invalid([DocumentFailure(place: "", message: error.description)])
@@ -163,7 +163,7 @@ public final class SceneSession {
 
     /// Shows the draft's new parse, with no undo left from the old one.
     private func newParse() {
-        if let draft { editor?.replace(with: draft.layout) }
+        if let draft { editor?.replace(with: draft.content) }
         parses += 1
     }
 }

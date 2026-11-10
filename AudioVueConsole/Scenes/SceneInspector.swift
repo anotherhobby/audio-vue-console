@@ -7,8 +7,12 @@ import SwiftUI
 struct SceneInspector: View {
     let editor: SceneEditor?
     let document: SceneDocument
+    let scenes: PanelScenes
+    let input: PanelInput?
+
     /// Each card kind's settings, as the panel's schema declares them.
-    let settings: [String: SettingGroup]
+    private var settings: [String: SettingGroup] { scenes.facts?.settings ?? [:] }
+    private var colours: SceneColours { scenes.facts?.colours ?? .none }
 
     var body: some View {
         let cards = editor?.selectedCards ?? []
@@ -17,7 +21,7 @@ struct SceneInspector: View {
         } else if let editor, !cards.isEmpty {
             several(cards, editor)
         } else {
-            SceneSettingsPanel(document: document, grid: editor?.layout.grid)
+            SceneSettingsPanel(document: document, editor: editor, scenes: scenes, input: input)
         }
     }
 
@@ -45,7 +49,8 @@ struct SceneInspector: View {
             if !shared.settings.isEmpty {
                 Section("Shared Settings") {
                     CardSettingsList(
-                        declared: shared, cards: cards, groups: settings, editor: editor)
+                        declared: shared, cards: cards, groups: settings, colours: colours,
+                        editor: editor)
                 }
             }
             ForEach(cards) { card in
@@ -76,7 +81,9 @@ struct SceneInspector: View {
     /// Every setting `card` declares, changing that card alone.
     @ViewBuilder private func ownSettings(_ card: LayoutCard, _ editor: SceneEditor) -> some View {
         if let declared = settings[card.kind], !declared.settings.isEmpty {
-            CardSettingsList(declared: declared, cards: [card], groups: settings, editor: editor)
+            CardSettingsList(
+                declared: declared, cards: [card], groups: settings, colours: colours,
+                editor: editor)
         } else {
             Text("This card has no settings.").foregroundStyle(.secondary)
         }
@@ -84,29 +91,5 @@ struct SceneInspector: View {
 
     private static func title(_ card: LayoutCard) -> String {
         card.kind.replacingOccurrences(of: "_", with: " ")
-    }
-}
-
-/// The scene's own facts, shown whenever no card is selected: its name, grid, and whether it is a
-/// built-in or a copy made in the app.
-struct SceneSettingsPanel: View {
-    let document: SceneDocument
-    let grid: CellSize?
-
-    var body: some View {
-        Form {
-            Section(document.name ?? document.id) {
-                if let grid {
-                    LabeledContent("Grid") { Text(verbatim: "\(grid.cols) × \(grid.rows) cells") }
-                }
-                LabeledContent("Kept", value: kept)
-            }
-        }
-        .formStyle(.grouped)
-    }
-
-    private var kept: String {
-        if SceneDrafts.isCopy(document.id) { return "In this app until saved" }
-        return document.builtIn ? "Built in" : "On the panel"
     }
 }

@@ -3,23 +3,24 @@
 ## Purpose
 
 How the editor's inspector reads and changes the open scene's own settings, its backdrop, palette,
-glass, type, analysis, display and grid, generated from the host's settings schema.
+elements, glass, type, analysis, display and grid, generated from the host's settings schema.
 
 ## ADDED Requirements
 
 ### Requirement: The inspector shows the scene's settings when no card is selected
 
-With no card selected, the inspector SHALL show, after the scene's name and kind, a section per
-scene block: Backdrop, Palette, Glass, Type, Analysis, Display and Grid, then any other declared
-block by its label. Each setting SHALL behave as `card-settings` says a card's settings do.
+With no card selected, the inspector SHALL show the scene's name and kind, then tabs: Look
+(Backdrop, Glass, Type), Colours (Palette, Elements), Analysis (Analysis, Display), Grid, and Other
+for any other block, by its name. Settings SHALL behave as `card-settings` says.
 
-Source: `product.md`: every scene setting through the app. Decision (maintainer, 2026-11-08).
+Source: `product.md`: every scene setting through the app. Decisions (maintainer, 2026-11-08,
+2026-11-09): in the inspector, in tabs. audio-vue `settings-schema`: a block has no label.
 
 #### Scenario: Opening a scene
 
 - **WHEN** the user opens a scene and selects nothing
-- **THEN** the inspector shows its name and kind, then Backdrop, Palette, Glass, Type, Analysis,
-  Display and Grid
+- **THEN** the inspector shows its name and kind, then the tabs Look, Colours, Analysis and Grid,
+  with no Other tab
 
 #### Scenario: A palette colour
 
@@ -35,26 +36,80 @@ Source: `product.md`: every scene setting through the app. Decision (maintainer,
 #### Scenario: A block the app does not know
 
 - **WHEN** the schema declares a scene block no build of the app has seen
-- **THEN** it has a section after Grid, under its label, with its settings
+- **THEN** an Other tab shows it under its name, with its settings
+
+### Requirement: A scene's elements point at its swatches
+
+The Elements section SHALL offer, for each element, every palette swatch, each shown in the colour
+the scene gives it as edited. Choosing a swatch SHALL draw that element in it on every card that
+sets no colour of its own for the element.
+
+Source: audio-vue `card-colours`, "A colour resolves by lookup" and "Status colours are
+scene-wide": a scene's `elements:` block points any element at a swatch.
+
+#### Scenario: Titles in the text colour
+
+- **WHEN** the user points Title at Text
+- **THEN** every card's title is drawn in the scene's Text colour, and Title offers Use Default
+
+#### Scenario: A swatch changed under an element
+
+- **WHEN** Title points at Text and the user changes the palette's Text
+- **THEN** Title's choice shows the new colour, and every card's title is drawn in it
+
+#### Scenario: A card's own colour
+
+- **WHEN** the scene points Grid minor at Accent and an `rta_bars` card sets its own minor line
+  colour
+- **THEN** that card's minor lines keep its own colour
+
+### Requirement: The palette and the elements are shown by family
+
+The Palette section SHALL show its swatches as colour wells, and the Elements section its elements
+as one row each, both under their declared families in declared order, each element family
+collapsible.
+
+Source: audio-vue `card-colours`, "The palette has three families"; the export declares each
+swatch's and each element's family.
+
+#### Scenario: The palette
+
+- **WHEN** the user opens the Palette section
+- **THEN** Signal, Signal alt and Signal 3 are together under their family, before the sequence
+  swatches
 
 ### Requirement: The backdrop is one source
 
-The Backdrop section SHALL offer one of None, Colour, Gradient and Image. None SHALL remove the
-backdrop, so the scene uses the palette's background. Choosing another source SHALL replace the one
-held, as one step, and Blur and the gradient's angle SHALL stay as set.
+The Backdrop section SHALL offer None, Colour, Gradient and Image. None SHALL remove the backdrop,
+so the palette's background shows. Another source SHALL replace the one held as one step; Blur
+SHALL stay, and the angle SHALL be held only with a gradient.
 
-Source: audio-vue `scene-backdrop`: a backdrop holds one of a colour, a gradient or an image, and a
-scene with none uses the palette's background.
+Source: audio-vue `scene-backdrop`: one of a colour, a gradient or an image; none shows the
+palette's background. audio-vue refuses an angle without a gradient (`src/schema/scene.py`).
 
 #### Scenario: From gradient to colour
 
 - **WHEN** a scene's backdrop is a gradient and the user chooses Colour
-- **THEN** the backdrop holds a colour and no gradient, starting from the gradient's first stop
+- **THEN** the backdrop holds a colour and no gradient and no angle, starting from the gradient's
+  first stop
 
 #### Scenario: None
 
 - **WHEN** the user chooses None
 - **THEN** the scene holds no backdrop source, and the canvas shows the palette's background
+
+### Requirement: A source chosen again comes back as it was
+
+Choosing again a source the backdrop held while the scene was open SHALL bring back what it held:
+the gradient's stops and angle, the colour, or the image.
+
+Source: Decision (maintainer, 2026-11-09): switching back to a source must not lose what it held.
+
+#### Scenario: Back to the gradient
+
+- **WHEN** a scene's backdrop is a three-stop gradient at 90°, and the user chooses Colour, then
+  Gradient
+- **THEN** the backdrop is the same three stops at 90°
 
 ### Requirement: A gradient's stops and angle are edited
 
