@@ -83,8 +83,14 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 
 - A scene is identified by its id, never its `name`, which is a label: a built-in's filename stem, or
   a stored scene's UUID (`settings-store`).
-- A scene's shape is its grid's `cols:rows`: 64x36 at 16:9, 96x36 at 8:3. The host fits it to the
-  largest centred region at that aspect, with the backdrop outside.
+- The layout grid is the panel's display's, not the scene's (audio-vue `host-grid`, 2026-11-21): 36
+  rows, and columns from the display's shape (96 on the proving panel), filling the display with
+  near-square cells. The state's display section gives it as `grid` (null with no display), which
+  `PanelState.grid` reads. A scene's `grid:` holds only `gap`; one setting `cols` or `rows` is
+  refused. A scene placing a card past the display's last column is refused when drawn: a switch
+  to it, the helper (`refused: does not fit this display: …`), and the next-scene key passes over
+  it. An unset `colspan` spans every column and must start at column 0. `x-min-cells` is a card's
+  span on every scene. Calibration, the one fixed scene, keeps its own grid; the app lays out none.
 - A switch or reload to a scene that will not load is refused, the reply carries the failure, and the
   last good scene keeps drawing.
 - `reload` is refused during a calibration, as every command is on the audio-vue screen apart from
@@ -121,8 +127,8 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - **Each setting's declaration** (Built, audio-vue `schema-step-and-order`; read live 2026-11-09):
   under `properties`, `type` (`boolean`, `number`, `integer`, `string`) or `enum` (an `integer` may
   carry one, as `install.input.rate` does), `minimum`/`maximum`, `pattern` `^#[0-9a-fA-F]{6}$` for a
-  colour, `default` (absent on a card's colour setting, which resolves through its element,
-  below), and `x-label`, `x-help`,
+  colour, `default` (absent on a card's colour setting, which resolves by lookup, below), a
+  choice's names as `x-choice-labels` where it has them, and `x-label`, `x-help`,
   `x-unit`, `x-class`, `x-standard` (`null` off the measurement class, `{document: null, values: []}`
   where none governs it), `x-live` and `x-step` (always present, null for none, never a
   constraint). Each `card.<name>`, `block.<name>` and `install.<name>` lists its keys in declared
@@ -134,16 +140,45 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   case matches; a case matches where every named setting holds one of its values (the console
   matches set-or-default). Display only: a scene setting it is still accepted. Read it from the
   export each time; never keep a copy of the field lists.
-- **Colours** (Built, audio-vue `card-colours`, archived 2026-11-09; the app's lookup is planned in
-  `scene-settings`): the palette (`block.palette`) holds concrete swatches in families, each with
-  a literal default; `grid` was renamed `track`, and a scene setting `grid` is refused. Cards draw
-  through elements; a scene's `elements:` block points any element at a swatch. The root lists
-  `x-swatches` (each swatch's family) and `x-elements` (each element's family and default swatch),
-  in declared order. A card's colour setting has no default and names the element it overrides as
-  `x-element`; one key can name different elements on different cards (`major_color`). An unset
-  card colour is: the scene's `elements:` entry for its element, else the element's swatch, then
-  the scene's `palette:` entry for that swatch, else its default (audio-vue `Card.colour`). Status
-  elements are never card settings. Blocks declare no `x-label`.
+- **Colours** (Built, audio-vue `scene-styles`, deployed 2026-11-19; it replaced the palette, the
+  `elements:` block, `x-swatches`, `x-elements` and `x-element`): a scene's `colors:` block holds
+  one `#rrggbb` per role, a thing seen on screen, in the groups background, text, lines and
+  signal; one per step of each meaning scale (Warnings, Stereo phase), which are scene-wide and
+  never a card's; and `shadow`, an amount from 0 to 1. The root lists `x-roles` (`{id, group,
+  default, help}`) and `x-scales` (`{id, label, steps}`) in declared order. A card's colour
+  setting is derived from each role the card draws, named `<role>_color`, and takes a role's id or
+  a colour (`anyOf` an `enum` and the pattern), with `x-role`; a colour only that card draws
+  carries `x-own: {default}`, a role's id or a colour. Unset resolves by lookup: the scene's
+  colour for the role, else the role's default; or the own default read the same way. A card's
+  `shadow` has no default and no keyword; unset, it takes the scene's. The app's lookup is
+  `SceneColours` and `SettingDeclaration.drawnColour`. Blocks declare no `x-label`.
+- **Type and typeface** (Built, audio-vue `scene-styles`): `type:` holds a size per text role, a
+  number in CSS reference pixels with its own bounds and no step. `typeface:` is the scene's own
+  key, outside any block, a labelled choice. The host turns reference pixels into its own from the
+  install's `viewing` block (`distance_in`, `display_diagonal_in`), which replaced `fonts`; until
+  both are stored the state's `install.viewing_set` is false and a reference pixel is the
+  display's height over 1,080.
+- **`x-inherits`** (audio-vue `scene-editor-settings`, 2026-11-20): every setting exports it,
+  null or `<document>.<block>`. Where set, the setting declares no `default`, and unset it takes
+  the setting of the same key in that block: a scene's `display.saver`, `saver_after_min` and
+  `sleep_after_min` name `install.display`; a card's `shadow` names `scene.colors`. The app reads
+  it in `SchemaFacts.inheritedValue`. Do not match blocks by name or settings by key yourself.
+- **Silence** is one fixed line on the host, with no threshold setting in either display block or
+  the state. The silence reset is a scene's `analysis.reset_silence_s` (unset means never) and
+  `mute_on_silence`. The install has no `loudness` block.
+- **A scene needs at least one card** (read 2026-11-20): the schema's `cards` has `minItems: 1`
+  and the render bundle answers "no cards: entries". So a new scene is the app's alone until it
+  holds a card (maintainer, 2026-11-20): never send a scene with no cards to the helper or the
+  host.
+- **Styles** (Built, audio-vue `scene-styles`; the app's side is the `styles` change): a style
+  holds a `name` and any of the five look categories, `colors`, `typeface`, `type`, `backdrop` and
+  `glass`. A scene names styles in `styles:`; each category comes from the scene's own key, else
+  the one named style holding it, else the built-in `default` style, and a category set in two
+  places is refused on a scene write and on a style write alike. A scene with no backdrop draws
+  `default`'s. Routes under `/v1/styles` mirror the scenes' (list, read, revisions, validate,
+  create, write on `base_rev`, revert, delete); a listing entry names its `categories` and the
+  `scenes` naming it; a style a stored scene names is not deleted; a write never changes the
+  screen. Read the routes from the saved contract.
 - **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
   `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and
   naming every card, placeable or not; each `card.<name>` also carries `x-category`. The app reads
@@ -161,10 +196,19 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   `rev`, `applies`, `chain_changed` and `calibration` (the host's words on what the chain change does
   to calibration). Its 409 is `Stale | Refusal`: a stale write carries `current_rev`, the refusal
   during a calibration only `detail` (a stale body also reads as a `Refusal`, so check `Stale`
-  first). The console writes only `input`'s `device` and `rate`
-  (`PanelInput`), keeping the block's other keys.
-- **Capture devices** (`GET /v1/host/devices`): ALSA names, with a `reason` where the list is empty.
-  `input.device` unset is the host's default device.
+  first). The console writes `input`'s `device`, `rate`,
+  `fmt` and `pair` (`PanelInput`, `InputEdit`), keeping the block's other keys. An `input` write
+  the attached device cannot stream is refused with 422 and one failure per setting, in the host's
+  words.
+- **Capture devices** (`GET /v1/host/devices`; audio-vue `capture-channels`, 2026-11-20): each
+  `{name, streams}`, `streams` a list of `{format, channels, rates}`, one per way the device
+  captures, or absent where the host cannot read them (unknown, not none), with a `reason` where
+  the list is empty. A device's formats and rates may include ones the panel does not capture;
+  offer the overlap with the schema's. The `input` block holds no channel count: the panel takes
+  it from the device, and the host counts a `pair` against the most channels among the ways taking
+  the format and rate. `input.device` unset is the host's default device, which is not checked.
+  While a capture will not open as configured the panel waits, phase `waiting`, with its sentence
+  in the state's `run.screen_status`; it is not a health fault.
 - **Revisions**: each scene and install block has its own revision. A write names its base revision,
   and a stale one is refused with the current revision. 20 earlier revisions are kept
   (`KEPT_REVISIONS`, `src/host_store.py`); a revert stores one as a new revision. `/validate` routes
@@ -204,7 +248,8 @@ calls them:
 - **`GET /v1/scenes`** (token) lists each scene's `id`, `name`, `built_in` and `fixed`; a fixed scene
   is a process's, not offered to pick or duplicate. **`GET /v1/scenes/{id}`** gives its `doc` as the
   store holds it, passed to the helper whole (`SceneDocument`, `JSONValue`).
-- **`GET /v1/install`** (token) gives each block's `doc` by name; the helper takes the `fonts` block.
+- **`GET /v1/install`** (token) gives each block's `doc` by name; the helper takes the `viewing`
+  block.
 - **`GET /v1/schema`** (token) is JSON Schema under `$defs`: `block.grid` with its declared defaults,
   and `card.<name>` with `x-placeable`, `x-min-cells` (on a 36-row grid), `x-sizing`, `x-aspect`.
 - **`GET /v1/images/{id}`** (token) serves uploads and shipped images alike, PNG or JPEG; a 404 is
@@ -223,7 +268,9 @@ two steps of the panel's own render.
 
 The render helper's protocol is audio-vue's (`src/render_service.py`, its docstring): `hello`,
 `prepare`, `render` and `stimulus`, each a 4-byte big-endian length and JSON, layers' bytes after a
-render's answer.
+render's answer. Since `scene-styles` a `render` takes `viewing` and `styles` (`{id: document}`,
+the stored styles the scene names; the bundle carries the built-in ones) and no `fonts` or
+`fallback`, and its answer adds `style_notice`, naming a style it was not given.
 Asks travel as handoff files in audio-vue's root (`working-notes.md`).
 
 ## Calibration (Built, audio-vue `calibration-from-the-app`, 2026-11-08)

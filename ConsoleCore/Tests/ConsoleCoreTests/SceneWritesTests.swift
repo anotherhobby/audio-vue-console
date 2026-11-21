@@ -64,7 +64,7 @@ struct SceneWritesTests {
         let (scenes, transport) = try await PanelScenesTests.loadedWithMine()
         let writes = Self.writes(scenes)
         let mine = try #require(scenes.scenes.last)
-        _ = try writes.drafts.draft(for: mine, defaultGrid: CellSize(cols: 64, rows: 36))
+        _ = try writes.drafts.draft(for: mine, panel: CellSize(cols: 64, rows: 36))
         await transport.answer(.switchScene, with: .status(200, #"{"status": "done"}"#))
         _ = try await writes.apply("u1")
         #expect(await transport.requests(to: .writeScene("u1")).isEmpty)
@@ -102,7 +102,7 @@ struct SceneWritesTests {
         let writes = Self.writes(scenes)
         let mine = try #require(scenes.scenes.last)
         let copy = writes.drafts.duplicate(
-            try writes.drafts.draft(for: mine, defaultGrid: CellSize(cols: 64, rows: 36)),
+            try writes.drafts.draft(for: mine, panel: CellSize(cols: 64, rows: 36)),
             among: scenes.scenes)
         let created = #"{"id": "u2", "rev": 1, "applies": "on_reload", "analysis_changed": false}"#
         await transport.answer(.createScene, with: .status(201, created))
@@ -120,7 +120,7 @@ struct SceneWritesTests {
         let (scenes, transport) = try await PanelScenesTests.loadedWithMine()
         let writes = Self.writes(scenes)
         let mine = try #require(scenes.scenes.last)
-        let draft = try writes.drafts.draft(for: mine, defaultGrid: CellSize(cols: 64, rows: 36))
+        let draft = try writes.drafts.draft(for: mine, panel: CellSize(cols: 64, rows: 36))
         let copy = writes.drafts.duplicate(draft, among: scenes.scenes)
         let before = await transport.requests.count
         try await writes.rename(copy.id, to: " Wide ")

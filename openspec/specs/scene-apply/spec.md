@@ -36,24 +36,6 @@ revision.
 - **WHEN** the user chooses Apply and the host refuses the save as invalid
 - **THEN** the panel is not switched, and the failures are shown as for a Save
 
-### Requirement: Apply works on any scene
-
-Apply SHALL be enabled for every scene the gallery lists, built-in, stored or a copy, of the panel's
-shape or another.
-
-Source: Decision (maintainer, 2026-11-07): Apply covers built-ins and other shapes. audio-vue
-`scene-grid`: a scene is fitted to the display at its own aspect, with backdrop outside it.
-
-#### Scenario: Another shape
-
-- **WHEN** the user opens the built-in Default, 16:9, on an 8:3 panel and chooses Apply
-- **THEN** the panel switches to it, fitted to the display with backdrop either side
-
-#### Scenario: A built-in scene
-
-- **WHEN** the user opens the built-in RTA
-- **THEN** Apply is enabled
-
 ### Requirement: Apply asks nothing first and says what it cost
 
 Apply SHALL NOT ask before switching. When the switch is done, the app SHALL say the scene is on the
@@ -156,3 +138,26 @@ restarts is audio-vue's to state.
 
 - **WHEN** the panel refuses a reset
 - **THEN** the app shows the panel's reason
+
+### Requirement: Apply works on any scene that fits the panel
+
+Apply SHALL be enabled for every scene the gallery lists, built-in, stored or a copy, that is not
+too wide for the panel. For a scene too wide it SHALL be disabled, saying why.
+
+Source: Decision (maintainer, 2026-11-07, 2026-11-21). audio-vue `scene-grid`, "A switch to a scene
+too wide for the display is refused".
+
+#### Scenario: A built-in scene
+
+- **WHEN** the user opens the built-in RTA on a panel it fits
+- **THEN** Apply is enabled
+
+#### Scenario: A scene too wide
+
+- **WHEN** the user opens a scene reaching column 96 for a 64-column panel
+- **THEN** Apply is disabled, saying the scene is too wide for this panel
+
+#### Scenario: Made to fit
+
+- **WHEN** the user moves its cards within the panel's columns
+- **THEN** Apply is enabled

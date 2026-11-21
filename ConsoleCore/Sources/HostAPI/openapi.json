@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "audio-vue host agent",
-    "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, its\ninstall settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
-    "version": "2.7.1"
+    "description": "The host agent of an audio-vue panel: its state, its commands, its service, its calibration\nruns, its pairing, and its settings: the settings' schema and each card's page, its scenes, the\nstyles its scenes name, its install settings and its backdrop images.\n\nThe state is pushed over the WebSocket `/v1/events`, which OpenAPI cannot describe: each message\nis one `State`, sent as it changes and in whole every second, the first on connect. It takes the\ntoken as `Authorization: Bearer <token>` in its handshake, and refuses the handshake without it.\n\nEvery route but `POST /v1/pairing`, `POST /v1/pairing/confirm` and `GET /v1/version` takes the\ntoken. A client is generated from this document, which `make openapi` writes from the code.\n\nA read leaves the display as it is. Every command but `saver` ends the screensaver or sleep,\neven when it is refused; `saver` starts the screensaver.\n",
+    "version": "4.1.0"
   },
   "paths": {
     "/v1/version": {
@@ -944,7 +944,7 @@
     "/v1/host/devices": {
       "get": {
         "summary": "Devices",
-        "description": "The capture devices attached, as ALSA names them.",
+        "description": "The capture devices attached, as ALSA names them, each with how it streams.",
         "operationId": "devices_v1_host_devices_get",
         "responses": {
           "200": {
@@ -2005,6 +2005,510 @@
         }
       }
     },
+    "/v1/styles": {
+      "get": {
+        "summary": "Style Listing",
+        "description": "Every style a scene may name: the built-ins, then the stored styles by name, each\nwith the categories it holds and the scenes that name it.",
+        "operationId": "style_listing_v1_styles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Styles"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create Style",
+        "description": "Stores a new style at revision 1, under an id the host gives it. Duplicating a\nbuilt-in is reading it and creating a style from its document.",
+        "operationId": "create_style_v1_styles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewStyle"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{style_id}": {
+      "get": {
+        "summary": "Read Style",
+        "description": "A style's document: a built-in's file as it ships, or a stored style's current\nrevision. A style is named by its id, never by a path.",
+        "operationId": "read_style_v1_styles__style_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Write Style",
+        "description": "Stores the style's next revision, refused where a scene naming it would then take a\ncategory from two places. The screen is unchanged until a reload or a switch.",
+        "operationId": "write_style_v1_styles__style_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Edit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Style",
+        "description": "Deletes a stored style with its revisions. Refused while a stored scene names it.",
+        "operationId": "delete_style_v1_styles__style_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/styles/{style_id}/revisions": {
+      "get": {
+        "summary": "Style Revisions",
+        "description": "A stored style's kept earlier revisions, newest first. A built-in keeps none.",
+        "operationId": "style_revisions_v1_styles__style_id__revisions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Revisions"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/styles/validate": {
+      "post": {
+        "summary": "Validate Style",
+        "description": "Every failure a new style would be refused for, with nothing stored.",
+        "operationId": "validate_style_v1_styles_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Draft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Checked"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/styles/{style_id}/revert": {
+      "post": {
+        "summary": "Revert Style",
+        "description": "Stores a kept revision's content as the style's next revision, checked as any\nwrite is.",
+        "operationId": "revert_style_v1_styles__style_id__revert_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevertTo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleWritten"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invalid"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stale"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "No token, or a wrong one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/install": {
       "get": {
         "summary": "Read Install",
@@ -2984,15 +3488,38 @@
         ],
         "title": "Clients"
       },
+      "Device": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The device, as ALSA names it and capture opens it."
+          },
+          "streams": {
+            "items": {
+              "$ref": "#/components/schemas/Stream"
+            },
+            "type": "array",
+            "title": "Streams",
+            "description": "Each way it streams; null where the host cannot read them."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Device"
+      },
       "Devices": {
         "properties": {
           "devices": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Device"
             },
             "type": "array",
             "title": "Devices",
-            "description": "Capture devices, as ALSA names them."
+            "description": "Capture devices, each with how it streams."
           },
           "reason": {
             "type": "string",
@@ -3029,6 +3556,9 @@
             "type": "integer",
             "title": "Height Px"
           },
+          "grid": {
+            "$ref": "#/components/schemas/Grid"
+          },
           "saver": {
             "type": "string",
             "title": "Saver"
@@ -3040,10 +3570,6 @@
           "sleep_after_min": {
             "type": "number",
             "title": "Sleep After Min"
-          },
-          "threshold_lufs": {
-            "type": "number",
-            "title": "Threshold Lufs"
           }
         },
         "additionalProperties": true,
@@ -3332,12 +3858,17 @@
             },
             "type": "array",
             "title": "Failed"
+          },
+          "viewing_set": {
+            "type": "boolean",
+            "title": "Viewing Set",
+            "description": "Whether the install's viewing block holds both of its keys; until it does, text is sized from the display's height."
           }
         },
         "additionalProperties": true,
         "type": "object",
         "title": "Install",
-        "description": "Each install block that failed validation and runs on its defaults, with why."
+        "description": "Each install block that failed validation and runs on its defaults, with why, and\nwhether the host's viewing is set, as the panel's last scene build read it."
       },
       "InstallBlock": {
         "properties": {
@@ -3438,7 +3969,7 @@
           "applies"
         ],
         "title": "InstallWritten",
-        "description": "An install block stored. With no chain setting changed it applies when the panel next\nstarts, or for the type sizes (`fonts`) when it next builds a scene, by a reload or a switch.\nA chain change restarts a running panel and leaves a stopped one stopped."
+        "description": "An install block stored. With no chain setting changed it applies when the panel next\nstarts, or for the viewing (`viewing`) when it next builds a scene, by a reload or a switch.\nA chain change restarts a running panel and leaves a stopped one stopped."
       },
       "Invalid": {
         "properties": {
@@ -3508,6 +4039,21 @@
           "doc"
         ],
         "title": "NewScene"
+      },
+      "NewStyle": {
+        "properties": {
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "doc"
+        ],
+        "title": "NewStyle"
       },
       "OffStandard": {
         "properties": {
@@ -4199,6 +4745,199 @@
         ],
         "title": "State",
         "description": "The panel's state with its condition. Down, the sections are empty and `since` is when\nthe panel last answered."
+      },
+      "Stream": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "description": "The sample format, as ALSA names it."
+          },
+          "channels": {
+            "type": "integer",
+            "title": "Channels",
+            "description": "How many channels it streams this way."
+          },
+          "rates": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Rates",
+            "description": "The rates it takes this way, in Hz. A continuous range is given as the capture rates within it."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "format",
+          "channels",
+          "rates"
+        ],
+        "title": "Stream",
+        "description": "One way a capture device streams."
+      },
+      "StyleDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "built_in": {
+            "type": "boolean",
+            "title": "Built In"
+          },
+          "categories": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "colors",
+                "typeface",
+                "type",
+                "backdrop",
+                "glass"
+              ]
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "scenes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scenes",
+            "description": "The ids of the stored and built-in scenes naming this style."
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev",
+            "description": "A stored style's current revision; null for a built-in."
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          },
+          "doc": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Doc"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "built_in",
+          "categories",
+          "scenes",
+          "doc"
+        ],
+        "title": "StyleDocument"
+      },
+      "StyleSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "built_in": {
+            "type": "boolean",
+            "title": "Built In"
+          },
+          "categories": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "colors",
+                "typeface",
+                "type",
+                "backdrop",
+                "glass"
+              ]
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "scenes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scenes",
+            "description": "The ids of the stored and built-in scenes naming this style."
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev",
+            "description": "A stored style's current revision; null for a built-in."
+          },
+          "saved_at": {
+            "type": "string",
+            "title": "Saved At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "built_in",
+          "categories",
+          "scenes"
+        ],
+        "title": "StyleSummary",
+        "description": "A style: a built-in by its file's stem, or a stored style by the id the host gave it,\nwith the categories it holds and every scene, stored or built in, that names it."
+      },
+      "StyleWritten": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "rev": {
+            "type": "integer",
+            "title": "Rev"
+          },
+          "applies": {
+            "type": "string",
+            "const": "on_reload",
+            "title": "Applies"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "rev",
+          "applies"
+        ],
+        "title": "StyleWritten",
+        "description": "A style stored. A scene on screen naming it takes it on a reload or a switch, never\nbefore."
+      },
+      "Styles": {
+        "properties": {
+          "styles": {
+            "items": {
+              "$ref": "#/components/schemas/StyleSummary"
+            },
+            "type": "array",
+            "title": "Styles"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "styles"
+        ],
+        "title": "Styles"
       },
       "Switch": {
         "properties": {

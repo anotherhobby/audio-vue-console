@@ -37,9 +37,9 @@ Built and archived as the specs `scene-layout` and `scene-canvas` (2026-11-04), 
 `product.md`, which only the maintainer edits. UI quirks from the spike's manual run are held by the
 maintainer for when the editor is built out, not recorded.
 
-- The grid's shape comes from the connected panel: `/v1/host`'s `width_px`/`height_px` and the scene's
-  `grid` in `/v1/state`. When it cannot be told, 16:9 (64x36) is the default. 96x36 at 8:3 is only the
-  maintainer's display; most users are expected to be 16:9.
+- The grid comes from the connected panel's state (`PanelState.grid`, held by `SceneStore.grid`);
+  with none there is no editing. 96x36 at 8:3 is only the maintainer's display; most users are
+  expected to be 16:9.
 - Cards never overlap.
 - A card is refused on drop unless its cells are free; no push and no swap.
 - A resize stops at the neighbouring card's edge, by the same rule as a drop.
@@ -93,8 +93,8 @@ rulings are in `openspec/specs/scene-saving`, `scene-apply`, `host-connection` a
 
 Built and archived as `openspec/changes/archive/2026-11-08-gallery-sections`. Ruled (maintainer,
 2026-11-07): "My Scenes", "Built-in Scenes", then "Other Shapes", none dimmed; Apply works on a
-scene of another shape (the panel fits it with backdrop either side, audio-vue `scene-grid`), and
-the canvas still refuses edits by shape. Ruled 2026-11-08: the editor's card library is grouped by
+scene of another shape, and the canvas refused edits by shape. All of that went with `host-grid`
+(2026-11-21): two sections, and a scene too wide for the panel is edited and saved, not applied. Ruled 2026-11-08: the editor's card library is grouped by
 audio-vue's card categories (its change `card-categories`), the categories and the card order both
 from the panel. The handoff `card-order-handoff.md` was answered and `card-categories` archived
 (2026-11-08): the schema's root `x-categories` lists `{id, label, cards}` in display order, the
@@ -120,25 +120,63 @@ Three changes, built in this order (maintainer, 2026-11-08):
    card colour showed a black swatch; audio-vue's `card-colours` (archived 2026-11-09) made it
    resolvable by lookup (`host-contract.md`, Colours), and `scene-settings` now shows the colour and
    its element (maintainer, 2026-11-09).
-2. `scene-settings` (built 2026-11-09, 15 of 16 tasks; task 5.1, the maintainer's run on the
-   proving host, is next, then verify and archive. Reconciled the same day with card-settings as
-   built and with audio-vue's `card-colours`: an Elements section after Palette, the palette by
-   family, and the card inspector's unset colour by lookup. The calibration note words the rate as
-   `RateText` does, "44.1 kHz". Ruled on the maintainer's first look, 2026-11-09: the scene's
-   settings go in inspector tabs, Look, Colours, Analysis and Grid, and rows are compact for card
-   and scene settings alike, help on hover, Use Default a small button; a backdrop source chosen
-   again comes back as it was): the scene's blocks in the inspector when nothing is selected;
-   backdrop as one source with gradient stops and image upload; grid gap and density at the scene's
-   aspect. Calibration warning only where no calibration holds at the scene's rate (maintainer:
-   users calibrate at several rates and switch scenes between them; audio-vue applies the newest
-   valid record for device and rate); needs a per-rate calibration read from audio-vue. Its `scene-canvas`/`scene-rendering` deltas carry card-settings' text, so card-settings
-   is archived first.
-3. `styles` (proposal and `handoff.md` only): à la carte styles holding any of palette, typeface,
-   type roles, backdrop and glass; a scene links several, each category from exactly one place (a
-   style or the scene), and a style edit that would set a category twice is refused, the console
-   offering to clear it from those scenes; built-in styles ship with audio-vue; typefaces
-   ship with audio-vue; a Styles sidebar section previewing on a picked scene. Specs, design and
-   tasks wait on audio-vue's answer.
+2. `scene-settings` (built 2026-11-09; rebuilt 2026-11-19 on audio-vue's `scene-styles`, tasks
+   6.1 to 6.5; task 5.1, the maintainer's run on the proving host, is next, then verify and
+   archive): the scene's blocks in the inspector when nothing is selected, in the tabs Scene
+   (Backdrop, Glass, Grid, Display), Style (Typeface, Colours, Text Sizes) and Analysis
+   (maintainer, 2026-11-19); rows compact for card and scene settings alike, help on hover, Use
+   Default a small button; the backdrop as one source (Default, Colour, Gradient, Image) with
+   gradient stops and image upload, a source chosen again coming back as it was; grid gap and
+   density at the scene's aspect; a calibration warning only where no calibration holds at the
+   scene's rate. Since the rebuild: colours by role group and meaning scale, a size per text role,
+   the typeface, a card's colour as a well beside a menu of the scene's roles with its colours
+   under one disclosure, and a render request carrying `viewing` and `styles`
+   (`host-contract.md`, Colours, Type and typeface, Styles). The app cannot reach the proving
+   host until it is paired again: the host's store was rebuilt, so install blocks, images and
+   stored scenes are entered again.
+   The maintainer's review of 2026-11-20 is built as tasks 7.1 to 7.5: no Kept row, Glass titled
+   Cards, the typeface at the head of Text, a slider for a number from 0 to 1, Use Default
+   Gradient (the built-in `default` style's stops and angle), an unset display setting showing the
+   panel's value, and New Scene (an empty unsaved scene on a grid of the panel's shape, the app's
+   alone until it holds a card: Save and Apply disabled, its backdrop asked for by `LibraryTiles`
+   around one library card, tasks 7.6 and 7.7; tiles sit on the scene's backdrop). audio-vue
+   answered the round's hand-off the same day with its `scene-editor-settings` (`x-inherits`,
+   steps, opacity 0.6, a scene's screensaver, the silence reset in analysis); the app follows it
+   in task 7.8, and the answering hand-off is deleted.
+   Drawing ahead (tasks 8.1, 8.2, same day): the window reads the scenes once paired and
+   `SceneStore.drawAhead` draws thumbnails then each scene's library tiles; `LibraryTiles` keeps
+   a set per settings key. Thumbnails are kept on disk (`ThumbnailCache`, task 8.3) since the
+   helper's first drawing after a start takes 2 to 3 s.
+   The scope-preview hand-off (2026-11-20: the loudness scope's preview shows a full lap and all
+   four bands; the panel keeps its trace across a look-only reload) was answered by audio-vue's
+   `loudness-scope-target` on 2026-11-21. The app needed only a render-bundle refresh: the
+   scope's new settings (preset, target, speed, resolution and so on) are choices with labels
+   and an `x-unused-when`, which the card inspector already reads. Both hand-off files are gone.
+   `host-grid` (2026-11-21), the console's change following audio-vue's of the same name, is
+   built, and the maintainer's run on the proving panel passed with `scene-settings`' (2026-11-21,
+   everything as expected): the grid is
+   the panel's, from the state (`SceneStore.follow(grid:)`); `LaidOutScene(_:panel:)` lays a
+   scene out on it, or on its reach where a card ends past the last column, which makes it too
+   wide: listed with a note, edited and saved, drawn as boxes, not applied. An unset span is
+   written back unset while its card covers the grid from column 0. Grid density, display
+   shapes and scaled minimums are gone. Ruled by the maintainer the same day; both hand-off files
+   are deleted. Both changes are archived (2026-11-21: `scene-settings`, then `host-grid`), and
+   the standing specs pass `--strict`. A stored scene that still sets `cols` or `rows` is refused by the host; the app
+   opens it without them, marked unsaved, so Save removes them (maintainer, 2026-11-21).
+3. `styles` (proposal only, rewritten 2026-11-19 on what audio-vue built): each look category in
+   the scene inspector says where it comes from (This Scene, a style, Default); a style is edited
+   from a scene, where it is seen, with no Styles sidebar section (maintainer, 2026-11-19); Save as
+   New Style, Rename, Delete; the viewing asked at setup. Three questions are open in its proposal
+   (one undo history or two; when other scenes redraw; where the viewing is asked). Specs, design
+   and tasks wait on those.
+
+4. `input-channels` (built and archived 2026-11-20 as
+   `openspec/changes/archive/2026-11-20-input-channels`; `capture-input` updated; the maintainer
+   ran it on the proving host with no issue found): the Capture page reads what each capture
+   device streams, offers only the formats and rates the installed device takes and Left and Right
+   Channel over more than two channels, fits a chosen input to its device before asking about the
+   restart, and shows the host's sentences for a refused input and the panel's while it waits on a
+   capture it cannot open (`host-contract.md`, Capture devices; `pitfalls.md`).
 
 audio-vue asks, placed in its root 2026-11-08: `card-settings-handoff.md` was answered by
 audio-vue's `schema-step-and-order` (`x-step` on every setting, `x-settings` on every card, block
@@ -147,7 +185,9 @@ channel choice), and the file is gone; the live panel's export matched on 2026-1
 `scene-settings-handoff.md` was answered by `GET /v1/calibration` (see input-and-rates below).
 `meter-colours-handoff.md` (placed 2026-11-09 for `scene-settings` task 4.5) was answered the same
 day by audio-vue's `unused-settings` (`x-unused-when`, `host-contract.md`), built in task 4.5.
-`styles-handoff.md` (a copy of `openspec/changes/styles/handoff.md`) awaits a reply. audio-vue's open `loudness-scope` change renames
+`styles-handoff.md` was answered by audio-vue's `scene-styles` (deployed 2026-11-19), whose
+`scene-styles-handoff.md` sits at this repo's top level until `styles` is planned from it; then
+delete it and tell the maintainer. audio-vue's open `loudness-scope` change renames
 `loudness_radar` to `loudness_scope` (a trademark), with nothing touching these asks. `narrowband` is a calibration card,
 not placeable.
 

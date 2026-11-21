@@ -2,8 +2,9 @@ import ConsoleCore
 import SwiftUI
 
 /// The Scenes page (`scene-gallery`): the paired panel's scenes in a gallery, the user's first,
-/// then the built-ins, then other shapes, each opened on the canvas. It reads the scenes when the
-/// app pairs, and draws the thumbnails once the renderer has compared the card code. `isEditing`
+/// then the built-ins, each opened on the canvas, laid out on the panel's grid. The window reads the scenes
+/// when the app pairs and draws them ahead (`SceneStore.drawAhead`); the page reads them again
+/// when shown. `isEditing`
 /// tells the window to give the editor the width.
 struct ScenesPage: View {
     let connection: HostConnection
@@ -12,7 +13,8 @@ struct ScenesPage: View {
     let live: LiveState?
     @Binding var isEditing: Bool
     @Environment(SceneStore.self) private var store
-    @State private var scenes: PanelScenes?
+    /// The paired panel's scenes, read by the window as soon as it is paired.
+    private var scenes: PanelScenes? { store.scenes }
     /// The panel's input, for the calibrated rates the editor warns by.
     @State private var input: PanelInput?
     @State private var path: [String] = []
@@ -24,10 +26,10 @@ struct ScenesPage: View {
                 .navigationDestination(for: String.self) { destination($0) }
         }
         .onChange(of: path) { isEditing = !path.isEmpty }
+        // An open editor holds a layout on the old grid, so a new grid closes it.
+        .onChange(of: store.grid) { path = [] }
         .task(id: PanelKey(connection)) { await load() }
-        .task(id: DrawKey(verdict: renderer.verdict, loaded: scenes?.state == .loaded)) {
-            await drawThumbnails()
-        }
+        .task(id: drawKey) { await store.drawAhead(with: renderer) }
     }
 
     @ViewBuilder private var content: some View {
@@ -35,10 +37,16 @@ struct ScenesPage: View {
             ContentUnavailableView(
                 "No Panel Paired", systemImage: "rectangle.3.group",
                 description: Text("Pair with the panel on the Panel page to see its scenes."))
-        } else if let scenes, scenes.state == .loaded, let facts = scenes.facts {
+        } else if let scenes, scenes.state == .loaded, store.grid == nil {
+            ContentUnavailableView(
+                "No Display on the Panel", systemImage: "display.trianglebadge.exclamationmark",
+                description: Text(
+                    "The panel has no display to lay scenes out for. Its scenes show here once it does."
+                ))
+        } else if let scenes, scenes.state == .loaded, let grid = store.grid {
             SceneGallery(
-                scenes: store.drafts.listing(scenes.scenes), facts: facts,
-                panel: Self.shape(of: scenes), notice: renderer.verdict?.noCardsReason,
+                scenes: store.drafts.listing(scenes.scenes), grid: grid,
+                aspect: Self.aspect(of: scenes), notice: renderer.verdict?.noCardsReason,
                 open: { path.append($0) },
                 rename: { id, name throws(HostFailure) in
                     try await store.writes(to: scenes).rename(id, to: name)
@@ -58,67 +66,52 @@ struct ScenesPage: View {
     }
 
     @ViewBuilder private func destination(_ id: String) -> some View {
-        if let scenes,
+        if let scenes, let grid = store.grid,
             let document = store.drafts.listing(scenes.scenes).first(where: { $0.id == id })
         {
             SceneEditorView(
                 document: document, scenes: scenes, renderer: renderer, verdict: renderer.verdict,
-                panel: Self.shape(of: scenes), live: live, input: input,
+                panel: grid, live: live, input: input,
                 open: { path.append($0) },
                 reopen: { path[path.count - 1] = $0 })
         }
     }
 
-    /// The panel's shape, from its display size, or the stand-in's where the host gives none.
-    static func shape(of scenes: PanelScenes) -> DisplayShape {
+    /// The display's width over its height, or the stand-in's where the host gives no size.
+    static func aspect(of scenes: PanelScenes) -> Double {
         let display = scenes.context.display
-        return DisplayShape(width: display.width, height: display.height)
+        return Double(display.width) / Double(display.height)
     }
 
-    /// Reads the scenes of the panel now paired, forgetting the last panel's edits and copies
-    /// where it is another host.
+    private var drawKey: DrawKey {
+        DrawKey(
+            verdict: renderer.verdict, loaded: scenes?.state == .loaded, grid: store.grid)
+    }
+
+    /// Shows the gallery of the panel now paired, and reads its scenes again where the window
+    /// has already read them, so a change made elsewhere shows without the gallery leaving.
     private func load() async {
-        store.follow(host: connection.isPaired == true ? connection.host?.id : nil)
         path = []
-        scenes = connection.makeScenes()
-        store.scenes = scenes
-        await scenes?.load()
+        if scenes?.state == .loaded { await scenes?.load() }
         input = connection.makePanelInput()
         await input?.load()
     }
 
-    /// Once the scenes are read and the renderer has compared the card code with the panel's (the
-    /// window does, `PanelWindow`), draws the thumbnails, unless no card may be drawn.
-    private func drawThumbnails() async {
-        guard let scenes, scenes.state == .loaded, let facts = scenes.facts,
-            let queue = renderer.queue
-        else { return }
-        switch renderer.verdict {
-        case .same?: break
-        case .differs(let drift)? where !drift.sharesNothing: break
-        default: return
-        }
-        let laidOut = store.drafts.listing(scenes.scenes).compactMap { document in
-            if let draft = store.drafts.draft(document.id) { return (draft.laidOut, draft.content) }
-            return Self.laidOut(document, facts: facts).map { ($0, $0.content) }
-        }
-        await store.thumbnails.draw(laidOut, context: scenes.context, through: queue)
-    }
-
-    static func laidOut(_ document: SceneDocument, facts: SchemaFacts) -> LaidOutScene? {
+    /// `document` laid out on `grid`, the panel's, or nil where it cannot be read.
+    static func laidOut(_ document: SceneDocument, on grid: CellSize) -> LaidOutScene? {
         do {
-            return try LaidOutScene(document, defaultGrid: facts.defaultGrid)
+            return try LaidOutScene(document, panel: grid)
         } catch {
             return nil
         }
     }
 
     /// `document`'s draft, made the first time it is asked for, or nil where it cannot be read.
-    static func draft(_ document: SceneDocument, in drafts: SceneDrafts, facts: SchemaFacts)
+    static func draft(_ document: SceneDocument, in drafts: SceneDrafts, on grid: CellSize)
         -> Draft?
     {
         do {
-            return try drafts.draft(for: document, defaultGrid: facts.defaultGrid)
+            return try drafts.draft(for: document, panel: grid)
         } catch {
             return nil
         }
@@ -138,5 +131,6 @@ struct ScenesPage: View {
     private struct DrawKey: Equatable {
         let verdict: CardCodeVerdict?
         let loaded: Bool
+        let grid: CellSize?
     }
 }

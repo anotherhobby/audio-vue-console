@@ -87,16 +87,23 @@ extension HostClient {
         }
     }
 
-    /// `GET /v1/host/devices`: the host's capture devices as ALSA names them, and why the list is
-    /// empty where it is.
+    /// `GET /v1/host/devices`: the host's capture devices, each with how it streams where the
+    /// host can read that, and why the list is empty where it is.
     public func captureDevices(at address: HostAddress, token: HostToken)
-        async throws(HostFailure) -> (devices: [String], reason: String?)
+        async throws(HostFailure) -> (devices: [CaptureDevice], reason: String?)
     {
         let output = try await call(at: address, token: token) {
             try await $0.devicesV1HostDevicesGet()
         }
         guard case .ok(let ok) = output else { throw .unexpectedAnswer }
         let body = try Self.body { try ok.body.json }
-        return (body.devices, body.reason)
+        let devices = body.devices.map { device in
+            CaptureDevice(
+                name: device.name,
+                streams: device.streams?.map {
+                    CaptureDevice.Stream(format: $0.format, channels: $0.channels, rates: $0.rates)
+                })
+        }
+        return (devices, body.reason)
     }
 }

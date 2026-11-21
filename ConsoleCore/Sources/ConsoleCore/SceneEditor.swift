@@ -14,14 +14,13 @@ public final class SceneEditor {
     public private(set) var refusal: LayoutRefusal?
     /// Why the scene cannot be edited here, or nil when it can.
     public let readOnly: ReadOnlyReason?
-    /// Each card's minimum on a grid `SchemaFacts.referenceRows` tall, by kind, as declared.
-    @ObservationIgnored private let declaredMinimums: [String: CellSize]
+    /// Each card's declared minimum, by kind; a kind with none may go down to a cell.
+    @ObservationIgnored public let minimums: [String: CellSize]
 
     @ObservationIgnored private let undoManager: UndoManager?
     @ObservationIgnored private let onCommit: (SceneContent) -> Void
 
-    /// An editor for `content`, each card's minimum in `minimums` as declared, on a grid
-    /// `SchemaFacts.referenceRows` tall. Each committed content goes to `onCommit`, so the app
+    /// An editor for `content`, each card's minimum in `minimums` as declared. Each committed content goes to `onCommit`, so the app
     /// can keep it, and each edit is registered with `undoManager`.
     public init(
         content: SceneContent, readOnly: ReadOnlyReason? = nil, minimums: [String: CellSize] = [:],
@@ -29,7 +28,7 @@ public final class SceneEditor {
     ) {
         self.content = content
         self.readOnly = readOnly
-        declaredMinimums = minimums
+        self.minimums = minimums
         self.undoManager = undoManager
         self.onCommit = onCommit
     }
@@ -46,16 +45,6 @@ public final class SceneEditor {
 
     /// The scene's cards on its grid.
     public var layout: SceneLayout { content.layout }
-
-    /// Each card's minimum on the scene's grid as it is now, by kind; a kind with none may go
-    /// down to a cell.
-    public var minimums: [String: CellSize] {
-        minimums(onRows: layout.grid.rows)
-    }
-
-    private func minimums(onRows rows: Int) -> [String: CellSize] {
-        declaredMinimums.mapValues { SchemaFacts.scaled($0, toRows: rows) }
-    }
 
     // MARK: Selection
 
@@ -187,15 +176,6 @@ public final class SceneEditor {
         }
     }
 
-    /// Makes the grid `grid`, at the scene's aspect, moving every card to the cells covering the
-    /// same part of the scene, as one step; refused where a card would fall below its minimum
-    /// (`scene-settings`, design D5).
-    public func setDensity(_ grid: CellSize) {
-        commit("Change Density") { () throws(LayoutRefusal) in
-            try GridDensity.relaid(layout, to: grid, minimums: minimums(onRows: grid.rows))
-        }
-    }
-
     /// What each backdrop source last held while this scene is edited (design D3).
     public private(set) var backdropMemory = BackdropMemory()
 
@@ -216,8 +196,18 @@ public final class SceneEditor {
         replace(block: Self.backdrop, with: fields, label: "Backdrop")
     }
 
+    /// Sets the backdrop's gradient to the stops and angle of `standard`, the default look's
+    /// backdrop, as one step. Nothing where it is no gradient or the scene already holds it.
+    public func useDefaultGradient(_ standard: JSONValue?) {
+        guard
+            let fields = BackdropSource.gradient(
+                of: standard, over: content.blocks[Self.backdrop])
+        else { return }
+        replace(block: Self.backdrop, with: fields, label: "Backdrop")
+    }
+
     /// Switches the backdrop to `kind`, bringing back what that source last held, else starting
-    /// from what it shows and `background`, the palette's (design D3). False where an image has to
+    /// from what it shows and `background`, the scene's card colour (design D3). False where an image has to
     /// be chosen first, and nothing changes.
     public func switchBackdrop(to kind: BackdropSource.Kind, background: String) -> Bool {
         let block = content.blocks[Self.backdrop]
@@ -247,6 +237,25 @@ public final class SceneEditor {
         fields[key] = nil
         commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
             blocks(content, with: block, as: fields)
+        }
+    }
+
+    /// Sets the scene's own setting `key`, one outside any block such as its typeface, declared
+    /// as `label`, to `value`.
+    public func setScene(_ key: String, to value: JSONValue, label: String) {
+        commitContent("Change \(label)") { () throws(LayoutRefusal) in
+            var edited = content
+            edited.blocks[key] = value
+            return edited
+        }
+    }
+
+    /// Leaves the scene's own setting `key`, declared as `label`, unset.
+    public func useDefault(scene key: String, label: String) {
+        commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
+            var edited = content
+            edited.blocks[key] = nil
+            return edited
         }
     }
 

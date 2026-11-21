@@ -95,8 +95,8 @@ import Testing
         #expect(committed == [editor.layout])
     }
 
-    @Test(arguments: [ReadOnlyReason.builtIn, .shape(scene: "16:9", panel: "8:3")])
-    func aReadOnlySceneRefusesEveryEdit(reason: ReadOnlyReason) throws {
+    @Test func aReadOnlySceneRefusesEveryEdit() throws {
+        let reason = ReadOnlyReason.builtIn
         let editor = SceneEditor(layout: scene, readOnly: reason)
         editor.select(loose.id)
         #expect(editor.selection == [loose.id])

@@ -54,7 +54,18 @@ public final class SceneSession {
     /// Whether the scene may be written: shown in an editor that may edit it.
     private var isEditable: Bool { editor != nil && editor?.readOnly == nil }
 
-    public var canSave: Bool { isEditable && isUnsaved }
+    /// Whether the scene holds a card, which the host needs before it stores or shows one: a
+    /// new scene is the app's alone until then.
+    public var hasCards: Bool { draft?.layout.cards.isEmpty == false }
+
+    public var canSave: Bool { isEditable && isUnsaved && hasCards }
+
+    /// Whether a card reaches past the panel's last column, so the panel would refuse the scene.
+    public var isTooWide: Bool { draft.map { $0.laidOut.isTooWide($0.content) } ?? false }
+
+    /// Apply: a scene the panel can show (`scene-apply`, "Apply works on any scene that fits the
+    /// panel").
+    public var canApply: Bool { hasCards && !isTooWide }
 
     /// Revert to Saved: an unsaved scene the host holds a revision of.
     public var canRevert: Bool { isEditable && isUnsaved && draft?.rev != nil }
@@ -85,7 +96,7 @@ public final class SceneSession {
 
     /// Drops this edit and shows the host's scene, read again.
     public func discardMine() async {
-        guard let grid = draft?.layout.grid else { return }
+        guard let grid = draft?.laidOut.panel else { return }
         do throws(HostFailure) {
             try await writes.discardMine(id)
         } catch {
@@ -93,7 +104,7 @@ public final class SceneSession {
         }
         guard let base = writes.scenes.scenes.first(where: { $0.id == id }) else { return }
         do throws(LayoutRefusal) {
-            _ = try writes.drafts.draft(for: base, defaultGrid: grid)
+            _ = try writes.drafts.draft(for: base, panel: grid)
         } catch {
             failure = .invalid([DocumentFailure(place: "", message: error.description)])
             return

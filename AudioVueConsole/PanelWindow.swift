@@ -38,6 +38,7 @@ struct PanelWindow: View {
         }
         .unsavedScenesAlerts(store.unsaved, shown: !isAddingPanel)
         .onChange(of: live?.state?.sceneSpec) { _, spec in store.follow(onScreen: spec) }
+        .onChange(of: live?.state?.grid, initial: true) { _, grid in store.follow(grid: grid) }
         .onChange(of: live?.state) { forwardLiveState() }
         .onChange(of: live?.isLive) { forwardLiveState() }
         .task { await connection.connectAtLaunch() }
@@ -45,15 +46,30 @@ struct PanelWindow: View {
             live = connection.liveState()
             await live?.watch()
         }
-        // The helper starts once the app is paired, and its code is compared with the panel's
-        // (`render-helper`, `card-code`).
-        .task(id: WatchKey(connection)) {
-            renderer.forgetCode()
-            guard connection.isPaired == true else { return }
-            await renderer.start()
-            if let scenes = connection.makeScenes() { await renderer.checkCode(with: scenes) }
-        }
+        .task(id: WatchKey(connection)) { await startRendering() }
         .frame(minWidth: PanelMetrics.windowMinWidth, minHeight: PanelMetrics.windowMinHeight)
+    }
+
+    /// Starts the helper once the app is paired and compares its code with the panel's
+    /// (`render-helper`, `card-code`). The scenes are read meanwhile, and drawn ahead with the
+    /// library's tiles, so the Scenes page and a scene show at once when opened
+    /// (`scene-rendering`).
+    private func startRendering() async {
+        renderer.forgetCode()
+        let paired = connection.isPaired == true
+        store.follow(host: paired ? connection.host?.id : nil)
+        let scenes = paired ? connection.makeScenes() : nil
+        store.scenes = scenes
+        guard let scenes else { return }
+        async let started: Void = renderer.start()
+        await scenes.load()
+        // Last launch's thumbnails show while the helper starts. A new pairing's drafts were
+        // forgotten with the old panel's grid, so the grid is followed again.
+        store.follow(grid: live?.state?.grid)
+        store.restoreThumbnails()
+        await started
+        await renderer.checkCode(with: scenes)
+        await store.drawAhead(with: renderer)
     }
 
     @ViewBuilder private var detail: some View {

@@ -8,6 +8,8 @@ enum CanvasMetrics {
         colors: [.indigo, .black, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
 
     static let plateFillOpacity: Double = 0.55
+    /// How dark the columns past the panel's last are, on a scene too wide for it.
+    static let lackingColumnsOpacity: Double = 0.45
     static let plateCornerRadius: CGFloat = 6
     static let plateInset: CGFloat = 1.5
     static let thumbnailCornerRadius: CGFloat = 2

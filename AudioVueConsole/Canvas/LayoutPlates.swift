@@ -72,7 +72,7 @@ extension View {
 }
 
 #Preview("Plates and a group") {
-    if let layout = PlatesPreview.layout {
+    if let layout = PlatesPreview.layout(on: CellSize(cols: 96, rows: 36)) {
         LayoutPlates(layout: layout)
             .aspectRatio(8.0 / 3.0, contentMode: .fit)
             .background(CanvasMetrics.backdrop)
@@ -80,23 +80,22 @@ extension View {
     }
 }
 
-/// A wide layout with a group, for the preview, read as a scene's document is.
-private enum PlatesPreview {
+/// A layout reaching column 96 with a group, for previews, read as a scene's document is.
+enum PlatesPreview {
     static let doc = #"""
-        {"grid": {"cols": 96, "rows": 36}, "cards": [
+        {"cards": [
           {"card": "rta_bars", "col": 0, "row": 0, "colspan": 48, "rowspan": 36},
           {"card": "meter", "col": 48, "row": 0, "colspan": 24, "rowspan": 18, "group": "g"},
           {"card": "readout", "col": 72, "row": 0, "colspan": 24, "rowspan": 18, "group": "g"},
           {"card": "waveform", "col": 48, "row": 18, "colspan": 48, "rowspan": 18}]}
         """#
 
-    static var layout: SceneLayout? {
+    static func layout(on panel: CellSize) -> SceneLayout? {
         do {
             let document = SceneDocument(
                 id: "preview", name: "Preview", builtIn: false, fixed: false,
                 doc: try JSONDecoder().decode(JSONValue.self, from: Data(doc.utf8)))
-            // The document declares its grid, so no default is used.
-            return try LaidOutScene(document, defaultGrid: .oneCell).layout
+            return try LaidOutScene(document, panel: panel).layout
         } catch {
             return nil
         }

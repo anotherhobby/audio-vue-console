@@ -32,8 +32,14 @@ struct PanelScenesTests {
                 #"{"id": "calibration", "built_in": true, "fixed": true, "doc": {"cards": []}}"#),
             .install: .status(
                 200,
-                #"{"blocks": [{"block": "fonts", "rev": 1, "doc": {"value_px": 90.5}},"#
+                #"{"blocks": [{"block": "viewing", "rev": 1, "doc": {"distance_in": 40.5}},"#
+                    + #"{"block": "display", "rev": 2, "doc": {"saver_after_min": 10}},"#
                     + #"{"block": "input", "rev": 0, "doc": {}}]}"#),
+            .style("default"): .status(
+                200,
+                #"{"id": "default", "name": "Default", "built_in": true, "categories": "#
+                    + #"["backdrop"], "scenes": [], "doc": {"name": "Default", "backdrop": "#
+                    + ##"{"gradient": ["#2a1a6e", "#0e4a6a"], "angle": 120, "blur": 24}}}"##),
             .schema: .status(200, schema),
             .image("sky.png"): .status(200, "PNG", headers: ["Content-Type": "image/png"]),
         ]
@@ -62,8 +68,9 @@ struct PanelScenesTests {
         #expect(scenes.scenes.map(\.id) == ["default"])
         #expect(scenes.facts?.placeable.map(\.name) == ["meter"])
         #expect(scenes.context.display == PixelSize(width: 1920, height: 720))
-        #expect(scenes.context.fonts["value_px"] == .decimal(90.5))
-        #expect(scenes.context.fallback["image"] == .string("sky.png"))
+        #expect(scenes.context.viewing["distance_in"] == .decimal(40.5))
+        #expect(scenes.installed["display"]?["saver_after_min"] == .integer(10))
+        #expect(scenes.defaultBackdrop?["angle"] == .integer(120))
         let paths = await transport.requests.compactMap { $0.url?.path }
         #expect(paths.contains("/v1/images/sky.png"))
     }
@@ -108,7 +115,7 @@ struct PanelScenesTests {
         .status(
             200,
             #"{"id": "u1", "name": "\#(name)", "built_in": false, "rev": \#(rev), "doc": "#
-                + #"{"name": "\#(name)", "grid": {"cols": 64, "rows": 36}, "cards": [{"card": "#
+                + #"{"name": "\#(name)", "cards": [{"card": "#
                 + #""meter", "col": \#(col), "row": 0, "colspan": 8, "rowspan": 8, "peak": "hold"}]}}"#
         )
     }
@@ -138,7 +145,7 @@ struct PanelScenesTests {
         throws -> Draft
     {
         let document = try #require(scenes.scenes.first { $0.id == id })
-        let draft = try drafts.draft(for: document, defaultGrid: CellSize(cols: 64, rows: 36))
+        let draft = try drafts.draft(for: document, panel: CellSize(cols: 64, rows: 36))
         let card = try #require(draft.layout.cards.first)
         drafts.keep(
             draft.content.with(
@@ -170,7 +177,7 @@ struct PanelScenesTests {
         let drafts = SceneDrafts()
         let mine = try #require(scenes.scenes.last)
         let copy = drafts.duplicate(
-            try drafts.draft(for: mine, defaultGrid: CellSize(cols: 64, rows: 36)),
+            try drafts.draft(for: mine, panel: CellSize(cols: 64, rows: 36)),
             among: scenes.scenes)
         let created = #"{"id": "u2", "rev": 1, "applies": "on_reload", "analysis_changed": false}"#
         await transport.answer(.createScene, with: .status(201, created))

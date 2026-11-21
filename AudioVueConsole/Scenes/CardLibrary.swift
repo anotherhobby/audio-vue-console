@@ -9,16 +9,19 @@ struct CardLibrary: View {
     let shelves: [SchemaFacts.Shelf]
     /// The tiles drawn so far, by card name.
     let tiles: [String: LibraryTiles.Tile]
+    /// The scene's backdrop as the helper drew it, which each tile sits on.
+    let backdrop: CGImage?
     /// A card's size on this scene's grid, by name.
     let sizeOf: (String) -> CellSize?
     @State private var search: String
 
     init(
-        shelves: [SchemaFacts.Shelf], tiles: [String: LibraryTiles.Tile], search: String = "",
-        sizeOf: @escaping (String) -> CellSize?
+        shelves: [SchemaFacts.Shelf], tiles: [String: LibraryTiles.Tile],
+        backdrop: CGImage? = nil, search: String = "", sizeOf: @escaping (String) -> CellSize?
     ) {
         self.shelves = shelves
         self.tiles = tiles
+        self.backdrop = backdrop
         self.sizeOf = sizeOf
         _search = State(initialValue: search)
     }
@@ -30,7 +33,9 @@ struct CardLibrary: View {
                     Section {
                         // Each tile carries its own id; a card is on one shelf, so ids stay unique.
                         ForEach(shelf.cards) {
-                            CardTile(card: $0, size: sizeOf($0.name), tile: tiles[$0.name])
+                            CardTile(
+                                card: $0, size: sizeOf($0.name), tile: tiles[$0.name],
+                                backdrop: backdrop)
                         }
                     } header: {
                         VStack(alignment: .leading, spacing: SceneMetrics.stripSpacing) {
@@ -69,6 +74,8 @@ struct CardTile: View {
     let card: SchemaFacts.Card
     let size: CellSize?
     let tile: LibraryTiles.Tile?
+    /// The scene's backdrop, or nil until the helper has drawn it.
+    var backdrop: CGImage?
     @Environment(SceneStore.self) private var store
 
     var body: some View {
@@ -77,9 +84,8 @@ struct CardTile: View {
                 .padding(SceneMetrics.tilePadding)
                 .frame(maxWidth: .infinity)
                 .frame(height: SceneMetrics.cardPreviewHeight)
-                .background(
-                    CanvasMetrics.backdrop,
-                    in: RoundedRectangle(cornerRadius: SceneMetrics.tileCornerRadius))
+                .background { SceneBackdrop(image: backdrop) }
+                .clipShape(RoundedRectangle(cornerRadius: SceneMetrics.tileCornerRadius))
             HStack {
                 Text(Self.title(card.name))
                 Spacer()
@@ -104,7 +110,9 @@ struct CardTile: View {
 
     @ViewBuilder private var preview: some View {
         if let tile {
-            Image(decorative: tile.image, scale: 1)
+            // Over the scene's backdrop the plate is shown alone, its corners clear; stacked on
+            // its own square patch of the backdrop it showed that patch's corners.
+            Image(decorative: backdrop == nil ? tile.image : tile.layer.image, scale: 1)
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
@@ -216,5 +224,22 @@ private enum PreviewLayer {
         context.fill(rect)
         guard let image = context.makeImage() else { return nil }
         return RenderedLayer(kind: kind, cardIDs: [], rect: rect, unfit: unfit, image: image)
+    }
+}
+
+/// What a scene's cards sit on wherever the app shows them: the scene's backdrop as the helper
+/// drew it, filling the space, or the stand-in gradient until it has.
+struct SceneBackdrop: View {
+    let image: CGImage?
+
+    var body: some View {
+        if let image {
+            Color.clear.overlay {
+                Image(decorative: image, scale: 1).resizable().scaledToFill()
+            }
+            .clipped()
+        } else {
+            CanvasMetrics.backdrop
+        }
     }
 }

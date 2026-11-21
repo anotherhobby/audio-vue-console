@@ -13,8 +13,18 @@ struct PanelStateTests {
            "capture": {"open": true, "live": true, "device": "m2x4HD", "rate_hz": 96000},
            "analysis": {"p50_ms": 0.6, "p99_ms": 0.9, "max_ms": 1.4, "budget_ms": 5.3},
            "calibration": {"status": "calibrated", "age_days": 12.4},
-           "display": {"stage": "scene", "width_px": 1920, "height_px": 1080}}}
+           "display": {"stage": "scene", "width_px": 1920, "height_px": 1080,
+                       "grid": {"cols": 64, "rows": 36}}}}
         """#
+
+    /// `scene-layout`, "A scene is laid out on the panel's grid": the grid is the state's, and
+    /// there is none before the panel has a display.
+    @Test func theDisplaysGrid() throws {
+        #expect(try PanelState(json: Data(Self.up.utf8)).grid == CellSize(cols: 64, rows: 36))
+        let dark = Self.up.replacingOccurrences(
+            of: #""grid": {"cols": 64, "rows": 36}}}}"#, with: #""grid": null}}}"#)
+        #expect(try PanelState(json: Data(dark.utf8)).grid == nil)
+    }
 
     @Test func aWholeState() throws {
         let state = try PanelState(json: Data(Self.up.utf8))
@@ -66,6 +76,18 @@ struct PanelStateTests {
         #expect(state.calibrationNoiseFloorDBFS == nil)
         #expect(state.calibrationLifecycle == nil)
         #expect(try PanelState(json: Data(#"{"condition": "up", "sections": {}}"#.utf8)) == state)
+    }
+
+    @Test func aPanelWaitingOnItsCaptureSaysWhy() throws {
+        let sentence = "hw:CARD=CODEC,DEV=0 streams 2 channels; cannot take pair (2, 3)"
+        let waiting =
+            #"{"condition": "up", "sections": {"run": {"phase": "waiting", "#
+            + #""screen_status": "\#(sentence)"}}}"#
+        #expect(try PanelState(json: Data(waiting.utf8)).captureWaiting == sentence)
+        let drawing =
+            #"{"condition": "up", "sections": {"run": {"phase": "drawing", "#
+            + #""screen_status": "x"}}}"#
+        #expect(try PanelState(json: Data(drawing.utf8)).captureWaiting == nil)
     }
 
     @Test func aFailedSectionGivesItsReason() throws {

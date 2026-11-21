@@ -35,8 +35,10 @@ public final class PanelInput {
     public private(set) var device: String?
     /// The installed capture rate: the block's, else the schema's default. Nil until read.
     public private(set) var rate: Int?
-    /// The host's capture devices, as ALSA names them.
-    public private(set) var devices: [String] = []
+    /// The host's capture devices, each with how it streams where the host can read that.
+    public private(set) var devices: [CaptureDevice] = []
+    /// The installed channel pair: the block's, else the schema's default.
+    public private(set) var pair = InputChoice.firstPair
     /// Why the host lists no device, where it lists none.
     public private(set) var devicesReason: String?
     /// The rates the host's schema declares for the input, lowest first, or nil where it declares
@@ -55,6 +57,7 @@ public final class PanelInput {
     public private(set) var isWriting = false
 
     private var block = InstallBlockState(doc: [:], rev: 0)
+    private var defaultPair = InputChoice.firstPair
     private let address: HostAddress
     private let client: HostClient
     private let pairing: Pairing
@@ -75,37 +78,71 @@ public final class PanelInput {
 
     /// Whether the installed device is one the host lists; the default device always is.
     public var isDeviceAttached: Bool {
-        device.map(devices.contains) ?? true
+        device.map { name in devices.contains { $0.name == name } } ?? true
     }
 
-    /// Whether the host offers the installed rate. Where the schema declares no rates, the
-    /// installed rate is the only choice and counts as offered (design D1).
+    /// The host's listing of `name`, or nil for the default device or one not attached.
+    public func listed(_ name: String?) -> CaptureDevice? {
+        devices.first { $0.name == name }
+    }
+
+    /// The installed input, or nil until it is read.
+    public var installed: InputChoice? {
+        rate.map { InputChoice(device: device, rate: $0, format: format, pair: pair) }
+    }
+
+    /// The most channels the installed device streams in the installed format at the installed
+    /// rate, or nil where the host does not say: a pair is offered over more than two.
+    public var channels: Int? {
+        rate.flatMap { listed(device)?.channels(format: format, rate: $0) }
+    }
+
+    /// `choice` as its device can stream it, among the formats and rates the schema declares
+    /// (`InputChoice.fitted`), so no input the panel cannot open is written.
+    public func fitted(_ choice: InputChoice) -> InputChoice {
+        choice.fitted(to: listed(choice.device), formats: formats ?? [], rates: rates ?? [])
+    }
+
+    /// The schema's rates the installed device takes in the installed format, or all of them
+    /// where the host does not say how it streams.
+    private var offeredRates: [Int]? {
+        rates.map { listed(device)?.rates(among: $0, format: format) ?? $0 }
+    }
+
+    /// The schema's formats the installed device streams, or all of them where the host does not
+    /// say how it streams.
+    private var offeredFormats: [String]? {
+        formats.map { listed(device)?.formats(among: $0) ?? $0 }
+    }
+
+    /// Whether the host offers the installed rate on the installed device. Where the schema
+    /// declares no rates, the installed rate is the only choice and counts as offered (design D1).
     public var isRateOffered: Bool {
-        guard let rate, let rates else { return true }
-        return rates.contains(rate)
+        guard let rate, let offeredRates else { return true }
+        return offeredRates.contains(rate)
     }
 
-    /// The rates to choose from, lowest first: the schema's, with the installed rate shown as it
-    /// is where the schema does not declare it.
+    /// The rates to choose from, lowest first: the schema's that the device takes, with the
+    /// installed rate shown as it is where it is not among them.
     public var rateChoices: [Int] {
-        let declared = rates ?? []
-        guard let rate, !declared.contains(rate) else { return declared }
-        return (declared + [rate]).sorted()
+        let offered = offeredRates ?? []
+        guard let rate, !offered.contains(rate) else { return offered }
+        return (offered + [rate]).sorted()
     }
 
-    /// Whether the host offers the installed format. Where the schema declares no formats, the
-    /// installed format is the only choice and counts as offered.
+    /// Whether the host offers the installed format on the installed device. Where the schema
+    /// declares no formats, the installed format is the only choice and counts as offered.
     public var isFormatOffered: Bool {
-        guard let format, let formats else { return true }
-        return formats.contains(format)
+        guard let format, let offeredFormats else { return true }
+        return offeredFormats.contains(format)
     }
 
-    /// The formats to choose from: the schema's, in its order, with the installed format shown as
-    /// it is where the schema does not declare it.
+    /// The formats to choose from: the schema's that the device streams, in its order, with the
+    /// installed format shown as it is where it is not among them.
     public var formatChoices: [String] {
-        let declared = formats ?? []
-        guard let format, !declared.contains(format) else { return declared }
-        return declared + [format]
+        let offered = offeredFormats ?? []
+        guard let format, !offered.contains(format) else { return offered }
+        return offered + [format]
     }
 
     /// Reads the `input` block with its revision, the schema's rates and the host's devices.
@@ -127,34 +164,35 @@ public final class PanelInput {
         await readCalibrations()
     }
 
-    /// Writes `device`, `rate` and `format` into the block on the revision read, keeping its other
-    /// keys. Returns whether the host holds them afterwards: stored, or found stored when an
-    /// unanswered write reads the block again (`mac-output` design D1).
+    /// Writes `choice` into the block on the revision read, keeping its other keys. Returns
+    /// whether the host holds it afterwards: stored, or found stored when an unanswered write
+    /// reads the block again (`mac-output` design D1).
     @discardableResult
-    public func write(device: String?, rate: Int, format: String?) async -> Bool {
-        let doc = InputEdit.doc(block: block.doc, device: device, rate: rate, format: format)
+    public func write(_ choice: InputChoice) async -> Bool {
+        let doc = InputEdit.doc(block: block.doc, choice: choice, defaultPair: defaultPair)
         isWriting = true
         defer { isWriting = false }
         do {
             let written = try await client.writeInstall(
                 doc, block: "input", base: block.rev, at: address, token: pairing.token)
             block = InstallBlockState(doc: doc, rev: written.rev)
-            self.device = device
-            self.rate = rate
-            self.format = format ?? self.format
+            device = choice.device
+            rate = choice.rate
+            format = choice.format ?? format
+            pair = choice.pair
             note = .written(calibration: written.calibration)
         } catch {
             await refused(error)
-            return error == .unreachable && holds(device: device, rate: rate, format: format)
+            return error == .unreachable && holds(choice)
         }
         await readCalibrations()
         return true
     }
 
-    /// Whether the block as last read holds `device`, `rate` and `format`, a nil format matching
-    /// any.
-    private func holds(device: String?, rate: Int, format: String?) -> Bool {
-        self.device == device && self.rate == rate && (format == nil || self.format == format)
+    /// Whether the block as last read holds `choice`, a nil format matching any.
+    private func holds(_ choice: InputChoice) -> Bool {
+        device == choice.device && rate == choice.rate && pair == choice.pair
+            && (choice.format == nil || format == choice.format)
     }
 
     /// Reads which rates hold a calibration for the installed device, leaving every rate unmarked
@@ -196,6 +234,9 @@ public final class PanelInput {
             note = .changedElsewhere
         case .conflict(let words):
             note = .refused(words)
+        case .invalid(let failures):
+            // The host's own sentences, such as the pair a device cannot stream.
+            note = .refused(failures.map(\.message).joined(separator: "; "))
         case .unreachable:
             await load()
             note = .unanswered
@@ -211,6 +252,8 @@ public final class PanelInput {
         rates = SchemaFacts.inputRates(schema)
         format = input.doc["fmt"]?.stringValue ?? SchemaFacts.inputFormatDefault(schema)
         formats = SchemaFacts.inputFormats(schema)
+        defaultPair = SchemaFacts.inputPairDefault(schema) ?? InputChoice.firstPair
+        pair = input.doc["pair"]?.arrayValue.map { $0.compactMap(\.intValue) } ?? defaultPair
     }
 
     private func fail(_ failure: HostFailure) {

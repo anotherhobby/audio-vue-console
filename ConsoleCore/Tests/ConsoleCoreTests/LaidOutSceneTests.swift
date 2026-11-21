@@ -13,18 +13,49 @@ struct LaidOutSceneTests {
             doc: try JSONDecoder().decode(JSONValue.self, from: Data(doc.utf8)))
     }
 
-    @Test func anUnsetSpanCoversTheGrid() throws {
-        let laid = try LaidOutScene(
-            Self.scene(#"{"grid": {"cols": 96, "rows": 36}, "cards": [{"card": "logo"}]}"#),
-            defaultGrid: Self.defaults)
-        #expect(laid.layout.grid == CellSize(cols: 96, rows: 36))
+    /// `scene-layout`, "An unset span covers the grid" and "A scene is laid out on the panel's
+    /// grid".
+    @Test func anUnsetSpanCoversThePanelsGrid() throws {
+        let wide = CellSize(cols: 96, rows: 36)
+        let laid = try LaidOutScene(Self.scene(#"{"cards": [{"card": "logo"}]}"#), panel: wide)
+        #expect(laid.layout.grid == wide)
         #expect(laid.layout.cards.first?.cells == CellRect(col: 0, row: 0, cols: 96, rows: 36))
     }
 
-    @Test func anUnsetGridTakesTheDefaults() throws {
+    /// `scene-layout`, "A scene too wide for the panel is laid out on its reach".
+    @Test func aSceneTooWideIsLaidOutOnItsReach() throws {
+        let laid = try LaidOutScene(
+            Self.scene(#"{"cards": [{"card": "meter", "col": 80, "colspan": 16, "rowspan": 8}]}"#),
+            panel: Self.defaults)
+        #expect(laid.layout.grid == CellSize(cols: 96, rows: 36))
+        #expect(laid.isTooWide(laid.content))
+        let card = try #require(laid.layout.cards.first)
+        let moved = try laid.layout.moving([card.id], by: CellOffset(cols: -32, rows: 0))
+        #expect(!laid.isTooWide(laid.content.with(layout: moved)))
+        #expect(moved.grid.cols == 96)
+    }
+
+    /// `scene-saving`, "An unset span is kept until its card is resized".
+    @Test func anUnsetSpanIsKeptUntilItsCardIsResized() throws {
+        let laid = try LaidOutScene(
+            Self.scene(#"{"name": "S", "cards": [{"card": "rta_bars"}]}"#), panel: Self.defaults)
+        let untouched = try #require(laid.doc(for: laid.content)["cards"]?.arrayValue?.first)
+        #expect(untouched["colspan"] == nil && untouched["rowspan"] == nil)
+        let half = try SceneLayout(
+            grid: Self.defaults,
+            cards: laid.layout.cards.map {
+                LayoutCard(
+                    id: $0.id, kind: $0.kind,
+                    cells: CellRect(col: 0, row: 0, cols: 32, rows: 36))
+            })
+        let resized = try #require(laid.doc(for: half)["cards"]?.arrayValue?.first)
+        #expect(resized["colspan"] == .integer(32) && resized["rowspan"] == nil)
+    }
+
+    @Test func aSceneThatFitsIsOnThePanelsGrid() throws {
         let laid = try LaidOutScene(
             Self.scene(#"{"cards": [{"card": "meter", "col": 4, "colspan": 8}]}"#),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         #expect(laid.layout.grid == Self.defaults)
         #expect(laid.layout.cards.first?.cells == CellRect(col: 4, row: 0, cols: 8, rows: 36))
     }
@@ -34,7 +65,7 @@ struct LaidOutSceneTests {
             Self.scene(
                 #"{"name": "S", "cards": [{"card": "meter", "col": 0, "row": 0, "colspan": 8, "#
                     + ##""rowspan": 6, "plate": "#123456", "params": {"floor_db": -60.5}}]}"##),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         let id = try #require(laid.layout.cards.first?.id)
         let moved = try laid.layout.moving([id], by: CellOffset(cols: 3, rows: 1))
         let entry = try #require(laid.doc(for: moved)["cards"]?.arrayValue?.first)
@@ -46,7 +77,7 @@ struct LaidOutSceneTests {
     }
 
     @Test func aNewCardHoldsOnlyItsCells() throws {
-        let laid = try LaidOutScene(Self.scene(#"{"cards": []}"#), defaultGrid: Self.defaults)
+        let laid = try LaidOutScene(Self.scene(#"{"cards": []}"#), panel: Self.defaults)
         let added = try laid.layout.adding(
             kind: "waveform", size: CellSize(cols: 17, rows: 10), centredOn: Cell(col: 20, row: 10))
         let entry = try #require(laid.doc(for: added)["cards"]?.arrayValue?.first)
@@ -63,7 +94,7 @@ struct LaidOutSceneTests {
             Self.scene(
                 #"{"cards": [{"card": "a", "col": 0, "row": 0, "colspan": 4, "rowspan": 4},"#
                     + #"{"card": "b", "col": 4, "row": 0, "colspan": 4, "rowspan": 4}]}"#),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         let grouped = try laid.layout.grouping(Set(laid.layout.cards.map(\.id)))
         let entries = try #require(laid.doc(for: grouped)["cards"]?.arrayValue)
         #expect(entries.map { $0["group"] } == [.string("group-1"), .string("group-1")])
@@ -80,15 +111,15 @@ struct LaidOutSceneTests {
             .appending(path: "Fixtures/rta-scene.json")
         let doc = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: file))
         let document = SceneDocument(id: "rta", name: "RTA", builtIn: false, fixed: false, doc: doc)
-        return try LaidOutScene(document, defaultGrid: defaults)
+        return try LaidOutScene(document, panel: defaults)
     }
 
     @Test func aCardReadsItsParamsAsSettings() throws {
         let card = try #require(Self.rta().layout.cards.first)
         #expect(card.kind == "rta_bars")
-        #expect(card.settings.count == 6)
+        #expect(card.settings.count == 7)
         #expect(card.settings["floor_db"] == .integer(-80))
-        #expect(card.settings["major_color"] == .string("#2a3550"))
+        #expect(card.settings["grid_major_color"] == .string("#2a3550"))
     }
 
     @Test func anUnchangedLayoutWritesTheDocumentAsRead() throws {
@@ -114,18 +145,32 @@ struct LaidOutSceneTests {
         #expect(doc["cards"] == laid.document.doc["cards"])
     }
 
-    @Test func aSceneWithNoGridIsWrittenWithNoneUntilItsGridChanges() throws {
+    /// `scene-saving`, "A saved scene declares no grid size": a scene stored with one is unsaved
+    /// as opened, and is written without it, its gap kept.
+    @Test func aStoredGridSizeIsDroppedAndTheSceneIsUnsaved() throws {
+        let doc =
+            #"{"name": "S", "grid": {"cols": 96, "rows": 36, "gap": 8}, "cards": ["#
+            + #"{"card": "meter", "colspan": 8}]}"#
+        let laid = try LaidOutScene(Self.scene(doc), panel: Self.defaults)
+        #expect(laid.declaresGridSize && Draft(laid).isUnsaved)
+        #expect(laid.doc(for: laid.content)["grid"] == .object(["gap": .integer(8)]))
+        let sized = try LaidOutScene(
+            Self.scene(#"{"grid": {"cols": 96, "rows": 36}, "cards": []}"#), panel: Self.defaults)
+        #expect(sized.doc(for: sized.content)["grid"] == nil)
+        let clean = try LaidOutScene(
+            Self.scene(#"{"grid": {"gap": 8}, "cards": []}"#), panel: Self.defaults)
+        #expect(!clean.declaresGridSize && !Draft(clean).isUnsaved)
+    }
+
+    /// `scene-saving`, "A saved scene declares no grid size".
+    @Test func noGridSizeIsWritten() throws {
         let laid = try LaidOutScene(
             Self.scene(#"{"name": "S", "cards": [{"card": "meter", "colspan": 8}]}"#),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         #expect(laid.doc(for: laid.content)["grid"] == nil)
         var gapped = laid.content
         gapped.blocks["grid"] = JSONValue.object(["gap": .decimal(0.5)])
         #expect(laid.doc(for: gapped)["grid"] == .object(["gap": .decimal(0.5)]))
-        let finer = try SceneLayout(grid: CellSize(cols: 96, rows: 54), cards: [])
-        #expect(
-            laid.doc(for: gapped.with(layout: finer))["grid"]
-                == .object(["gap": .decimal(0.5), "cols": .integer(96), "rows": .integer(54)]))
     }
 
     @Test func aChangedSettingIsWrittenBesideThePlateAndAlternate() throws {
@@ -133,7 +178,7 @@ struct LaidOutSceneTests {
             Self.scene(
                 ##"{"cards": [{"card": "meter", "colspan": 8, "rowspan": 6, "plate": "#123456", "##
                     + #""alternate": {"card": "logo"}, "params": {"floor_db": -60}}]}"#),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         let id = try #require(laid.layout.cards.first?.id)
         let changed = laid.layout.setting("floor_db", to: .integer(-80), on: [id])
         let entry = try #require(laid.doc(for: changed)["cards"]?.arrayValue?.first)
@@ -145,7 +190,7 @@ struct LaidOutSceneTests {
     @Test func emptyingACardsSettingsDropsItsParams() throws {
         let laid = try LaidOutScene(
             Self.scene(#"{"cards": [{"card": "meter", "params": {"floor_db": -60}}]}"#),
-            defaultGrid: Self.defaults)
+            panel: Self.defaults)
         let id = try #require(laid.layout.cards.first?.id)
         let emptied = laid.layout.unsetting("floor_db", on: [id])
         let entry = try #require(laid.doc(for: emptied)["cards"]?.arrayValue?.first)
@@ -165,13 +210,13 @@ struct LaidOutSceneTests {
         #expect(throws: LayoutRefusal.unreadableCard) {
             try LaidOutScene(
                 Self.scene(#"{"cards": [{"card": "meter", "params": [1]}]}"#),
-                defaultGrid: Self.defaults)
+                panel: Self.defaults)
         }
     }
 
     @Test func aCardWithNoName() throws {
         #expect(throws: LayoutRefusal.unreadableCard) {
-            try LaidOutScene(Self.scene(#"{"cards": [{"col": 0}]}"#), defaultGrid: Self.defaults)
+            try LaidOutScene(Self.scene(#"{"cards": [{"col": 0}]}"#), panel: Self.defaults)
         }
     }
 }

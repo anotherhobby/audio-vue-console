@@ -1,28 +1,24 @@
 import ConsoleCore
 import SwiftUI
 
-/// The scene's own settings, shown whenever no card is selected: its name and where it is kept,
-/// then tabs over the blocks the host's schema declares, so no tab is a long list
-/// (`scene-settings`, design D2). The tab chosen is kept for the next scene.
+/// The scene's own settings, shown whenever no card is selected: tabs over the blocks the host's
+/// schema declares, so no tab is a long list (`scene-settings`, design D2). The tab chosen is
+/// kept for the next scene.
 struct SceneSettingsPanel: View {
     let document: SceneDocument
     let editor: SceneEditor?
     let scenes: PanelScenes
     let input: PanelInput?
-    @AppStorage("sceneSettingsTab") private var chosenTab = SceneSettingsTab.look.rawValue
+    @AppStorage("sceneSettingsTab") private var chosenTab = SceneSettingsTab.scene.rawValue
 
     var body: some View {
         Form {
-            Section(document.name ?? document.id) {
-                LabeledContent("Kept", value: kept)
-            }
             if let editor, let facts = scenes.facts {
-                Section {
-                    Picker("Settings", selection: tab(in: facts)) {
-                        ForEach(facts.settingsTabs) { Text($0.label).tag($0) }
+                let own = facts.sceneSettings(on: shownTab(in: facts))
+                if !own.isEmpty {
+                    Section {
+                        ForEach(own) { SceneSettingRow(declaration: $0, editor: editor) }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
                 ForEach(facts.blocks(on: shownTab(in: facts))) { block in
                     BlockSection(
@@ -32,18 +28,28 @@ struct SceneSettingsPanel: View {
             }
         }
         .formStyle(.grouped)
-    }
-
-    private var kept: String {
-        if SceneDrafts.isCopy(document.id) { return "In this app until saved" }
-        return document.builtIn ? "Built in" : "On the panel"
+        // A tab's settings start at their top, whatever the last tab was scrolled to.
+        .id(chosenTab)
+        // The tabs stay above the settings, which scroll under them (maintainer, 2026-11-20).
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if editor != nil, let facts = scenes.facts {
+                Picker("Settings", selection: tab(in: facts)) {
+                    ForEach(facts.settingsTabs) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(SceneMetrics.stripPadding)
+                .frame(maxWidth: .infinity)
+                .background(.bar)
+            }
+        }
     }
 
     /// The tab chosen, or the first where the chosen one has nothing to show.
     private func shownTab(in facts: SchemaFacts) -> SceneSettingsTab {
         let tabs = facts.settingsTabs
         return SceneSettingsTab(rawValue: chosenTab).flatMap { tabs.contains($0) ? $0 : nil }
-            ?? tabs.first ?? .look
+            ?? tabs.first ?? .scene
     }
 
     private func tab(in facts: SchemaFacts) -> Binding<SceneSettingsTab> {
@@ -57,8 +63,8 @@ struct SceneSettingsPanel: View {
     }
 }
 
-/// One scene block's section: the backdrop, the grid, the palette and the elements with views of
-/// their own, and any other block's settings in declared order.
+/// One scene block's section: the backdrop, the grid and the colours with views of their own,
+/// and any other block's settings in declared order.
 struct BlockSection: View {
     let block: SchemaFacts.Block
     let editor: SceneEditor
@@ -71,7 +77,7 @@ struct BlockSection: View {
             content
         } header: {
             VStack(alignment: .leading, spacing: SceneMetrics.settingSpacing) {
-                Text(Self.title(block.name))
+                Text(Self.titles[block.name] ?? Self.title(block.name))
                 if let description = Self.descriptions[block.name] {
                     Text(description).font(.caption).foregroundStyle(.secondary)
                 }
@@ -80,16 +86,15 @@ struct BlockSection: View {
     }
 
     @ViewBuilder private var content: some View {
+        ForEach(scenes.facts?.sceneSettings(with: block.name) ?? []) {
+            SceneSettingRow(declaration: $0, editor: editor)
+        }
         switch block.name {
         case "backdrop":
             BackdropEditor(
                 settings: block.settings, editor: editor, colours: colours, scenes: scenes)
-        case "grid":
-            GridEditor(settings: block.settings, editor: editor, colours: colours)
-        case "palette":
-            PaletteGrid(settings: block.settings, editor: editor, colours: colours)
-        case "elements":
-            ElementFamilies(settings: block.settings, editor: editor, colours: colours)
+        case SceneColours.block:
+            ColourGroups(settings: block.settings, editor: editor, colours: colours)
         default:
             if block.name == "analysis", let calibrationNote {
                 Label(calibrationNote, systemImage: "exclamationmark.triangle.fill")
@@ -97,17 +102,27 @@ struct BlockSection: View {
             }
             ForEach(block.settings.settings) {
                 BlockSettingRow(
-                    block: block.name, declaration: $0, editor: editor, colours: colours)
+                    block: block.name, declaration: $0, editor: editor, installed: installed($0))
             }
         }
     }
 
-    /// What the two colour sections are, said under their titles, since their names overlap: the
-    /// palette's Shadow is a colour, the elements' Shadow says which colour shadows are drawn in.
+    /// What the scene takes for `declaration` while it leaves it unset, where the setting
+    /// declares its source, as its display timeouts take the panel's.
+    private func installed(_ declaration: SettingDeclaration) -> JSONValue? {
+        scenes.facts?.inheritedValue(
+            of: declaration, scene: editor.content.blocks, installed: scenes.installed)
+    }
+
+    /// What a section is, said under its title.
     private static let descriptions = [
-        "palette": "The scene's colours. Hover over one for what it is used for.",
-        "elements": "Which palette colour each part of a card is drawn in.",
+        "colors": "What each part of a card is drawn in. Hover over one for what it is.",
+        "type": "The typeface, and the size of each kind of text.",
     ]
+
+    /// The titles of the blocks whose names do not read as one: `glass` is the plates under the
+    /// cards.
+    private static let titles = ["colors": "Colours", "type": "Text", "glass": "Cards"]
 
     /// A block's section title from its name, since a block declares no label.
     static func title(_ name: String) -> String {
@@ -116,27 +131,24 @@ struct BlockSection: View {
 }
 
 /// One setting of a scene block, read from the scene as edited and changed as one step of the
-/// editor's (design D2). An element's choices are shown as the swatches they name, each in its
-/// colour in this scene (design D8).
+/// editor's (design D2).
 struct BlockSettingRow: View {
     let block: String
     let declaration: SettingDeclaration
     let editor: SceneEditor
-    let colours: SceneColours
+    /// What the panel holds for the setting, which the scene takes while it leaves it unset.
+    var installed: JSONValue?
 
     var body: some View {
-        let value = declaration.value(in: editor.content.blocks[block])
+        let own = declaration.value(in: editor.content.blocks[block])
+        let taken = own.isSet ? nil : installed
+        let value = taken.map { SettingValue.same($0, isSet: false) } ?? own
         SettingRow(
             declaration: declaration, value: value, note: note(value), edit: edit,
-            choiceLabel: choiceLabel)
-    }
-
-    private static let elements = "elements"
-
-    /// An element's choices as their swatches; any other block's choices as they are.
-    private var choiceLabel: ((JSONValue) -> ChoiceLabel)? {
-        guard block == Self.elements else { return nil }
-        return { swatch($0) }
+            fromScene: FromScene(
+                value: taken,
+                owner: declaration.inherits?.document == SettingDeclaration.Source.scene
+                    ? "scene" : "panel"))
     }
 
     private func note(_ value: SettingValue) -> SettingNote? {
@@ -151,44 +163,27 @@ struct BlockSettingRow: View {
             set: { [editor] in editor.setBlock(block, key, to: $0, label: label) },
             useDefault: { [editor] in editor.useDefault(block: block, key: key, label: label) })
     }
-
-    private func swatch(_ choice: JSONValue) -> ChoiceLabel {
-        let name = choice.stringValue ?? choice.text
-        return ChoiceLabel(
-            text: colours.swatch(name)?.label ?? name,
-            colour: colours.colour(ofSwatch: name, in: editor.content.blocks))
-    }
 }
 
-/// The grid's density, its columns and rows changed together at the scene's aspect, and its other
-/// settings, such as the gap (design D5).
-struct GridEditor: View {
-    let settings: SettingGroup
+/// One of the scene's own settings, held outside any block, such as its typeface: read from the
+/// scene as edited and changed as one step of the editor's.
+struct SceneSettingRow: View {
+    let declaration: SettingDeclaration
     let editor: SceneEditor
-    let colours: SceneColours
 
     var body: some View {
-        let grid = editor.layout.grid
-        let choices = GridDensity.choices(for: grid)
-        let index = choices.firstIndex(of: grid) ?? 0
-        LabeledContent("Density") {
-            Stepper {
-                Text(verbatim: "\(grid.cols) × \(grid.rows) cells")
-            } onIncrement: {
-                if index + 1 < choices.count { editor.setDensity(choices[index + 1]) }
-            } onDecrement: {
-                if index > 0 { editor.setDensity(choices[index - 1]) }
-            }
-        }
-        .disabled(editor.readOnly != nil)
-        if case .tooSmall? = editor.refusal, let refusal = editor.refusal {
-            Text(refusal.description).font(.callout).foregroundStyle(.orange)
-        }
-        ForEach(settings.settings.filter { !Self.cellCounts.contains($0.key) }) {
-            BlockSettingRow(block: "grid", declaration: $0, editor: editor, colours: colours)
-        }
+        let own = editor.content.blocks[declaration.key]
+        SettingRow(
+            declaration: declaration,
+            value: .same(own ?? declaration.defaultValue, isSet: own != nil), note: nil,
+            edit: edit)
     }
 
-    /// The grid's settings density sets, never shown on their own.
-    private static let cellCounts: Set<String> = ["cols", "rows"]
+    private var edit: SettingEdit? {
+        guard editor.readOnly == nil else { return nil }
+        let (key, label) = (declaration.key, declaration.label)
+        return SettingEdit(
+            set: { [editor] in editor.setScene(key, to: $0, label: label) },
+            useDefault: { [editor] in editor.useDefault(scene: key, label: label) })
+    }
 }

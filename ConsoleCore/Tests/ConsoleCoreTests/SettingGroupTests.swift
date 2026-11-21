@@ -17,10 +17,11 @@ struct SettingGroupTests {
         try facts().settings
     }
 
-    @Test func aColourIsSharedOnlyWhereItOverridesTheSameElement() throws {
+    @Test func aColourOfTheSameNameIsSharedSinceItTakesTheSameRole() throws {
         let shared = try Self.shared("rta_bars", "loudness_scope")
-        #expect(shared.contains("minor_color"))
-        #expect(!shared.contains("major_color"))
+        #expect(shared.contains("grid_minor_color"))
+        #expect(!shared.contains("grid_major_color"))
+        #expect(!shared.contains("band1_color"))
     }
 
     // MARK: Settings with no effect (`scene-settings`, design D9)
@@ -72,11 +73,13 @@ struct SettingGroupTests {
         }
         let gridOff = [card(["major_grid": .bool(false)])]
         #expect(
-            SettingGroup.unusedReason(of: "major_color", across: gridOff, declaredBy: groups) == nil
+            SettingGroup.unusedReason(of: "grid_major_color", across: gridOff, declaredBy: groups)
+                == nil
         )
         let bothOff = [card(["major_grid": .bool(false), "show_labels": .bool(false)])]
         #expect(
-            SettingGroup.unusedReason(of: "major_color", across: bothOff, declaredBy: groups) != nil
+            SettingGroup.unusedReason(of: "grid_major_color", across: bothOff, declaredBy: groups)
+                != nil
         )
     }
 
@@ -110,8 +113,12 @@ struct SettingGroupTests {
 
     // MARK: Shared settings (design D3)
 
-    @Test func aGaugeAndAPeakMeterShareTheirReadoutAndScale() throws {
-        #expect(try Self.shared("dynamics_gauge", "peak_rms") == ["show_readout", "show_scale"])
+    @Test func aGaugeAndAPeakMeterShareTheirReadoutScaleAndTheColoursBothDraw() throws {
+        #expect(
+            try Self.shared("dynamics_gauge", "peak_rms") == [
+                "show_readout", "show_scale", "tick_color", "scale_color", "unit_color",
+                "notice_color",
+            ])
     }
 
     @Test func sharedSettingsAreLabelledByTheFirstCard() throws {
@@ -129,7 +136,7 @@ struct SettingGroupTests {
     }
 
     @Test func cardsOfOneKindShareEverySetting() throws {
-        #expect(try Self.shared("peak_rms", "peak_rms_vertical").count == 7)
+        #expect(try Self.shared("peak_rms", "peak_rms_vertical").count == 15)
     }
 
     @Test func nothingSelectedSharesNothing() {
@@ -158,10 +165,10 @@ struct SettingGroupTests {
         #expect(unset == .same(.decimal(1.5), isSet: false))
     }
 
-    @Test func anUnsetPaletteColourHasNoValue() throws {
+    @Test func anUnsetCardColourHasNoValue() throws {
         let bars = LayoutCard(kind: "rta_bars", cells: rect(0, 0, 4, 4))
         let value = SettingGroup.value(
-            of: "major_color", across: [bars], declaredBy: try Self.groups())
+            of: "grid_major_color", across: [bars], declaredBy: try Self.groups())
         #expect(value == .same(nil, isSet: false))
     }
 

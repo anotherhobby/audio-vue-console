@@ -33,6 +33,7 @@ actor FakeTransport: ClientTransport {
         static func revoke(_ id: String) -> Route { Route("DELETE", "/v1/clients/\(id)") }
         static let scenes = Route("GET", "/v1/scenes")
         static func scene(_ id: String) -> Route { Route("GET", "/v1/scenes/\(id)") }
+        static func style(_ id: String) -> Route { Route("GET", "/v1/styles/\(id)") }
         static let createScene = Route("POST", "/v1/scenes")
         static func writeScene(_ id: String) -> Route { Route("PUT", "/v1/scenes/\(id)") }
         static func deleteScene(_ id: String) -> Route { Route("DELETE", "/v1/scenes/\(id)") }

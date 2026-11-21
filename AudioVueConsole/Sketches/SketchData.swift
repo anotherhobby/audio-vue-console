@@ -29,5 +29,4 @@ struct SketchPanel: Decodable, Identifiable, Hashable {
     let scene: String
 
     var isUp: Bool { condition == "up" }
-    var shapeName: String { DisplayShape(width: widthPx, height: heightPx).description }
 }

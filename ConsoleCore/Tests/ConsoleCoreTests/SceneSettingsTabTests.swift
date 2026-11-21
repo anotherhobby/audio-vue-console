@@ -25,12 +25,16 @@ struct SceneSettingsTabTests {
         return try #require(SchemaFacts(schema: schema))
     }
 
-    @Test func theKnownBlocksFillFourTabs() throws {
+    @Test func theKnownBlocksFillThreeTabs() throws {
         let facts = try Self.facts()
-        #expect(facts.settingsTabs == [.look, .colours, .analysis, .grid])
-        #expect(facts.blocks(on: .look).map(\.name) == ["backdrop", "glass", "type"])
-        #expect(facts.blocks(on: .colours).map(\.name) == ["palette", "elements"])
-        #expect(facts.blocks(on: .analysis).map(\.name) == ["analysis", "display"])
+        #expect(facts.settingsTabs == [.scene, .style, .analysis])
+        #expect(
+            facts.blocks(on: .scene).map(\.name) == ["backdrop", "glass", "grid", "display"])
+        #expect(facts.blocks(on: .style).map(\.name) == ["colors", "type"])
+        #expect(facts.blocks(on: .analysis).map(\.name) == ["analysis"])
+        #expect(facts.sceneSettings(with: "type").map(\.key) == ["typeface"])
+        #expect(facts.sceneSettings(with: "colors").isEmpty)
+        #expect(facts.sceneSettings(on: .style).isEmpty && facts.sceneSettings(on: .other).isEmpty)
     }
 
     @Test func anUnknownBlockHasAnOtherTab() throws {

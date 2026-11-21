@@ -10,7 +10,6 @@ struct SketchDisplayPage: View {
         Form {
             Section("Screen") {
                 LabeledContent("Size", value: "\(panel.widthPx) × \(panel.heightPx)")
-                LabeledContent("Shape", value: panel.shapeName)
             }
             Section("When idle") {
                 Picker("Screen saver", selection: $saver) {

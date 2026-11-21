@@ -26,6 +26,8 @@ enum SceneMetrics {
     /// The space between a setting's control, help and footer in the inspector.
     static let settingSpacing: CGFloat = 4
     static let numberFieldWidth: CGFloat = 64
+    static let amountSliderWidth: CGFloat = 120
+    static let amountTextWidth: CGFloat = 40
     /// How long the colour panel's colour rests before it is written as one step (`card-settings`,
     /// design D8).
     static let colourSettleSeconds: Double = 0.5

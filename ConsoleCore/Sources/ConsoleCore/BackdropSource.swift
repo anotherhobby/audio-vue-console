@@ -3,7 +3,7 @@
 /// backdrop is one source", design D3). The block's other settings, the angle and the blur, are
 /// kept apart and survive every change of source.
 public enum BackdropSource: Sendable, Equatable {
-    /// No source: the scene shows the palette's background.
+    /// No source: the scene shows the default backdrop.
     case unset
     /// One colour, `#rrggbb`.
     case colour(String)
@@ -43,7 +43,7 @@ public enum BackdropSource: Sendable, Equatable {
 
     /// This source switched to `kind`: what `memory` holds of that kind, else a start from what
     /// this shows, a colour from a gradient's first stop, a gradient from a colour and
-    /// `background`, the palette's background, and either from `background` where there is nothing
+    /// `background`, the scene's card colour, and either from `background` where there is nothing
     /// to start from. Nil for an image none was chosen for, which changes nothing until one is.
     public func switched(to kind: Kind, background: String, memory: BackdropMemory = .init())
         -> BackdropSource?
@@ -113,6 +113,19 @@ public enum BackdropSource: Sendable, Equatable {
         guard case .gradient(var stops) = self, stops.indices.contains(index) else { return nil }
         stops[index] = colour
         return .gradient(stops)
+    }
+
+    /// `block`, a scene's `backdrop`, as a gradient with the stops and angle `standard` holds, the
+    /// default look's backdrop, its other settings kept; nil where `standard` is no gradient or
+    /// `block` already holds its stops and angle.
+    public static func gradient(of standard: JSONValue?, over block: JSONValue?)
+        -> [String: JSONValue]?
+    {
+        let source = BackdropSource(block: standard)
+        guard source.kind == .gradient else { return nil }
+        var fields = source.written(over: block)
+        fields[angleKey] = standard?[angleKey]
+        return fields == block?.objectValue ? nil : fields
     }
 
     /// The keys that name a source, which a backdrop holds one of.

@@ -50,6 +50,23 @@ struct BackdropSourceTests {
             BackdropSource.image("abc").written(over: Self.gradient) == ["image": .string("abc")])
     }
 
+    /// `scene-settings`, "A gradient returns to the default backdrop's".
+    @Test func theDefaultsGradientReplacesTheStopsAndAngleAndKeepsTheBlur() {
+        let standard = JSONValue.object([
+            "gradient": .array([.string("#2a1a6e"), .string("#0e4a6a")]), "angle": .integer(120),
+            "blur": .integer(24),
+        ])
+        let held = JSONValue.object([
+            "gradient": .array([.string("#000000"), .string("#ffffff")]), "blur": .integer(4),
+        ])
+        let fields = BackdropSource.gradient(of: standard, over: held)
+        #expect(fields?["gradient"] == standard["gradient"])
+        #expect(fields?["angle"] == .integer(120) && fields?["blur"] == .integer(4))
+        #expect(BackdropSource.gradient(of: standard, over: fields.map(JSONValue.object)) == nil)
+        #expect(
+            BackdropSource.gradient(of: .object(["color": .string("#000000")]), over: held) == nil)
+    }
+
     @Test func aGradientKeepsTwoStops() throws {
         let two = BackdropSource.gradient(["#000000", "#FFFFFF"])
         #expect(two.removingStop(at: 0) == nil)

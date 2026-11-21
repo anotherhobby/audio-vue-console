@@ -34,6 +34,20 @@ public struct SceneRevision: Sendable, Equatable, Identifiable {
 
 /// The host's scenes, settings schema and images, each read with a token.
 extension HostClient {
+    /// `GET /v1/styles/{style_id}`: one style's document, built in or stored.
+    public func style(_ id: String, at address: HostAddress, token: HostToken)
+        async throws(HostFailure) -> JSONValue
+    {
+        let output = try await call(at: address, token: token) {
+            try await $0.readStyleV1StylesStyleIdGet(path: .init(styleId: id))
+        }
+        switch output {
+        case .ok(let ok): return try Self.json(try Self.body { try ok.body.json }.doc)
+        case .notFound: throw .notFound
+        case .unauthorized, .unprocessableContent, .undocumented: throw .unexpectedAnswer
+        }
+    }
+
     /// `GET /v1/scenes`: every scene the host holds, built in or stored.
     public func scenes(at address: HostAddress, token: HostToken) async throws(HostFailure)
         -> [SceneSummary]

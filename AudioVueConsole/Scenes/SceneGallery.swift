@@ -1,14 +1,16 @@
 import ConsoleCore
 import SwiftUI
 
-/// The gallery of a panel's scenes: the user's of the panel's shape, then the built-ins, then
-/// every scene of another shape, each pictured by its thumbnail, or its boxes until the helper
-/// draws it (`scene-gallery`). Its menu renames and deletes any scene but a built-in
+/// The gallery of a panel's scenes: the user's, then the built-ins, each pictured by its
+/// thumbnail, or its boxes until the helper draws it, and noted where it is too wide for the
+/// panel (`scene-gallery`). Its menu renames and deletes any scene but a built-in
 /// (`scene-saving`).
 struct SceneGallery: View {
     let scenes: [SceneDocument]
-    let facts: SchemaFacts
-    let panel: DisplayShape
+    /// The panel's grid, which every scene is laid out on.
+    let grid: CellSize
+    /// The display's width over its height.
+    let aspect: Double
     /// Why no card is drawn, where the card code says so.
     var notice: String?
     let open: (String) -> Void
@@ -38,11 +40,27 @@ struct SceneGallery: View {
                 Text(Self.deleteWarning(scene))
             }
             .writeFailureAlert($failure)
+            .toolbar {
+                ToolbarItem {
+                    Button("New Scene", systemImage: "plus", action: newScene)
+                        .help("Make a scene with no cards")
+                }
+            }
     }
 
-    /// My scenes, the built-ins, then the other shapes, the last only when it has a scene.
+    /// Makes a scene with no cards on the panel's grid, and opens it.
+    private func newScene() {
+        do {
+            open(try store.drafts.new(on: grid, among: scenes).id)
+        } catch {
+            // A scene with no cards holds nothing a layout refuses.
+            return
+        }
+    }
+
+    /// My scenes, then the built-ins.
     private var sections: some View {
-        let sections = GallerySections(rows, panel: panel, defaultGrid: facts.defaultGrid)
+        let sections = GallerySections(rows)
         return ScrollView {
             VStack(alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 if let notice {
@@ -50,14 +68,11 @@ struct SceneGallery: View {
                         .foregroundStyle(.orange)
                 }
                 section(
-                    "My Scenes", sections.mine, fits: true,
-                    empty: "Duplicate a built-in scene to make one of your own.")
+                    "My Scenes", sections.mine,
+                    empty: "Make a new scene, or duplicate a built-in one.")
                 section(
-                    "Built-in Scenes", sections.builtIn, fits: true,
-                    empty: "No built-in scene has this panel's shape.")
-                if !sections.otherShapes.isEmpty {
-                    section("Other Shapes", sections.otherShapes, fits: false)
-                }
+                    "Built-in Scenes", sections.builtIn, empty: "The panel lists no built-in scene."
+                )
             }
             .padding(SceneMetrics.canvasPadding)
         }
@@ -87,41 +102,33 @@ struct SceneGallery: View {
         let laidOut: LaidOutScene?
         var id: String { document.id }
         var builtIn: Bool { document.builtIn }
-        var grid: CellSize? { laidOut?.layout.grid }
     }
 
     private var rows: [Item] {
-        scenes.map { Item(document: $0, laidOut: ScenesPage.laidOut($0, facts: facts)) }
+        scenes.map { Item(document: $0, laidOut: ScenesPage.laidOut($0, on: grid)) }
     }
 
-    /// One section; `fits` says its scenes have the panel's shape, and `empty` what goes in it
-    /// when it has none.
-    private func section(_ title: String, _ items: [Item], fits: Bool, empty: String? = nil)
-        -> some View
-    {
+    /// One section, and `empty`, what goes in it when it has none.
+    private func section(_ title: String, _ items: [Item], empty: String) -> some View {
         VStack(alignment: .leading) {
             Text(title).font(.headline)
-            if items.isEmpty, let empty {
+            if items.isEmpty {
                 Text(empty).foregroundStyle(.secondary)
             }
             LazyVGrid(columns: columns, alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 ForEach(items) { item in
-                    SceneRow(item: item, panel: panel)
+                    SceneRow(item: item, aspect: aspect)
                         .contentShape(Rectangle())
                         .onTapGesture { open(item.id) }
-                        .contextMenu { menu(item, fits: fits) }
+                        .contextMenu { menu(item) }
                 }
             }
         }
     }
 
-    @ViewBuilder private func menu(_ item: Item, fits: Bool) -> some View {
+    @ViewBuilder private func menu(_ item: Item) -> some View {
         Button("Edit") { open(item.id) }
-        if fits, item.laidOut != nil {
-            Button("Duplicate") { duplicate(item.document) }
-        } else {
-            Button("Duplicate for This Panel") {}.disabled(true)
-        }
+        Button("Duplicate") { duplicate(item.document) }.disabled(item.laidOut == nil)
         if !item.document.builtIn {
             Divider()
             Button("Rename…") { renaming = item.document }
@@ -131,7 +138,7 @@ struct SceneGallery: View {
 
     /// Copies `document` as its draft shows it, and opens the copy.
     private func duplicate(_ document: SceneDocument) {
-        guard let draft = ScenesPage.draft(document, in: store.drafts, facts: facts) else { return }
+        guard let draft = ScenesPage.draft(document, in: store.drafts, on: grid) else { return }
         open(store.drafts.duplicate(draft, among: scenes).id)
     }
 
@@ -143,13 +150,22 @@ struct SceneGallery: View {
 /// A scene's thumbnail and name, with a dot for an unsaved scene and a lock for a built-in one.
 struct SceneRow: View {
     let item: SceneGallery.Item
-    let panel: DisplayShape
+    /// The display's width over its height.
+    let aspect: Double
     @Environment(SceneStore.self) private var store
+
+    /// The scene as edited where it has a draft, else as read.
+    private var shown: (scene: LaidOutScene, content: SceneContent)? {
+        let draft = store.drafts.draft(item.id)
+        return (draft?.laidOut ?? item.laidOut).map { ($0, draft?.content ?? $0.content) }
+    }
+
+    private var isTooWide: Bool { shown.map { $0.scene.isTooWide($0.content) } ?? false }
 
     var body: some View {
         VStack(alignment: .leading) {
             thumbnail
-                .aspectRatio(panel.aspect, contentMode: .fit)
+                .aspectRatio(aspect, contentMode: .fit)
                 .background(CanvasMetrics.backdrop)
                 .frame(maxHeight: SceneMetrics.galleryThumbnailHeight, alignment: .leading)
             HStack {
@@ -167,30 +183,32 @@ struct SceneRow: View {
                     Image(systemName: "lock.fill").foregroundStyle(.secondary)
                 }
             }
+            if isTooWide {
+                Text("Too wide for this panel").font(.callout).foregroundStyle(.secondary)
+            }
         }
     }
 
     @ViewBuilder private var thumbnail: some View {
         if let image = store.thumbnails.images[item.id] {
             Image(decorative: image, scale: 1).resizable()
-        } else if let laidOut = item.laidOut {
-            LayoutPlates(
-                layout: store.drafts.draft(item.id)?.layout ?? laidOut.layout, isThumbnail: true
-            )
-            .aspectRatio(
-                CGFloat(laidOut.layout.grid.cols) / CGFloat(laidOut.layout.grid.rows),
-                contentMode: .fit)
+        } else if let shown {
+            // A scene wider than the panel's grid is wider by the same cells.
+            let layout = shown.content.layout
+            LayoutPlates(layout: layout, isThumbnail: true)
+                .aspectRatio(
+                    aspect * Double(layout.grid.cols) / Double(shown.scene.panel.cols),
+                    contentMode: .fit)
         } else {
             Color.clear
         }
     }
 }
 
-#Preview("Gallery, an 8:3 panel") {
-    if let preview = GalleryPreview.scenes, let facts = GalleryPreview.facts {
+#Preview("Gallery, a 16:9 panel") {
+    if let preview = GalleryPreview.scenes {
         SceneGallery(
-            scenes: preview, facts: facts,
-            panel: DisplayShape(width: 1920, height: 720)
+            scenes: preview, grid: CellSize(cols: 64, rows: 36), aspect: 16.0 / 9.0
         ) { _ in }
         .environment(SceneStore())
         .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
@@ -198,10 +216,10 @@ struct SceneRow: View {
 }
 
 #Preview("Gallery, only built-ins") {
-    if let preview = GalleryPreview.scenes, let facts = GalleryPreview.facts {
+    if let preview = GalleryPreview.scenes {
         SceneGallery(
-            scenes: preview.filter { $0.builtIn && $0.id == "rta" }, facts: facts,
-            panel: DisplayShape(width: 1920, height: 720)
+            scenes: preview.filter { $0.builtIn && $0.id == "rta" },
+            grid: CellSize(cols: 64, rows: 36), aspect: 16.0 / 9.0
         ) { _ in }
         .environment(SceneStore())
         .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
@@ -209,49 +227,35 @@ struct SceneRow: View {
 }
 
 #Preview("Gallery, with an unsaved copy") {
-    if let preview = GalleryPreview.scenes, let facts = GalleryPreview.facts,
-        let store = GalleryPreview.storeWithCopy(of: preview, facts: facts)
+    if let preview = GalleryPreview.scenes,
+        let store = GalleryPreview.storeWithCopy(of: preview, on: CellSize(cols: 64, rows: 36))
     {
         SceneGallery(
-            scenes: store.drafts.listing(preview), facts: facts,
-            panel: DisplayShape(width: 1920, height: 720)
+            scenes: store.drafts.listing(preview), grid: CellSize(cols: 64, rows: 36),
+            aspect: 16.0 / 9.0
         ) { _ in }
         .environment(store)
         .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
     }
 }
 
-/// Two built-in scenes and two stored ones, one of each shape each, read as the host gives scene
-/// documents.
+/// Two built-in scenes and two stored ones on a 16:9 panel, read as the host gives scene
+/// documents; "My RTA" reaches past the panel's last column.
 private enum GalleryPreview {
-    static let wide = #"{"grid": {"cols": 96, "rows": 36}, "cards": [{"card": "rta_bars"}]}"#
     static let docs = [
-        ("rta", "RTA", true, wide),
-        ("default", "Default", true, #"{"cards": [{"card": "meter", "colspan": 32}]}"#),
-        ("s1", "My RTA", false, wide),
+        ("rta", "RTA", true, #"{"cards": [{"card": "rta_bars", "colspan": 48}]}"#),
+        ("default", "Default", true, #"{"cards": [{"card": "rta_bars"}]}"#),
+        ("s1", "My RTA", false, #"{"cards": [{"card": "rta_bars", "colspan": 96}]}"#),
         ("s2", "Wide", false, #"{"cards": [{"card": "waveform", "colspan": 32}]}"#),
     ]
 
-    static let schema =
-        #"{"$defs": {"block.grid": {"properties": "#
-        + #"{"cols": {"default": 64}, "rows": {"default": 36}}}}}"#
-
-    static var facts: SchemaFacts? {
-        do {
-            return SchemaFacts(
-                schema: try JSONDecoder().decode(JSONValue.self, from: Data(schema.utf8)))
-        } catch {
-            return nil
-        }
-    }
-
     /// A store holding a copy of the first scene, never saved.
-    @MainActor static func storeWithCopy(of scenes: [SceneDocument], facts: SchemaFacts)
+    @MainActor static func storeWithCopy(of scenes: [SceneDocument], on grid: CellSize)
         -> SceneStore?
     {
         let store = SceneStore()
         guard let first = scenes.first,
-            let draft = ScenesPage.draft(first, in: store.drafts, facts: facts)
+            let draft = ScenesPage.draft(first, in: store.drafts, on: grid)
         else { return nil }
         _ = store.drafts.duplicate(draft, among: scenes)
         return store

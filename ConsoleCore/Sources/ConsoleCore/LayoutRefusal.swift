@@ -12,8 +12,6 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     case alreadyAGroup
     case notARectangle
     case cardInTheWay
-    /// A change of grid would leave a card of this kind below its minimum, or with no cells.
-    case tooSmall(String)
     case readOnly(ReadOnlyReason)
 
     public var description: String {
@@ -27,7 +25,6 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
         case .alreadyAGroup: "These cards are already a group."
         case .notARectangle: "These cards don't fill a rectangle."
         case .cardInTheWay: "Another card is in the way."
-        case .tooSmall(let kind): "The \(kind) card would be smaller than its minimum on that grid."
         case .readOnly(let reason): reason.description
         }
     }
@@ -36,15 +33,11 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
 /// Why a scene cannot be edited where it is.
 public enum ReadOnlyReason: Sendable, Hashable, CustomStringConvertible {
     case builtIn
-    /// The scene's shape and the panel's, such as `16:9` and `8:3`.
-    case shape(scene: String, panel: String)
 
     public var description: String {
         switch self {
         case .builtIn:
             "Built-in scenes can't be edited. Duplicate it to edit."
-        case .shape(let scene, let panel):
-            "This scene is \(scene) and the panel is \(panel). Duplicate it for this panel to edit."
         }
     }
 }

@@ -244,7 +244,7 @@ change is archived; archiving out of order fails.
 id. A layout paired with another parse of the same document finds no entries, and every card is
 written back as `card` and its cells alone, losing its settings (`scene-save` alignment F1). Turn a
 layout back into a document only through the parse it came from: a `Draft` keeps both. A scene read
-again after a save takes the saved layout's ids in order (`LaidOutScene(_:defaultGrid:ids:)`), so an
+again after a save takes the saved layout's ids in order (`LaidOutScene(_:panel:ids:keeping:)`), so an
 open editor keeps pairing; a version loaded from Versions is a new parse, so the editor's undo is
 cleared (`SceneEditor.replace(with:)`).
 
@@ -322,3 +322,18 @@ choice does not survive a run. The D10s offers only 24 and 32-bit integer, with 
 Calibrate…'s 16-bit warning never shows for it (measured by audio-vue on the proving chain).
 `cal-play rate <name>` with no rate lists the formats offered.
 
+## A panel that will not draw after the input is chosen
+
+- 2026-11-20: look at the panel's log (`make panel-log` in `../audio-vue`) before the app: the app
+  was not crashing (`~/Library/Logs/DiagnosticReports` was empty). The panel had restarted in a
+  loop because its capture device streamed four channels and the input block said two. audio-vue
+  since takes the count from the device and waits with a sentence (`run.screen_status`, phase
+  `waiting`), which the Capture page shows (`PanelState.captureWaiting`).
+
+## An inspector's form stuck scrolled down (2026-11-20)
+
+- A `safeAreaInset` applied outside `.inspector` also insets the inspector. One whose content
+  comes and goes, as the editor's banner does, moves the inspector's safe area under a `Form`,
+  which was left scrolled part-way down with no way back to its top. Apply such an inset to the
+  content the inspector is attached to, before `.inspector`. Not reproduced by an agent; the fix
+  is by reading, confirmed or not by the maintainer's run.

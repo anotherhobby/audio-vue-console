@@ -26,7 +26,7 @@ struct CapturePage: View {
             ) {
                 InputSection(
                     input: input, output: output, isPanelDown: live?.state?.condition == .down,
-                    lock: inputLock)
+                    lock: inputLock, waiting: live?.state?.captureWaiting)
             } calibrate: {
                 CalibrateSection(
                     readiness: readiness, pass: pass, runs: runs?.runs ?? [],

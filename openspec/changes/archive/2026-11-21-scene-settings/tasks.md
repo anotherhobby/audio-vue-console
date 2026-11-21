@@ -57,13 +57,10 @@ and audio-vue's `card-colours` gives the swatches and elements (design D8). Run 
   And `SettingGroupTests`: `rta_bars` and `loudness_scope` share `minor_color` but not
   `major_color`.
 
-## 3. Backdrop, images and density
+## 3. Backdrop and images
 
-- [x] 3.1 Add `GridDensity.choices(for:)` and `relaid(_:to:minimums:)` and
-  `LayoutRefusal.tooSmall(_:)` (design D5). Verify with `GridDensityTests`: 64×36 gives 11 choices,
-  rows 18 to 108 by 9; 96×36 gives 31, rows 18 to 108 by 3; a card at column 16, 32 wide, on 64×36
-  is at column 24, 48 wide, on 96×54; two grouped cards still tile after 64×36 to 96×54 and back to
-  64×36; a card at its minimum refuses a coarser grid naming its kind.
+- [x] 3.1 Withdrawn 2026-11-21: the grid's density left this change for `host-grid`, which removes
+  `GridDensity` and its tests.
 - [x] 3.2 Add `BackdropSource` reading and writing the `backdrop` block (design D3). Verify with a
   `BackdropSourceTests` suite: a gradient switched to Colour holds its first stop and no gradient; a
   colour switched to Gradient holds `[colour, palette background]`; None removes the
@@ -87,7 +84,7 @@ and audio-vue's `card-colours` gives the swatches and elements (design D8). Run 
   each swatch with a chip in its colour as edited (design D8); the Backdrop section with its source `Picker(.segmented)`, colour well, gradient stop
   rows (move up, move down, remove disabled at two, Add Stop), angle, Blur, and an image sheet
   listing the host's images by thumbnail with Upload… (`NSOpenPanel`, PNG and JPEG) and the host's
-  refusal shown; the Grid section's gap and density `Stepper` with its refusal. Everything disabled
+  refusal shown; the Grid section's gap (its density stepper, built here, is removed by `host-grid`). Everything disabled
   on a read-only editor. Verify by building the app (`BuildProject` over Xcode MCP) with no new
   warnings and the quality gate clean.
 - [x] 4.2 Draw library tiles from the draft's current document in `SceneEditorView.drawTiles()`,
@@ -116,17 +113,100 @@ and audio-vue's `card-colours` gives the swatches and elements (design D8). Run 
 
 ## 5. Integration
 
-- [ ] 5.1 Against the proving host: on a stored scene, switch the backdrop to a three-stop gradient
-  at 90°, then upload a JPEG and choose it, then None; change Signal and Title size; set a capture
-  rate the host is calibrated at (no warning), one it is not (warned), and clear it; point Grid
-  minor at Accent and see an `rta_bars` card's unset Minor line colour show Accent, then change
-  Accent and see it follow; make the grid
-  finer and coarser and see a refusal at the coarsest; undo across kinds; Save, re-open (not marked
-  unsaved, only changed keys stored) and Apply (the panel shows it). On a built-in, everything shows
-  and nothing changes. Record the run in `working-notes.md`.
+- [x] 5.1 Against the proving host, paired again: on a stored scene, switch the backdrop to a
+  three-stop gradient at 90°, then upload a JPEG and choose it, then Default; change the scene's
+  Title colour, Alert, Shadow, Title size and typeface; set a capture rate the host is calibrated
+  at (no warning), one it is not (warned), and clear it; on an `rta_bars` card see the unset Grid
+  minor colour show the scene's, follow a change to it, then take Tick, then a colour of its own,
+  then Use Default; undo across
+  kinds; Save, re-open (not marked unsaved, only changed keys stored) and Apply (the panel shows
+  it). On a built-in, everything shows and nothing changes. Record the run in `working-notes.md`. Run by the maintainer on 2026-11-21 with
+  `host-grid` built, the density step withdrawn with task 3.1: everything as expected.
+
+## 6. Follow audio-vue's scene-styles (2026-11-19)
+
+audio-vue's `scene-styles` replaced what groups 2 and 4 read (alignment F16 to F22). These tasks
+rebuild on it; where they differ from a task above, they stand.
+
+- [x] 6.1 Refresh the saved contract (`tools/refresh-contract.sh`), `Fixtures/schema-trimmed.json`
+  from audio-vue's `json_schema()` (whole, keeping the tests' `x-categories`) and
+  `Fixtures/rta-scene.json` from `scenes/rta.yaml`. Verify the core builds.
+- [x] 6.2 Rebuild `SceneColours` on `x-roles` and `x-scales`: roles, scales, `colour(of:in:)`,
+  `groups(of:)`, `ungrouped(of:)` (design D8). Read a card's colour as `.roleColour(roles:)` with
+  `role` and `ownDefault`, resolved by `drawnColour`; read `x-choice-labels`; read a card's unset
+  shadow by `sceneValue`. Verify with `SceneColoursTests`: an unset `grid_minor_color` is
+  `#6D7485` and follows the scene's `grid_minor`; set to `track` it is the scene's track; set to
+  `#445566` it names no role; `crest_color` unset is `#7AA2FF` and `psr_color` follows `value`; the
+  groups are Background, Text, Lines, Signal, Warnings, Stereo phase, with `shadow` ungrouped; a VU
+  meter's unset shadow is the scene's. And `SettingGroupTests`: `rta_bars` and `loudness_scope`
+  share `grid_minor_color`, not `grid_major_color` or `band1_color`.
+- [x] 6.3 Read the scene's own labelled settings into `SchemaFacts.sceneSettings`, and add
+  `SceneEditor.setScene` and `useDefault(scene:)` (design D2). Make the tabs Scene, Style and
+  Analysis, with the typeface on Style. Verify with `SchemaFactsTests` (seven blocks in order; 24
+  colour settings; `type.title` a number from 24 to 75, default 45, `px`; `typeface` with Oxanium's
+  label), `SceneSettingsTabTests` and `SceneEditorBlockTests` (the typeface set, left unset and
+  undone).
+- [x] 6.4 Send `viewing` and the styles a scene names in the render request, with no `fonts` or
+  `fallback`; read `viewing` in `PanelScenes` and fetch no fallback image (design D6). Verify with
+  `RenderRequestTests` and `PanelScenesTests`, and with the real helper:
+  `RENDER_HELPER_LIVE=1 xcrun swift test --disable-xctest --filter LiveHelperTests` draws the RTA
+  scene.
+- [x] 6.5 In the app: `ColourGroups` in place of the palette and elements views; Colours and Text
+  Sizes titled and described; the typeface row; the backdrop's Default; a card's colour as a well
+  beside `RoleMenu`, captioned with the role it takes, its colours under one Colours disclosure,
+  and its unset shadow showing the scene's. Verify by building the app with no warnings and the
+  gate clean.
+
+## 7. The maintainer's review of 2026-11-20
+
+- [x] 7.1 Inspector: drop the name and Kept section; title `glass` Cards and `type` Text; list the
+  typeface at the head of Text (`sceneSettings(with:)`). Verify with `SceneSettingsTabTests`.
+- [x] 7.2 A number from 0 to 1 as `AmountSlider`. Verify with `SchemaFactsTests`
+  (`aNumberFromNoneToAllIsAnAmount`) and the app build.
+- [x] 7.3 An unset scene setting shows the panel's: `installSettings`, `installedValue`,
+  `PanelScenes.installed`. Verify with `SchemaFactsTests` (`anUnsetDisplaySettingTakesThePanels`)
+  and `PanelScenesTests`.
+- [x] 7.4 Use Default Gradient: `HostClient.style`, `PanelScenes.defaultBackdrop`,
+  `SceneEditor.useDefaultGradient`. Verify with `BackdropSourceTests`.
+- [x] 7.5 New Scene: `SceneDrafts.new(on:among:)` on the panel's grid, the
+  gallery's toolbar button. Verify with `SceneDraftsTests`.
+- [x] 7.6 A scene with no cards asks the helper for nothing and cannot be saved or applied
+  (`SceneRendering.draw`, `SceneThumbnails.draw`, `SceneSession.hasCards`). Verify with
+  `SceneThumbnailsTests` (`aSceneWithNoCardsIsNotAskedFor`) and `SceneSessionTests`
+  (`aSceneWithNoCardsCannotBeSaved`).
+
+- [x] 7.7 Tiles and an empty canvas on the scene's backdrop: `LibraryTiles.backdropMessage`,
+  `SceneBackdrop`. Verify with `LibraryTilesTests` (`aSceneWithNoCardsHasItsBackdropAskedForOnce`,
+  `aSceneWithCardsLeavesItsBackdropToTheCanvas`).
+
+- [x] 7.8 Follow audio-vue's `scene-editor-settings`: refresh the contract, the render bundle and
+  the fixtures; read `x-inherits` (`SettingDeclaration.inherits`, `SchemaFacts.inheritedValue`) in
+  place of `sceneValue` and `installedValue`; an unset number with no value shows None, not Mixed.
+  Verify with `SchemaFactsTests`, `SceneColoursTests` and the live helper tests.
+
+- [x] 7.9 The editor's banner insets the library and canvas, not the inspector, whose safe area
+  it moved as it came and went, leaving the settings stuck scrolled down. Verify by the app
+  build; the maintainer's run checks it: apply a scene, then edit it.
+
+- [x] 7.10 Pin the tabs above the settings form (`safeAreaInset`), each tab's settings starting
+  at their top. Verify by the app build.
+
+## 8. Drawing ahead (maintainer, 2026-11-20)
+
+- [x] 8.1 `LibraryTiles` keeps a set per settings key and draws one ahead (`prepare`, `Source`).
+  Verify with `LibraryTilesTests` (`tilesDrawnAheadAreShownWithNoRequest`,
+  `onlyTheLastScenesTilesAreKept`).
+- [x] 8.2 The window reads the scenes once paired and calls `SceneStore.drawAhead`; the Scenes
+  page reads them again quietly. Verify by the app build; the maintainer's run checks that the
+  gallery and a scene's library show at once after a launch left on the Panel page.
+
+- [x] 8.3 Keep thumbnails between launches (`ThumbnailCache`, `SceneThumbnails.restore`,
+  `SceneStore.restoreThumbnails`), restored once the scenes are read. Verify with
+  `SceneThumbnailsTests` (`aKeptThumbnailIsShownAtTheNextLaunchWithNoRequest`).
 
 ## Workflow follow-up
 
 - The maintainer's run of the app, then verify and archive the change and sync its specs.
 - Before the pull request, review agent-maintained KB updates (`host-contract.md` for images and
   colours, `project-map.md`, `working-notes.md`).
+- Delete `scene-styles-handoff.md` once `styles` is planned from it, and tell the maintainer.

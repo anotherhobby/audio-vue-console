@@ -46,6 +46,10 @@ code card-settings will change are marked (planned), and are re-read in task 1.1
   `block.elements` 35 choices with labels; `x-swatches`, `x-elements`; every card colour setting's
   `x-element`; no block declares `x-label`. `openspec list --store audio-vue`: `mac-output` open.
 
+Pass 4, 2026-11-19, on `dev` at `e47c193`: `scene-styles-handoff.md`; audio-vue at `ebf804e`:
+`scene-styles`' proposal, `json_schema()` read live, `src/render_service.py`, `styles/default.yaml`;
+the regenerated contract diffed against the saved one (the style routes, `viewing_set`).
+
 ## Findings
 
 - **F1. Two open changes modify the same requirements** (resolved)
@@ -153,12 +157,85 @@ code card-settings will change are marked (planned), and are re-read in task 1.1
     which this plan already reads as an `enum`. Its Impact names no spec this change modifies.
   - Goes to: nothing.
 
+- **F16. The palette and the elements are gone** (resolved; audio-vue `scene-styles`, 2026-11-19)
+  - Plan: 21 swatches by family and an `elements` block pointing 35 elements at them (F8, F9).
+  - Code: `block.colors` holds one colour per role (17, in the groups background, text, lines and
+    signal), the steps of two scales (Warnings, Stereo phase) and `shadow`, a number; the root has
+    `x-roles` and `x-scales` and no `x-swatches` or `x-elements`.
+  - Goes to: proposal, spec, design D2 and D8, tasks 6.2, 6.3 and 6.5.
+  - Resolution: `SceneColours` reads roles and scales; Colours is wells by group and scale.
+- **F17. A card's colour takes a role or a colour** (resolved)
+  - Plan: a card colour is `#rrggbb`, unset by `x-element` (F10).
+  - Code: `anyOf` an `enum` of the 17 role ids and the pattern, with `x-role`, or `x-own:
+    {default}` for a colour of the card's own; no step of a scale is offered. Derived per role a
+    card draws, so a card declares many (eight on `vu_meter`), and one name is one role on every
+    card.
+  - Goes to: the card-settings delta, design D8, tasks 6.2 and 6.5.
+  - Resolution: `.roleColour(roles:)`, `drawnColour`, a well beside a role menu, colours under one
+    disclosure. F10's case no longer arises.
+- **F18. Text sizes are numbers, and the typeface is the scene's own key** (resolved)
+  - Plan: Title, label and value sizes as enums in `block.type`.
+  - Code: `block.type` holds seven numbers in `px` with bounds and no step; `scene.typeface` is a
+    labelled enum outside any block, with `x-choice-labels`.
+  - Goes to: spec, design D2, task 6.3.
+  - Resolution: the generic number row; `SchemaFacts.sceneSettings`; `SceneEditor.setScene`.
+- **F19. The render request changed** (resolved)
+  - Plan: the standing `scene-rendering` request carries `fonts` and `fallback`.
+  - Code: audio-vue `src/render_service.py` reads `viewing` and `styles` and neither of those; a
+    missing image draws the default style's backdrop; the answer adds `style_notice`.
+  - Goes to: the scene-rendering delta, design D6, task 6.4.
+  - Resolution: `RenderContext.viewing` and `styles`. `style_notice` is the `styles` change's to
+    show, since no scene names a stored style before it.
+- **F20. No backdrop is the default style's gradient** (resolved)
+  - Plan: None shows the palette's background (F14).
+  - Code: audio-vue `scene-backdrop`: a scene with no backdrop draws the `default` style's.
+  - Goes to: spec, design D3, task 6.5.
+  - Resolution: the segment is Default, and says the default backdrop shows.
+- **F21. A card's shadow has no default and no keyword saying whose it takes** (resolved, with a
+  match by key)
+  - Code: a card's `shadow` is a number with no `default`, `x-role` or `x-own`; its help says unset
+    uses the scene's.
+  - Goes to: design D8, task 6.2.
+  - Resolution: first a match by key and shape; since 2026-11-20 the export's `x-inherits` names
+    `scene.colors`, read by `SchemaFacts.inheritedValue` (task 7.8).
+- **F22. Stored and built-in scenes were renamed on the host** (resolved, no app change)
+  - Code: `rta_bars`' and the scope's line colours are `grid_major_color`, `grid_minor_color`,
+    `tick_color` and `outline_color`. The app holds no scene of its own, and the host's store was
+    rebuilt.
+  - Goes to: task 6.1 (the RTA fixture).
+
+- **F23. The host holds no scene without a card** (resolved in the app)
+  Read 2026-11-20: the schema's `cards` has `minItems: 1` (`src/schema/export.py`), and the render
+  bundle answers "no cards: entries". Ruled (maintainer, 2026-11-20): a new scene is like a new
+  document, the app's alone until saved. So the app asks the helper for nothing and disables Save
+  and Apply while a scene has no cards (task 7.6), and audio-vue is asked for nothing.
+- **F24. The scene's display defaults were not what an unset setting does** (resolved)
+  `block.display` declared 0 for both timeouts, but an unset one takes the install's. audio-vue's
+  `scene-editor-settings` (2026-11-20) exports `x-inherits` on them and declares no default; the
+  app reads it (task 7.8).
+- **F25. Labels, a second signal setting and text-size steps were the host's** (resolved, no app
+  code)
+  audio-vue ruled otherwise on the signal: silence is one fixed line, `threshold_lufs` is gone
+  from both display blocks and the state, and the time asked for is `analysis.reset_silence_s`,
+  with `mute_on_silence`, both shown by the Analysis tab as declared. The install's `loudness`
+  block is gone; the app read none. A scene's display block gains `saver`. Steps are declared on
+  the sizes, radius, blur, gap, angle and timeouts, which gives them arrows.
+- **F26. The plates' declared default opacity was 1.0** (resolved, no app code)
+  `block.glass` now declares `opacity` at 0.6, so a new scene shows and draws 60%.
+- **F27. The grid stops being the scene's** (resolved, moved)
+  audio-vue's `host-grid` (hand-off, 2026-11-21) makes the grid the panel's and refuses a scene's
+  `cols` and `rows`. The density requirements, D5 and task 3.1 are withdrawn here; the code built
+  for them, the grid write of F3 and New Scene's grid from a size are removed by the console's
+  `host-grid`. Task 5.1 is run once that change is built.
+
 ## Questions for the maintainer
 
 None open. Ruled (maintainer, 2026-11-08): scene settings as their own change after card-settings;
 the grid's gap and density at the scene's aspect; a calibration warning only where none holds at the
 scene's rate (F7). Ruled 2026-11-09: a card's unset colour shown by lookup is part of this change
-(F8 to F10).
+(F8 to F10). Ruled 2026-11-19: the app follows audio-vue's `scene-styles` in this change, and the
+tabs are Scene, Style and Analysis (F16 to F22). Ruled 2026-11-21: the grid's density leaves this
+change, and the run on the proving host waits for `host-grid` (F27).
 
 ## Confirmed
 
@@ -166,12 +243,10 @@ scene's rate (F7). Ruled 2026-11-09: a card's unset colour shown by lookup is pa
   sections need no names from the app beyond their order.
 - Image list and upload routes, and `GET /v1/calibration`, exist in the saved contract; no host
   work.
-- Every card colour setting names an element and no status one (audio-vue `card-colours`), so the
-  lookup covers every card colour the export declares.
+- Every card colour setting names a role or its own default (`x-role`, `x-own`; checked over the
+  export, 2026-11-19), so the lookup covers every card colour the export declares.
 - A scene write never changes the screen; Apply reloads it (`audio-vue:settings-store`).
 - A gradient needs two stops (`minItems` 2, `scene-backdrop`), so the stop list refuses removal at
   two.
 - `rta_weighting`'s values are all its standard's, so it is never flagged; four analysis settings
   are measurement, `capture_rate` is chain.
-- Density's counts: 64×36 reduces to 16:9, rows 18 to 108 by 9, 11 choices; 96×36 to 8:3, rows 18
-  to 108 by 3, 31 choices; 96×54 maps column 16 of 64 to 24 of 96 and a 32-column span to 48.

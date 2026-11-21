@@ -56,7 +56,7 @@ enum FakeRender {
 @MainActor
 struct RenderingFixture {
     private static let doc =
-        #"{"grid": {"cols": 64, "rows": 36}, "cards": ["#
+        #"{"cards": ["#
         + #"{"card": "meter", "col": 0, "row": 0, "colspan": 8, "rowspan": 8},"#
         + #"{"card": "waveform", "col": 8, "row": 0, "colspan": 8, "rowspan": 8},"#
         + #"{"card": "tiny", "col": 30, "row": 0, "colspan": 4, "rowspan": 4}]}"#
@@ -72,7 +72,7 @@ struct RenderingFixture {
         let document = SceneDocument(
             id: "s", name: "S", builtIn: false, fixed: false,
             doc: try JSONDecoder().decode(JSONValue.self, from: Data(Self.doc.utf8)))
-        let scene = try LaidOutScene(document, defaultGrid: CellSize(cols: 64, rows: 36))
+        let scene = try LaidOutScene(document, panel: CellSize(cols: 64, rows: 36))
         launcher = ScriptedLauncher(script)
         rendering = SceneRendering(
             scene: scene, context: RenderRequestTests.context, displayKnown: displayKnown)
@@ -180,17 +180,17 @@ struct SceneRenderingTests {
         #expect(fixture.rendering.plates.count == 3)
     }
 
-    @Test func aPaletteChangeDrawsEverything() async throws {
+    @Test func aColourChangeDrawsEverything() async throws {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)
         var content = fixture.content(fixture.layout)
-        content.blocks["palette"] = .object(["signal": .string("#00FF88")])
+        content.blocks["colors"] = .object(["series": .string("#00FF88")])
         await fixture.rendering.show(content)
         #expect(fixture.launcher.requests.count == 2)
         let request = try #require(fixture.launcher.requests.last)
         #expect(request["plates"] == nil || request["plates"] == .null)
         #expect(request["backdrop"] == .bool(true))
-        #expect(request["scene"]?["palette"]?["signal"] == .string("#00FF88"))
+        #expect(request["scene"]?["colors"]?["series"] == .string("#00FF88"))
     }
 
     @Test func aRefusedSceneIsBoxesWithTheReason() async throws {
@@ -238,12 +238,35 @@ struct SceneRenderingTests {
             ])
     }
 
+    /// `scene-rendering`, "A scene too wide is drawn as boxes": nothing is asked while a card
+    /// ends past the panel's last column, and everything once it is moved in.
+    @Test func aSceneTooWideIsDrawnOnlyOnceItFits() async throws {
+        let doc =
+            #"{"name": "Wide", "cards": [{"card": "meter", "col": 80, "colspan": 16, "rowspan": 8}]}"#
+        let wide = try LaidOutScene(
+            SceneDocument(
+                id: "w", name: "Wide", builtIn: false, fixed: false,
+                doc: try JSONDecoder().decode(JSONValue.self, from: Data(doc.utf8))),
+            panel: CellSize(cols: 64, rows: 36))
+        let launcher = ScriptedLauncher { FakeRender.reply(to: $0) }
+        let rendering = SceneRendering(
+            scene: wide, context: RenderRequestTests.context, displayKnown: true)
+        await rendering.show(wide.content)
+        await rendering.attach(RenderQueue(helper: RenderHelper(launcher: launcher)))
+        #expect(launcher.requests.isEmpty && rendering.showsBoxes)
+        let card = try #require(wide.layout.cards.first)
+        let moved = try wide.layout.moving([card.id], by: CellOffset(cols: -32, rows: 0))
+        await rendering.show(wide.content.with(layout: moved))
+        #expect(
+            launcher.requests.last?["scene"]?["cards"]?.arrayValue?.first?["col"] == .integer(48))
+    }
+
     @Test func aReopenedDraftKeepsTheUntouchedCardsSettings() async throws {
         let drafts = SceneDrafts()
         let rta = try SceneDraftsTests.rta()
-        let opened = try drafts.draft(for: rta, defaultGrid: SceneDraftsTests.grid)
+        let opened = try drafts.draft(for: rta, panel: SceneDraftsTests.grid)
         drafts.keep(try SceneDraftsTests.moveBars(opened), for: rta.id)
-        let reopened = try drafts.draft(for: rta, defaultGrid: SceneDraftsTests.grid)
+        let reopened = try drafts.draft(for: rta, panel: SceneDraftsTests.grid)
         let launcher = ScriptedLauncher { FakeRender.reply(to: $0) }
         let rendering = SceneRendering(
             scene: reopened.laidOut, context: RenderRequestTests.context, displayKnown: true)

@@ -1,36 +1,64 @@
-import AppKit
 import ConsoleCore
 import SwiftUI
 
-/// The settings `declared` for `cards`, one row each in declared order: each row reads every card
-/// and a change sets it on them all (`card-settings`).
+/// The settings `declared` for `cards`, one row each in declared order, the colours together
+/// under Colours, closed until opened: each row reads every card and a change sets it on them all
+/// (`card-settings`).
 struct CardSettingsList: View {
     let declared: SettingGroup
     let cards: [LayoutCard]
     /// Every card kind's settings, so each card is read by its own declaration.
     let groups: [String: SettingGroup]
-    let colours: SceneColours
+    /// The scene's colours and the settings its colours block declares.
+    let scene: SceneLook
     let editor: SceneEditor
 
     var body: some View {
-        ForEach(declared.settings) { declaration in
-            let value = SettingGroup.value(of: declaration.key, across: cards, declaredBy: groups)
-            SettingRow(
-                declaration: declaration, value: value,
-                note: SettingGroup.note(of: declaration.key, across: cards, declaredBy: groups),
-                edit: edit(declaration), inherited: inherited(declaration, value),
-                unused: SettingGroup.unusedReason(
-                    of: declaration.key, across: cards, declaredBy: groups))
+        ForEach(declared.settings.filter { !Self.isColour($0) }) { row($0) }
+        let colours = declared.settings.filter(Self.isColour)
+        if !colours.isEmpty {
+            DisclosureGroup("Colours") {
+                ForEach(colours) { row($0) }
+            }
         }
     }
 
-    /// The colour an unset colour is drawn in, from the scene's blocks as edited (`scene-settings`,
-    /// design D8); nil for any other value.
-    private func inherited(_ declaration: SettingDeclaration, _ value: SettingValue)
-        -> InheritedColour?
-    {
-        guard case .same(nil, isSet: false) = value else { return nil }
-        return declaration.inheritedColour(in: editor.content.blocks, colours: colours)
+    private static func isColour(_ declaration: SettingDeclaration) -> Bool {
+        if case .roleColour = declaration.shape { return true }
+        return false
+    }
+
+    private func row(_ declaration: SettingDeclaration) -> SettingRow {
+        let value = SettingGroup.value(of: declaration.key, across: cards, declaredBy: groups)
+        return SettingRow(
+            declaration: declaration, value: value,
+            note: SettingGroup.note(of: declaration.key, across: cards, declaredBy: groups),
+            edit: edit(declaration), fromScene: fromScene(declaration, value),
+            unused: SettingGroup.unusedReason(
+                of: declaration.key, across: cards, declaredBy: groups))
+    }
+
+    /// What the scene, as edited, gives the setting: the colour it is drawn in and the roles it
+    /// may take, or the scene's value an unset one takes (`scene-settings`, design D8). Nothing
+    /// for cards that differ.
+    private func fromScene(_ declaration: SettingDeclaration, _ value: SettingValue) -> FromScene {
+        guard case .same(let held, _) = value else { return FromScene() }
+        let blocks = editor.content.blocks
+        guard case .roleColour(let roles) = declaration.shape else {
+            return FromScene(
+                value: held == nil
+                    ? scene.facts?.inheritedValue(
+                        of: declaration, scene: blocks, installed: scene.installed) : nil,
+                owner: declaration.inherits?.document == SettingDeclaration.Source.install
+                    ? "panel" : "scene")
+        }
+        return FromScene(
+            drawn: declaration.drawnColour(held, in: blocks, colours: scene.colours),
+            roles: roles.compactMap { id in
+                scene.colours.role(id).map { role in
+                    RoleChoice(role: role, colour: scene.colours.colour(of: id, in: blocks))
+                }
+            })
     }
 
     /// The row's changes as editor steps on these cards, or nil where the scene is read-only.
@@ -49,25 +77,49 @@ struct SettingEdit {
     let useDefault: () -> Void
 }
 
-/// How a choice is shown: its words, and the colour of the swatch it names where it names one.
-struct ChoiceLabel {
-    let text: String
+/// What a card's unset settings are read against: the scene's colours, and the host's facts and
+/// install blocks a setting's declared source is found in.
+struct SceneLook {
+    let colours: SceneColours
+    let facts: SchemaFacts?
+    let installed: [String: JSONValue]
+
+    init(_ scenes: PanelScenes) {
+        facts = scenes.facts
+        colours = scenes.facts?.colours ?? .none
+        installed = scenes.installed
+    }
+}
+
+/// One of the scene's roles as a card's colour may take it, in its colour in this scene.
+struct RoleChoice: Identifiable {
+    let role: SceneColours.Role
     let colour: HexColour?
+
+    var id: String { role.id }
+}
+
+/// What the scene gives a card's setting: the colour a colour setting is drawn in, the roles it
+/// may take, and the scene's value a setting with no default of its own takes while unset.
+struct FromScene {
+    var drawn: DrawnColour?
+    var roles: [RoleChoice] = []
+    var value: JSONValue?
+    /// Whose value an unset setting takes: the scene's, or the panel's for a scene's own setting.
+    var owner = "scene"
 }
 
 /// One setting, compact: its label, its control with Use Default beside it where the scene sets it,
 /// its help on hover, and under it only what needs saying: the standard it is off, that the cards
-/// differ, or the element and swatch an unset colour is drawn in (design D5; `scene-settings`).
+/// differ, or the scene's colour or value it takes (design D5; `scene-settings`).
 /// Nothing here says Reset, which is the panel's measurement reset.
 struct SettingRow: View {
     let declaration: SettingDeclaration
     let value: SettingValue
     let note: SettingNote?
     let edit: SettingEdit?
-    /// Where an unset colour comes from, shown in its well and said under it.
-    var inherited: InheritedColour?
-    /// How each choice is shown, where not by its value.
-    var choiceLabel: ((JSONValue) -> ChoiceLabel)?
+    /// What the scene gives the setting, shown in its control and said under it.
+    var fromScene = FromScene()
     /// Why the setting has no effect as the card's other settings stand, which greys it out
     /// (`scene-settings`, design D9).
     var unused: String?
@@ -78,8 +130,7 @@ struct SettingRow: View {
                 HStack(spacing: SceneMetrics.settingSpacing) {
                     SettingControl(
                         declaration: declaration, value: value,
-                        edit: unused == nil ? edit : nil, inheritedHex: inherited?.colour.hex,
-                        choiceLabel: choiceLabel)
+                        edit: unused == nil ? edit : nil, fromScene: fromScene)
                     if value.isSet, let edit { UseDefaultButton(action: edit.useDefault) }
                 }
             }
@@ -97,14 +148,12 @@ struct SettingRow: View {
         .help(declaration.help)
     }
 
-    /// What needs saying of a value the scene does not set alone: that the cards differ, or the
-    /// element and swatch an unset colour is drawn in.
+    /// What needs saying of a value the card does not hold alone: that the cards differ, the
+    /// scene's role a colour takes, or that an unset setting takes the scene's.
     private var state: String? {
-        switch value {
-        case .mixed: "Mixed"
-        case .same(nil, isSet: false): inherited?.caption
-        case .same: nil
-        }
+        if case .mixed = value { return "Mixed" }
+        if let caption = fromScene.drawn?.caption { return caption }
+        return fromScene.value == nil ? nil : "Uses the \(fromScene.owner)'s \(declaration.label)"
     }
 }
 
@@ -121,15 +170,16 @@ struct UseDefaultButton: View {
     }
 }
 
-/// The control a setting's shape takes: a switch, a picker of its choices, a colour well, a number
-/// field, or its value as text where the app cannot edit it.
+/// The control a setting's shape takes: a switch, a picker of its choices, a colour well, a colour
+/// well with the scene's roles beside it, a number field, or its value as text where the app
+/// cannot edit it.
 struct SettingControl: View {
     let declaration: SettingDeclaration
     let value: SettingValue
     let edit: SettingEdit?
-    /// The colour an unset colour is drawn in, shown in its well.
-    var inheritedHex: String?
-    var choiceLabel: ((JSONValue) -> ChoiceLabel)?
+    /// What the scene gives the setting: a card colour's drawn colour and roles, or the value an
+    /// unset number takes.
+    var fromScene = FromScene()
 
     var body: some View {
         Group {
@@ -138,13 +188,23 @@ struct SettingControl: View {
                 Toggle(declaration.label, isOn: flag).labelsHidden()
             case .choice(let choices):
                 Picker(declaration.label, selection: choice) {
-                    ForEach(choices, id: \.self) { item($0).tag(Optional($0)) }
+                    ForEach(choices, id: \.self) {
+                        Text(declaration.label(of: $0)).tag(Optional($0))
+                    }
                 }
                 .labelsHidden()
             case .colour:
-                ColourWell(hex: shown?.stringValue ?? inheritedHex, set: edit?.set)
+                ColourWell(hex: shown?.stringValue, set: edit?.set)
+            case .roleColour:
+                ColourWell(hex: fromScene.drawn?.colour.hex, set: edit?.set)
+                RoleMenu(roles: fromScene.roles, taken: fromScene.drawn?.role?.id, set: edit?.set)
+            case .number where declaration.isAmount:
+                AmountSlider(
+                    declaration: declaration, value: shown ?? fromScene.value, set: edit?.set)
             case .number, .integer:
-                NumberField(declaration: declaration, value: shown, set: edit?.set)
+                NumberField(
+                    declaration: declaration, value: shown ?? fromScene.value, set: edit?.set,
+                    isMixed: isMixed)
             case .other, .colours:
                 Text(shown?.text ?? "None").foregroundStyle(.secondary)
             }
@@ -153,9 +213,11 @@ struct SettingControl: View {
     }
 
     /// The value every card takes, or nil where they differ.
-    private var shown: JSONValue? {
-        if case .same(let value, _) = value { return value }
-        return nil
+    private var shown: JSONValue? { value.shown }
+
+    private var isMixed: Bool {
+        if case .mixed = value { return true }
+        return false
     }
 
     private var flag: Binding<Bool> {
@@ -164,137 +226,5 @@ struct SettingControl: View {
 
     private var choice: Binding<JSONValue?> {
         Binding(get: { shown }, set: { picked in picked.map { edit?.set($0) } })
-    }
-
-    /// A choice as its menu item: its words, with a chip of its swatch where it names one.
-    @ViewBuilder private func item(_ choice: JSONValue) -> some View {
-        if let label = choiceLabel?(choice) {
-            if let colour = label.colour {
-                Label {
-                    Text(label.text)
-                } icon: {
-                    Image(nsImage: SwatchChip.image(colour))
-                }
-            } else {
-                Text(label.text)
-            }
-        } else {
-            Text(choice.text)
-        }
-    }
-}
-
-/// A small square of a colour for a menu item, drawn as an image since a menu does not draw
-/// views or tint symbols.
-enum SwatchChip {
-    static func image(_ colour: HexColour) -> NSImage {
-        let side = SceneMetrics.swatchChipSide
-        return NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
-            let radius = SceneMetrics.swatchChipRadius
-            let chip = NSBezierPath(
-                roundedRect: rect.insetBy(dx: 1, dy: 1), xRadius: radius, yRadius: radius)
-            NSColor(srgbRed: colour.red, green: colour.green, blue: colour.blue, alpha: 1)
-                .setFill()
-            chip.fill()
-            NSColor.separatorColor.setStroke()
-            chip.stroke()
-            return true
-        }
-    }
-}
-
-/// A number typed or stepped: kept to its range and step as the core writes it, committed on
-/// Return or leaving the field, each stepper click one step (design D4).
-struct NumberField: View {
-    let declaration: SettingDeclaration
-    /// The value every card takes, or nil where they differ.
-    let value: JSONValue?
-    let set: ((JSONValue) -> Void)?
-
-    var body: some View {
-        HStack(spacing: SceneMetrics.settingSpacing) {
-            TextField(declaration.label, value: number, format: .number, prompt: Text("Mixed"))
-                .labelsHidden()
-                .multilineTextAlignment(.trailing)
-                .frame(width: SceneMetrics.numberFieldWidth)
-            if !declaration.unit.isEmpty {
-                Text(declaration.unit).foregroundStyle(.secondary)
-            }
-            if declaration.stepped(value, by: 1) != nil {
-                Stepper(declaration.label, onIncrement: { step(1) }, onDecrement: { step(-1) })
-                    .labelsHidden()
-            }
-        }
-    }
-
-    private var number: Binding<Double?> {
-        Binding(
-            get: { value?.numberValue },
-            set: { typed in typed.flatMap(declaration.written).map { set?($0) } })
-    }
-
-    private func step(_ steps: Int) {
-        declaration.stepped(value, by: steps).map { set?($0) }
-    }
-}
-
-/// A colour through the system colour panel, with no opacity, written as `#RRGGBB` in sRGB. The
-/// panel sends a change for every movement, so a run of changes is held and written once the
-/// colour has rested, or the well goes, as one step and one redraw (design D8).
-struct ColourWell: View {
-    /// The colour shown: the stored one, or the one an unset colour is drawn in; nil for colours
-    /// that differ. A colour chosen equal to it is not written (`scene-settings`, design D8).
-    let hex: String?
-    let set: ((JSONValue) -> Void)?
-    @State private var pending: String?
-    @State private var settling: Task<Void, Never>?
-
-    var body: some View {
-        ColorPicker("Colour", selection: colour, supportsOpacity: false)
-            .labelsHidden()
-            .onDisappear(perform: commit)
-    }
-
-    /// The colour shown, as `HexColour` writes it.
-    private var stored: String? {
-        hex.flatMap { HexColour($0) }?.hex
-    }
-
-    private var colour: Binding<Color> {
-        Binding(get: { Self.swatch(pending ?? stored) }, set: choose)
-    }
-
-    private func choose(_ picked: Color) {
-        guard let srgb = NSColor(picked).usingColorSpace(.sRGB) else { return }
-        let chosen = HexColour(
-            red: Double(srgb.redComponent), green: Double(srgb.greenComponent),
-            blue: Double(srgb.blueComponent)
-        ).hex
-        guard chosen != (pending ?? stored) else { return }
-        pending = chosen
-        settling?.cancel()
-        settling = Task {
-            do {
-                try await Task.sleep(for: .seconds(SceneMetrics.colourSettleSeconds))
-            } catch {
-                return
-            }
-            commit()
-        }
-    }
-
-    /// Writes the held colour, if it differs from the stored one.
-    private func commit() {
-        settling?.cancel()
-        settling = nil
-        guard let chosen = pending else { return }
-        pending = nil
-        if chosen != stored { set?(.string(chosen)) }
-    }
-
-    /// `hex` as an sRGB colour, or clear for none.
-    private static func swatch(_ hex: String?) -> Color {
-        guard let colour = hex.flatMap({ HexColour($0) }) else { return .clear }
-        return Color(.sRGB, red: colour.red, green: colour.green, blue: colour.blue)
     }
 }

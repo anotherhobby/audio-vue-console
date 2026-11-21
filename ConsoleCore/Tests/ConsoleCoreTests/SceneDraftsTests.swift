@@ -7,12 +7,13 @@ import Testing
 /// makes an unsaved copy": each draft keeps the parse it came from, so a card's settings survive.
 @MainActor
 struct SceneDraftsTests {
-    static let grid = CellSize(cols: 64, rows: 36)
+    /// An 8:3 panel's grid.
+    static let grid = CellSize(cols: 96, rows: 36)
 
     /// The built-in RTA: a meter carrying a setting of its own, and bars beside it.
     static func rta() throws -> SceneDocument {
         let doc =
-            #"{"name": "RTA", "grid": {"cols": 96, "rows": 36}, "cards": ["#
+            #"{"name": "RTA", "cards": ["#
             + #"{"card": "meter", "col": 0, "row": 0, "colspan": 8, "rowspan": 8, "peak": "hold"},"#
             + #"{"card": "rta_bars", "col": 48, "row": 0, "colspan": 48, "rowspan": 36}]}"#
         return SceneDocument(
@@ -29,15 +30,15 @@ struct SceneDraftsTests {
 
     @Test func aDraftIsTheSameOnASecondAsk() throws {
         let drafts = SceneDrafts()
-        let first = try drafts.draft(for: try Self.rta(), defaultGrid: Self.grid)
-        let second = try drafts.draft(for: try Self.rta(), defaultGrid: Self.grid)
+        let first = try drafts.draft(for: try Self.rta(), panel: Self.grid)
+        let second = try drafts.draft(for: try Self.rta(), panel: Self.grid)
         #expect(first == second)
         #expect(first.layout.cards.map(\.id) == second.layout.cards.map(\.id))
     }
 
     @Test func aKeptEditKeepsTheOtherCardsSettings() throws {
         let drafts = SceneDrafts()
-        let draft = try drafts.draft(for: try Self.rta(), defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: try Self.rta(), panel: Self.grid)
         drafts.keep(try Self.moveBars(draft), for: "rta")
         let kept = try #require(drafts.draft("rta"))
         let cards = try #require(kept.doc["cards"]?.arrayValue)
@@ -47,7 +48,7 @@ struct SceneDraftsTests {
 
     @Test func anEditThenItsUndoIsNotUnsaved() throws {
         let drafts = SceneDrafts()
-        let draft = try drafts.draft(for: try Self.rta(), defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: try Self.rta(), panel: Self.grid)
         #expect(!draft.isUnsaved)
         drafts.keep(try Self.moveBars(draft), for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == true)
@@ -60,7 +61,7 @@ struct SceneDraftsTests {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
         let copy = drafts.duplicate(
-            try drafts.draft(for: rta, defaultGrid: Self.grid), among: [rta])
+            try drafts.draft(for: rta, panel: Self.grid), among: [rta])
         #expect(copy.name == "RTA copy")
         #expect(!copy.builtIn && !copy.fixed && copy.rev == nil)
         #expect(copy.doc["name"] == .string("RTA copy"))
@@ -73,7 +74,7 @@ struct SceneDraftsTests {
     @Test func aDuplicateOfAnEditedSceneKeepsTheEditsAndTheSettings() throws {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
-        let draft = try drafts.draft(for: rta, defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: rta, panel: Self.grid)
         drafts.keep(try Self.moveBars(draft), for: "rta")
         let copy = drafts.duplicate(try #require(drafts.draft("rta")), among: [rta])
         let cards = try #require(copy.doc["cards"]?.arrayValue)
@@ -84,10 +85,46 @@ struct SceneDraftsTests {
         #expect(copied.doc["name"] == .string("RTA copy"))
     }
 
+    /// `scene-gallery`, "New Scene makes an unsaved scene with no cards".
+    @Test func aNewSceneIsAnUnsavedEmptySceneOnTheGivenGrid() throws {
+        let drafts = SceneDrafts()
+        let grid = CellSize(cols: 96, rows: 36)
+        let first = try drafts.new(on: grid, among: [])
+        let second = try drafts.new(on: grid, among: [])
+        #expect(first.name == "New Scene" && second.name == "New Scene 2")
+        let draft = try #require(drafts.draft(first.id))
+        #expect(draft.isUnsaved && draft.layout.cards.isEmpty && draft.layout.grid == grid)
+        #expect(draft.doc["grid"] == nil)
+        #expect(drafts.listing([]).map(\.id) == [first.id, second.id])
+    }
+
+    /// A panel whose display changes: an edited draft keeps its edit, and a card left as read
+    /// with no span covers the new grid.
+    @Test func draftsAreLaidOutAgainOnANewGrid() throws {
+        let drafts = SceneDrafts()
+        let doc =
+            ##"{"name": "Mine", "backdrop": {"color": "#000000"}, "cards": [{"card": "rta_bars"}]}"##
+        let mine = SceneDocument(
+            id: "u1", name: "Mine", builtIn: false, fixed: false,
+            doc: try JSONDecoder().decode(JSONValue.self, from: Data(doc.utf8)), rev: 3)
+        let draft = try drafts.draft(for: mine, panel: Self.grid)
+        var edited = draft.content
+        edited.blocks["backdrop"] = .object(["color": .string("#102030")])
+        drafts.keep(edited, for: "u1")
+        let narrow = CellSize(cols: 64, rows: 36)
+        drafts.relay(on: narrow)
+        let relaid = try #require(drafts.draft("u1"))
+        #expect(relaid.laidOut.panel == narrow && relaid.layout.grid == narrow)
+        #expect(relaid.layout.cards.first?.cells == CellRect(col: 0, row: 0, cols: 64, rows: 36))
+        #expect(relaid.isUnsaved && relaid.rev == 3)
+        #expect(relaid.doc["backdrop"] == .object(["color": .string("#102030")]))
+        #expect(relaid.doc["cards"]?.arrayValue?.first?["colspan"] == nil)
+    }
+
     @Test func copiesAreNamedForTheFirstFreeNumber() throws {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
-        let draft = try drafts.draft(for: rta, defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: rta, panel: Self.grid)
         #expect(drafts.duplicate(draft, among: [rta]).name == "RTA copy")
         #expect(drafts.duplicate(draft, among: [rta]).name == "RTA copy 2")
         #expect(drafts.duplicate(draft, among: [rta]).name == "RTA copy 3")
@@ -96,7 +133,7 @@ struct SceneDraftsTests {
     /// The stored scene "Mine" at `rev`, with the bars at `barsCol`.
     static func mine(rev: Int, name: String = "Mine", barsCol: Int = 48) throws -> SceneDocument {
         let doc =
-            #"{"name": "\#(name)", "grid": {"cols": 96, "rows": 36}, "cards": ["#
+            #"{"name": "\#(name)", "cards": ["#
             + #"{"card": "meter", "col": 0, "row": 0, "colspan": 8, "rowspan": 8, "peak": "hold"},"#
             + #"{"card": "rta_bars", "col": \#(barsCol), "row": 0, "colspan": 48, "rowspan": 36}]}"#
         return SceneDocument(
@@ -106,7 +143,7 @@ struct SceneDraftsTests {
 
     @Test func aSavedSceneIsNotUnsavedAndItsEditorKeepsPairing() throws {
         let drafts = SceneDrafts()
-        let draft = try drafts.draft(for: try Self.mine(rev: 3), defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: try Self.mine(rev: 3), panel: Self.grid)
         let moved = try Self.moveBars(draft)
         drafts.keep(moved, for: "u1")
         drafts.saved(try Self.mine(rev: 4, barsCol: 38), was: "u1")
@@ -126,7 +163,7 @@ struct SceneDraftsTests {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
         let copy = drafts.duplicate(
-            try drafts.draft(for: rta, defaultGrid: Self.grid), among: [rta])
+            try drafts.draft(for: rta, panel: Self.grid), among: [rta])
         let stored = SceneDocument(
             id: "u2", name: "RTA copy", builtIn: false, fixed: false, doc: copy.doc, rev: 1)
         drafts.saved(stored, was: copy.id)
@@ -137,7 +174,7 @@ struct SceneDraftsTests {
 
     @Test func aRenameKeepsAnUnsavedLayoutAndMovesTheBase() throws {
         let drafts = SceneDrafts()
-        let draft = try drafts.draft(for: try Self.mine(rev: 3), defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: try Self.mine(rev: 3), panel: Self.grid)
         let moved = try Self.moveBars(draft)
         drafts.keep(moved, for: "u1")
         drafts.renamed("u1", to: try Self.mine(rev: 4, name: "Studio"))
@@ -150,7 +187,7 @@ struct SceneDraftsTests {
 
     @Test func aCleanDraftIsReadAgainOnARename() throws {
         let drafts = SceneDrafts()
-        _ = try drafts.draft(for: try Self.mine(rev: 3), defaultGrid: Self.grid)
+        _ = try drafts.draft(for: try Self.mine(rev: 3), panel: Self.grid)
         drafts.renamed("u1", to: try Self.mine(rev: 4, name: "Studio"))
         let renamed = try #require(drafts.draft("u1"))
         #expect(!renamed.isUnsaved && renamed.rev == 4 && renamed.name == "Studio")
@@ -160,7 +197,7 @@ struct SceneDraftsTests {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
         let copy = drafts.duplicate(
-            try drafts.draft(for: rta, defaultGrid: Self.grid), among: [rta])
+            try drafts.draft(for: rta, panel: Self.grid), among: [rta])
         drafts.renameCopy(copy.id, to: "Wide")
         #expect(drafts.copies.first?.name == "Wide")
         #expect(drafts.draft(copy.id)?.doc["name"] == .string("Wide"))
@@ -178,7 +215,7 @@ struct SceneDraftsTests {
 
     @Test func aLoadedVersionIsUnsavedUnderTheCurrentName() throws {
         let drafts = SceneDrafts()
-        _ = try drafts.draft(for: try Self.mine(rev: 5, name: "Studio"), defaultGrid: Self.grid)
+        _ = try drafts.draft(for: try Self.mine(rev: 5, name: "Studio"), panel: Self.grid)
         try drafts.load(try Self.revision3(), for: "u1")
         let loaded = try #require(drafts.draft("u1"))
         #expect(loaded.layout == loaded.laidOut.layout)
@@ -192,7 +229,7 @@ struct SceneDraftsTests {
     @Test func aRevertAfterALoadIsANewParse() throws {
         let drafts = SceneDrafts()
         let current = try Self.mine(rev: 5, name: "Studio")
-        _ = try drafts.draft(for: current, defaultGrid: Self.grid)
+        _ = try drafts.draft(for: current, panel: Self.grid)
         try drafts.load(try Self.revision3(), for: "u1")
         let reverted = try #require(try drafts.revert("u1", to: current))
         #expect(reverted.newParse)
@@ -203,7 +240,7 @@ struct SceneDraftsTests {
     @Test func aRevertAfterAnEditIsTheSameParse() throws {
         let drafts = SceneDrafts()
         let current = try Self.mine(rev: 5)
-        let draft = try drafts.draft(for: current, defaultGrid: Self.grid)
+        let draft = try drafts.draft(for: current, panel: Self.grid)
         drafts.keep(try Self.moveBars(draft), for: "u1")
         let reverted = try #require(try drafts.revert("u1", to: current))
         #expect(!reverted.newParse)
@@ -213,7 +250,7 @@ struct SceneDraftsTests {
     @Test func draftsAreKeptUntilForgotten() throws {
         let drafts = SceneDrafts()
         let rta = try Self.rta()
-        _ = drafts.duplicate(try drafts.draft(for: rta, defaultGrid: Self.grid), among: [rta])
+        _ = drafts.duplicate(try drafts.draft(for: rta, panel: Self.grid), among: [rta])
         drafts.forget()
         #expect(drafts.draft("rta") == nil)
         #expect(drafts.copies.isEmpty)
@@ -227,7 +264,7 @@ struct SceneDraftsTests {
         manager.groupsByEvent = false
         let drafts = SceneDrafts()
         let draft = try drafts.draft(
-            for: try SceneDraftsTests.rta(), defaultGrid: SceneDraftsTests.grid)
+            for: try SceneDraftsTests.rta(), panel: SceneDraftsTests.grid)
         let editor = SceneEditor(content: draft.content, undoManager: manager) {
             drafts.keep($0, for: "rta")
         }
@@ -244,12 +281,12 @@ struct SceneDraftsTests {
     @Test func aBlockChangedAndChangedBackIsNotUnsaved() throws {
         let drafts = SceneDrafts()
         let draft = try drafts.draft(
-            for: try SceneDraftsTests.rta(), defaultGrid: SceneDraftsTests.grid)
+            for: try SceneDraftsTests.rta(), panel: SceneDraftsTests.grid)
         var changed = draft.content
-        changed.blocks["palette"] = JSONValue.object(["signal": .string("#00FF88")])
+        changed.blocks["colors"] = JSONValue.object(["series": .string("#00FF88")])
         drafts.keep(changed, for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == true)
-        #expect(drafts.draft("rta")?.doc["palette"]?["signal"] == .string("#00FF88"))
+        #expect(drafts.draft("rta")?.doc["colors"]?["series"] == .string("#00FF88"))
         drafts.keep(draft.content, for: "rta")
         #expect(drafts.draft("rta")?.isUnsaved == false)
     }

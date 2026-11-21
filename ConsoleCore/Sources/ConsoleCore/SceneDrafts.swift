@@ -18,11 +18,11 @@ public final class SceneDrafts {
     }
 
     /// `document`'s draft, made from one parse the first time and the same after that.
-    public func draft(for document: SceneDocument, defaultGrid: CellSize) throws(LayoutRefusal)
+    public func draft(for document: SceneDocument, panel: CellSize) throws(LayoutRefusal)
         -> Draft
     {
         if let draft = drafts[document.id] { return draft }
-        let draft = Draft(try LaidOutScene(document, defaultGrid: defaultGrid))
+        let draft = Draft(try LaidOutScene(document, panel: panel))
         drafts[document.id] = draft
         return draft
     }
@@ -42,17 +42,40 @@ public final class SceneDrafts {
         listing(scenes).compactMap { drafts[$0.id] }.filter(\.isUnsaved)
     }
 
-    /// A copy of `draft` as it now shows, kept with the app's copies, not built in, named for it
-    /// with "copy" after it, or "copy 2" and on, the first no scene of `scenes` or copy has.
-    public func duplicate(_ draft: Draft, among scenes: [SceneDocument]) -> SceneDocument {
-        let base = "\(draft.name ?? draft.id) copy"
-        let taken = Set(listing(scenes).compactMap(\.name))
+    /// A new scene with no cards, laid out on `grid`, the panel's, kept with the app's copies until saved, named "New
+    /// Scene", or "New Scene 2" and on, the first no scene of `scenes` or copy has.
+    public func new(on grid: CellSize, among scenes: [SceneDocument]) throws(LayoutRefusal)
+        -> SceneDocument
+    {
+        let name = Self.free("New Scene", among: listing(scenes))
+        let doc: JSONValue = .object([
+            "name": .string(name), "cards": .array([]),
+        ])
+        let scene = SceneDocument(
+            id: "\(Self.copyPrefix)\(UUID().uuidString)", name: name, builtIn: false,
+            fixed: false, doc: doc)
+        let draft = Draft(try LaidOutScene(scene, panel: grid))
+        copies.append(scene)
+        drafts[scene.id] = draft
+        return scene
+    }
+
+    /// `base`, or `base` with 2 and on after it, the first no scene of `scenes` is named.
+    private static func free(_ base: String, among scenes: [SceneDocument]) -> String {
+        let taken = Set(scenes.compactMap(\.name))
         var name = base
         var number = 2
         while taken.contains(name) {
             name = "\(base) \(number)"
             number += 1
         }
+        return name
+    }
+
+    /// A copy of `draft` as it now shows, kept with the app's copies, not built in, named for it
+    /// with "copy" after it, or "copy 2" and on, the first no scene of `scenes` or copy has.
+    public func duplicate(_ draft: Draft, among scenes: [SceneDocument]) -> SceneDocument {
+        let name = Self.free("\(draft.name ?? draft.id) copy", among: listing(scenes))
         var doc = draft.doc.objectValue ?? [:]
         doc["name"] = .string(name)
         let copy = SceneDocument(
@@ -98,7 +121,7 @@ public final class SceneDrafts {
         let document = SceneDocument(
             id: id, name: old.name, builtIn: false, fixed: false, doc: .object(doc),
             rev: revision.rev)
-        var draft = Draft(try LaidOutScene(document, defaultGrid: old.layout.grid))
+        var draft = Draft(try LaidOutScene(document, panel: old.laidOut.panel))
         draft.rev = old.rev
         drafts[id] = draft
     }
@@ -111,7 +134,7 @@ public final class SceneDrafts {
     {
         guard let old = drafts[id] else { return nil }
         guard old.source != old.rev else { return (old.laidOut.content, false) }
-        let draft = Draft(try LaidOutScene(base, defaultGrid: old.layout.grid))
+        let draft = Draft(try LaidOutScene(base, panel: old.laidOut.panel))
         drafts[id] = draft
         return (draft.content, true)
     }
@@ -134,6 +157,42 @@ public final class SceneDrafts {
         copies.removeAll { $0.id == id }
     }
 
+    /// Lays every draft out again on `panel`, the panel's grid now, as when its display changes.
+    /// An edited draft keeps its blocks and each card it moved or resized; a card left as read
+    /// takes its cells on the new grid, so an unset span covers it. A draft that cannot be laid
+    /// out there is dropped, and the next open says why.
+    public func relay(on panel: CellSize) {
+        for (id, old) in drafts where old.laidOut.panel != panel {
+            drafts[id] = Self.relaid(old, on: panel)
+        }
+    }
+
+    private static func relaid(_ old: Draft, on panel: CellSize) -> Draft? {
+        do throws(LayoutRefusal) {
+            let ids = old.laidOut.layout.cards.map(\.id)
+            let base = try LaidOutScene(old.laidOut.document, panel: panel, ids: ids)
+            let asRead = Dictionary(
+                uniqueKeysWithValues: old.laidOut.layout.cards.map { ($0.id, $0.cells) })
+            let cards = old.layout.cards.map { card in
+                var moved = card
+                if asRead[card.id] == card.cells, let now = base.layout.card(card.id) {
+                    moved.cells = now.cells
+                }
+                return moved
+            }
+            let reach = cards.map(\.cells.maxCol).max() ?? 0
+            let layout = try SceneLayout(
+                grid: CellSize(cols: max(panel.cols, reach), rows: panel.rows), cards: cards)
+            var draft = Draft(
+                base, content: SceneContent(layout: layout, blocks: old.content.blocks),
+                name: old.name, rev: old.rev)
+            draft.source = old.source
+            return draft
+        } catch {
+            return nil
+        }
+    }
+
     /// Forgets every draft and copy, as when another panel is shown.
     public func forget() {
         copies = []
@@ -146,7 +205,8 @@ public final class SceneDrafts {
         do {
             return Draft(
                 try LaidOutScene(
-                    document, defaultGrid: old.layout.grid, ids: old.layout.cards.map(\.id)))
+                    document, panel: old.laidOut.panel, ids: old.layout.cards.map(\.id),
+                    keeping: old.layout))
         } catch {
             return nil
         }

@@ -11,13 +11,16 @@ enum CanvasGesture: Equatable {
     case dropping(kind: String, size: CellSize, cell: Cell)
 }
 
-/// The scene canvas: the scene's grid fitted inside the panel's outline, as the host fits it, with
-/// the backdrop around it. It turns pointer and key events into `SceneEditor` calls and draws
+/// The scene canvas: the panel's grid filling the display's outline, as the host stretches it,
+/// and wider by the same cells for a scene too wide for the panel (`scene-canvas`, "The canvas
+/// has the display's shape"). It turns pointer and key events into `SceneEditor` calls and draws
 /// their results; every rule is the editor's (`scene-canvas`).
 struct SceneCanvas: View {
     let editor: SceneEditor
-    /// The panel's width over its height.
+    /// The display's width over its height.
     let panelAspect: Double
+    /// How many columns the panel's grid has; the scene's has more where it is too wide.
+    let panelCols: Int
     /// A library card's size, by kind.
     let sizeOf: (String) -> CellSize?
     /// The scene's layers, or nil where the canvas draws boxes alone, as in previews.
@@ -69,19 +72,28 @@ struct SceneCanvas: View {
 
     private var grid: CellSize { editor.layout.grid }
 
+    /// Whether a card ends past the panel's last column, so the panel would refuse the scene.
+    private var isTooWide: Bool { editor.layout.cards.contains { $0.cells.maxCol > panelCols } }
+
+    /// The canvas's width over its height: the display's, wider by the columns past the panel's.
+    private var aspect: Double { panelAspect * Double(grid.cols) / Double(panelCols) }
+
     private var display: some View {
         ZStack {
             if let rendering, showsLayers {
-                LayerStack(rendering: rendering, grid: grid, shown: shownLayout)
+                LayerStack(
+                    rendering: rendering, grid: grid, panelCols: panelCols, shown: shownLayout)
             } else {
-                CanvasMetrics.backdrop
+                // A scene with no cards is drawn by no request of the canvas's; the library's
+                // tiles hold its backdrop.
+                SceneBackdrop(
+                    image: editor.layout.cards.isEmpty ? store.tiles.backdrop?.image : nil)
             }
             GeometryReader { proxy in
                 region(GridGeometry(grid: grid, size: proxy.size))
             }
-            .aspectRatio(CGFloat(grid.cols) / CGFloat(grid.rows), contentMode: .fit)
         }
-        .aspectRatio(panelAspect, contentMode: .fit)
+        .aspectRatio(aspect, contentMode: .fit)
         .padding(CanvasMetrics.bezelWidth)
         .background(.black, in: RoundedRectangle(cornerRadius: CanvasMetrics.bezelCornerRadius))
     }
@@ -92,6 +104,13 @@ struct SceneCanvas: View {
         ZStack(alignment: .topLeading) {
             marqueeSurface(geometry)
             if !showsLayers { LayoutPlates(layout: shownLayout).allowsHitTesting(false) }
+            if grid.cols > panelCols {
+                // Over the plates: the columns the panel lacks (`scene-canvas`, "A scene too wide shows the
+                // columns the panel lacks").
+                Rectangle().fill(.black.opacity(CanvasMetrics.lackingColumnsOpacity))
+                    .placed(at: geometry.rect(of: lackingColumns))
+                    .allowsHitTesting(false)
+            }
             ForEach(editor.layout.cards) { target($0, geometry) }
             CanvasOutlines(rects: outlineRects(geometry), isRefused: isRefused, marquee: marquee)
             if let card = editor.resizableCard {
@@ -107,6 +126,11 @@ struct SceneCanvas: View {
                 gesture: $gesture))
     }
 
+    /// The cells past the panel's last column.
+    private var lackingColumns: CellRect {
+        CellRect(col: panelCols, row: 0, cols: grid.cols - panelCols, rows: grid.rows)
+    }
+
     private var footer: some View {
         VStack {
             footerLine
@@ -117,10 +141,17 @@ struct SceneCanvas: View {
         .font(.callout)
     }
 
+    private var tooWideMessage: String? {
+        isTooWide
+            ? "This scene is too wide for this panel. Move its cards into the first "
+                + "\(panelCols) columns to apply it."
+            : nil
+    }
+
     private var footerLine: some View {
         Group {
             if let message = (previewRefusal ?? editor.refusal)?.description
-                ?? editor.readOnly?.description
+                ?? editor.readOnly?.description ?? tooWideMessage
             {
                 Label(message, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -277,5 +308,27 @@ struct CanvasOutlines: View {
             }
         }
         .allowsHitTesting(false)
+    }
+}
+
+#Preview("Canvas, an 8:3 panel") {
+    if let layout = PlatesPreview.layout(on: CellSize(cols: 96, rows: 36)) {
+        SceneCanvas(
+            editor: SceneEditor(layout: layout), panelAspect: 8.0 / 3.0, panelCols: 96,
+            sizeOf: { _ in nil }
+        )
+        .environment(SceneStore())
+        .frame(width: 900, height: 420)
+    }
+}
+
+#Preview("Canvas, too wide for a 61-column panel") {
+    if let layout = PlatesPreview.layout(on: CellSize(cols: 61, rows: 36)) {
+        SceneCanvas(
+            editor: SceneEditor(layout: layout), panelAspect: 1024.0 / 600.0, panelCols: 61,
+            sizeOf: { _ in nil }
+        )
+        .environment(SceneStore())
+        .frame(width: 900, height: 420)
     }
 }

@@ -24,6 +24,8 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         case choice([JSONValue])
         /// `#rrggbb`.
         case colour
+        /// A scene role by its id, one of `roles`, or `#rrggbb`: a card's colour setting.
+        case roleColour(roles: [String])
         /// A list of `#rrggbb` colours holding at least `minimum`, such as a gradient's stops.
         case colours(minimum: Int)
         /// A shape the inspector shows but does not edit, such as a list of colours.
@@ -41,6 +43,48 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         public init(when: [String: [JSONValue]], reason: String) {
             self.when = when
             self.reason = reason
+        }
+    }
+
+    /// Where a card's unset colour comes from: the scene's role it takes, or the default of a
+    /// colour of its own; neither for any other setting.
+    public struct ColourDefault: Sendable, Equatable {
+        public let role: String?
+        public let own: String?
+
+        public static let none = ColourDefault()
+
+        public init(role: String? = nil, own: String? = nil) {
+            self.role = role
+            self.own = own
+        }
+    }
+
+    /// The block an unset setting takes its value from, the setting of the same key there
+    /// (audio-vue `x-inherits`, `<document>.<block>`): a scene's display timeouts take the
+    /// install's, a card's shadow the scene's colours'.
+    public struct Source: Sendable, Equatable {
+        /// The document holding the block: `install` or `scene`.
+        public let document: String
+        public let block: String
+
+        /// What the scene's document is called.
+        public static let scene = "scene"
+        /// What the install's document is called.
+        public static let install = "install"
+
+        public init(document: String, block: String) {
+            self.document = document
+            self.block = block
+        }
+
+        /// The source `name` names, or nil where it is not a document and a block.
+        init?(_ name: String?) {
+            let parts = (name ?? "").split(separator: ".", maxSplits: 1).map(String.init)
+            guard let document = parts.first, let block = parts.last, parts.count > 1 else {
+                return nil
+            }
+            self.init(document: document, block: block)
         }
     }
 
@@ -63,23 +107,32 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
     public let settingClass: String?
     public let standard: Standard
     /// The value a card takes when the scene leaves the setting unset, or nil where it declares
-    /// none: a colour that follows the palette.
+    /// none: a colour that follows the scene's.
     public let defaultValue: JSONValue?
     public let shape: Shape
-    /// The element a card's colour setting overrides (audio-vue `x-element`), or nil for any
-    /// other setting (`scene-settings`, design D8).
-    public let element: String?
+    /// The scene role a card's colour setting takes where it is unset (audio-vue `x-role`), or nil
+    /// for any other setting (`scene-settings`, design D8).
+    public let role: String?
+    /// What a colour of the card's own takes where it is unset, a role's id or `#rrggbb`
+    /// (audio-vue `x-own`), or nil for any other setting.
+    public let ownDefault: String?
+    /// What each choice is called, in the choices' order; empty where a choice is its own name
+    /// (audio-vue `x-choice-labels`).
+    public let choiceLabels: [String]
     /// The cases in which the setting has no effect, in declared order; none where it always has
     /// one (audio-vue `x-unused-when`; `scene-settings` design D9).
     public let unusedWhen: [UnusedCase]
+    /// Where the setting's value comes from while it is unset, in place of a default of its own;
+    /// nil for a setting that takes its own default.
+    public private(set) var inherits: Source?
 
     public var id: String { key }
 
     public init(
         key: String, label: String, help: String = "", unit: String = "",
         settingClass: String? = nil, standard: Standard = .notApplicable,
-        defaultValue: JSONValue? = nil, shape: Shape, element: String? = nil,
-        unusedWhen: [UnusedCase] = []
+        defaultValue: JSONValue? = nil, shape: Shape, colour: ColourDefault = .none,
+        choiceLabels: [String] = [], unusedWhen: [UnusedCase] = []
     ) {
         self.key = key
         self.label = label
@@ -89,7 +142,9 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         self.standard = standard
         self.defaultValue = defaultValue
         self.shape = shape
-        self.element = element
+        role = colour.role
+        ownDefault = colour.own
+        self.choiceLabels = choiceLabels
         self.unusedWhen = unusedWhen
     }
 
@@ -102,23 +157,41 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
             settingClass: property["x-class"]?.stringValue,
             standard: Self.standard(property["x-standard"]),
             defaultValue: property["default"], shape: Self.shape(property),
-            element: property["x-element"]?.stringValue,
+            colour: ColourDefault(
+                role: property["x-role"]?.stringValue,
+                own: property["x-own"]?["default"]?.stringValue),
+            choiceLabels: (property["x-choice-labels"]?.arrayValue ?? []).compactMap(\.stringValue),
             unusedWhen: Self.unusedCases(property["x-unused-when"]))
+        inherits = Source(property["x-inherits"]?.stringValue)
     }
 
     /// Whether `other` takes the same values and means the same thing: its shape, unit, class,
-    /// standard and the element it overrides, whatever its label, help and default (design D3;
+    /// standard and the role it takes, whatever its label, help and default (design D3;
     /// `scene-settings` design D8).
     func declaresAlike(_ other: SettingDeclaration) -> Bool {
         key == other.key && shape == other.shape && unit == other.unit
             && settingClass == other.settingClass && standard == other.standard
-            && element == other.element
+            && role == other.role
+    }
+
+    /// What `choice` is called: its declared label, else the choice itself.
+    public func label(of choice: JSONValue) -> String {
+        guard case .choice(let choices) = shape, let index = choices.firstIndex(of: choice),
+            choiceLabels.indices.contains(index)
+        else { return choice.text }
+        return choiceLabels[index]
     }
 
     private static let colourPattern = "^#[0-9a-fA-F]{6}$"
 
     private static func shape(_ property: JSONValue) -> Shape {
         if let choices = property["enum"]?.arrayValue { return .choice(choices) }
+        if let either = property["anyOf"]?.arrayValue,
+            either.contains(where: { $0["pattern"]?.stringValue == colourPattern }),
+            let roles = either.lazy.compactMap({ $0["enum"]?.arrayValue }).first
+        {
+            return .roleColour(roles: roles.compactMap(\.stringValue))
+        }
         let limits = Limits(
             minimum: property["minimum"]?.numberValue, maximum: property["maximum"]?.numberValue,
             step: property["x-step"]?.numberValue)

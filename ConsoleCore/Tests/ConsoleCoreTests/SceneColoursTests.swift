@@ -4,8 +4,7 @@ import Testing
 @testable import ConsoleCore
 
 /// `scene-settings`, design D8, and `card-settings`, "A setting shows the scene's value or the
-/// card's default": an element's colour resolved by lookup from the trimmed copy of audio-vue's
-/// schema.
+/// card's default": a card's colour resolved by lookup from the copy of audio-vue's schema.
 struct SceneColoursTests {
     private static func facts() throws -> SchemaFacts {
         let file = URL(filePath: #filePath).deletingLastPathComponent()
@@ -18,67 +17,101 @@ struct SceneColoursTests {
         try facts().colours
     }
 
-    @Test func anElementTheSceneLeavesTakesItsSwatchsDefault() throws {
+    private static func setting(_ card: String, _ key: String) throws -> SettingDeclaration {
+        try #require(try facts().settings[card]?[key])
+    }
+
+    @Test func aRoleTheSceneLeavesTakesItsDefault() throws {
         let colours = try Self.colours()
         #expect(colours.colour(of: "grid_minor", in: [:])?.hex == "#6D7485")
-        #expect(colours.swatch(of: "grid_minor", in: [:])?.label == "Line")
+        let blocks = ["colors": JSONValue.object(["grid_minor": .string("#112233")])]
+        #expect(colours.colour(of: "grid_minor", in: blocks)?.hex == "#112233")
+        #expect(colours.colour(of: "grid_major", in: blocks)?.hex == "#6D7485")
+        #expect(colours.colour(of: "ok", in: [:]) == nil)
     }
 
-    @Test func aRepointedElementTakesItsNewSwatch() throws {
+    @Test func rolesAndScalesComeInDeclaredOrder() throws {
         let colours = try Self.colours()
-        let pointer = JSONValue.object(["grid_minor": .string("accent")])
-        let repointed = ["elements": pointer]
-        #expect(colours.colour(of: "grid_minor", in: repointed)?.hex == "#7AA2FF")
-        var recoloured = repointed
-        recoloured["palette"] = .object(["accent": .string("#112233")])
-        #expect(colours.colour(of: "grid_minor", in: recoloured)?.hex == "#112233")
-        #expect(colours.colour(of: "grid_major", in: recoloured)?.hex == "#6D7485")
+        #expect(colours.roles.count == 17)
+        #expect(colours.roles.prefix(3).map(\.id) == ["card", "title", "value"])
+        #expect(colours.role("track")?.group == "lines")
+        #expect(colours.role("grid_minor")?.label == "Grid minor")
+        #expect(colours.scales.map(\.label) == ["Status", "Stereo phase"])
+        #expect(colours.scales.first?.steps == ["ok", "caution", "alert"])
     }
 
-    @Test func swatchesAndElementsComeInDeclaredOrderWithTheirFamilies() throws {
-        let colours = try Self.colours()
-        #expect(colours.swatches.count == 21)
-        #expect(colours.swatches.prefix(3).map(\.name) == ["signal", "signal_alt", "signal_3"])
-        #expect(colours.swatch("track")?.family == "structure")
-        #expect(colours.elements.count == 35)
-        #expect(colours.elements.first?.name == "title")
-        #expect(colours.element("over")?.family == "status")
-        #expect(colours.element("bar_tip")?.swatch == "signal_alt")
-    }
-
-    @Test func thePaletteIsGroupedByFamilyInDeclaredOrder() throws {
+    @Test func theColoursAreListedByGroupThenByScale() throws {
         let facts = try Self.facts()
-        let palette = try #require(facts.block("palette")?.settings)
-        let families = try #require(facts.colours.families(of: palette, in: "palette"))
-        #expect(families.map(\.name).first == "identity")
-        #expect(families.first?.settings.map(\.label) == ["Signal", "Signal alt", "Signal 3"])
-        #expect(families.flatMap(\.settings).count == 21)
-        #expect(facts.colours.families(of: palette, in: "glass") == nil)
-    }
-
-    @Test func anUnsetCardColourFollowsThePalette() throws {
-        let facts = try Self.facts()
-        let minor = try #require(facts.settings["rta_bars"]?["minor_color"])
-        let plain = try #require(minor.inheritedColour(in: [:], colours: facts.colours))
-        #expect(plain.colour.hex == "#6D7485")
-        #expect(plain.caption == "Uses Grid minor, in Line")
-        let blocks = ["palette": JSONValue.object(["line": .string("#ABCDEF")])]
-        #expect(minor.inheritedColour(in: blocks, colours: facts.colours)?.colour.hex == "#ABCDEF")
+        let settings = try #require(facts.block("colors")?.settings)
+        let groups = facts.colours.groups(of: settings)
         #expect(
-            facts.settings["rta_bars"]?["floor_db"]?.inheritedColour(
-                in: [:], colours: facts.colours) == nil)
+            groups.map(\.label)
+                == ["Background", "Text", "Lines", "Signal", "Status", "Stereo phase"])
+        #expect(groups.first?.settings.map(\.label) == ["Card"])
+        #expect(groups.last?.settings.map(\.key) == ["centred", "wide", "anti_phase"])
+        #expect(facts.colours.ungrouped(of: settings).map(\.key) == ["shadow"])
+    }
+
+    @Test func anUnsetCardColourIsTheScenesForItsRole() throws {
+        let facts = try Self.facts()
+        let minor = try Self.setting("rta_bars", "grid_minor_color")
+        let plain = try #require(minor.drawnColour(nil, in: [:], colours: facts.colours))
+        #expect(plain.colour.hex == "#6D7485")
+        #expect(plain.caption == "Uses the scene's Grid minor colour")
+        let blocks = ["colors": JSONValue.object(["grid_minor": .string("#ABCDEF")])]
+        #expect(minor.drawnColour(nil, in: blocks, colours: facts.colours)?.colour.hex == "#ABCDEF")
+    }
+
+    @Test func aCardColourSetToAnotherRoleIsThatRolesColour() throws {
+        let facts = try Self.facts()
+        let minor = try Self.setting("rta_bars", "grid_minor_color")
+        let blocks = ["colors": JSONValue.object(["track": .string("#010203")])]
+        let drawn = try #require(
+            minor.drawnColour(.string("track"), in: blocks, colours: facts.colours))
+        #expect(drawn.colour.hex == "#010203" && drawn.role?.id == "track")
+    }
+
+    @Test func aCardColourSetToAColourIsItsOwn() throws {
+        let facts = try Self.facts()
+        let minor = try Self.setting("rta_bars", "grid_minor_color")
+        let drawn = try #require(
+            minor.drawnColour(.string("#445566"), in: [:], colours: facts.colours))
+        #expect(drawn.colour.hex == "#445566" && drawn.role == nil && drawn.caption == nil)
+    }
+
+    @Test func aCardsOwnColourTakesItsOwnDefault() throws {
+        let facts = try Self.facts()
+        let crest = try Self.setting("dynamics_gauge", "crest_color")
+        let own = try #require(crest.drawnColour(nil, in: [:], colours: facts.colours))
+        #expect(own.colour.hex == "#7AA2FF" && own.role == nil)
+        let ratio = try Self.setting("dynamics_gauge", "psr_color")
+        let blocks = ["colors": JSONValue.object(["value": .string("#0A0B0C")])]
+        let followed = try #require(ratio.drawnColour(nil, in: blocks, colours: facts.colours))
+        #expect(followed.colour.hex == "#0A0B0C" && followed.role?.id == "value")
+    }
+
+    @Test func aSettingThatIsNoCardColourDrawsNone() throws {
+        let facts = try Self.facts()
+        let floor = try Self.setting("rta_bars", "floor_db")
+        #expect(floor.drawnColour(nil, in: [:], colours: facts.colours) == nil)
+    }
+
+    @Test func aCardsUnsetShadowIsTheScenes() throws {
+        let facts = try Self.facts()
+        let shadow = try Self.setting("vu_meter", "shadow")
+        #expect(shadow.inherits == .init(document: "scene", block: "colors"))
+        #expect(
+            facts.inheritedValue(of: shadow, scene: [:], installed: [:])?.numberValue == 1)
+        let blocks = ["colors": JSONValue.object(["shadow": .decimal(0.4)])]
+        #expect(facts.inheritedValue(of: shadow, scene: blocks, installed: [:]) == .decimal(0.4))
+        let floor = try Self.setting("rta_bars", "floor_db")
+        #expect(facts.inheritedValue(of: floor, scene: blocks, installed: [:]) == nil)
     }
 
     @Test func aBlockSettingIsItsOwnOrTheDefault() throws {
-        let signal = try #require(try Self.facts().block("palette")?.settings["signal"])
-        #expect(signal.value(in: nil) == .same(.string("#1ad9cc"), isSet: false))
-        let block = JSONValue.object(["signal": .string("#00FF88")])
-        #expect(signal.value(in: block) == .same(.string("#00FF88"), isSet: true))
-    }
-
-    @Test func aCardColourNamesItsElement() throws {
-        let bars = try #require(try Self.facts().settings["rta_bars"])
-        #expect(bars["minor_color"]?.element == "grid_minor")
-        #expect(bars["floor_db"]?.element == nil)
+        let title = try #require(try Self.facts().block("colors")?.settings["title"])
+        #expect(title.value(in: nil) == .same(.string("#a8bad6"), isSet: false))
+        let block = JSONValue.object(["title": .string("#00FF88")])
+        #expect(title.value(in: block) == .same(.string("#00FF88"), isSet: true))
     }
 }

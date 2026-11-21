@@ -47,6 +47,13 @@ public struct PanelState: Sendable, Equatable {
     public var endedCalibration: EndedCalibration?
     public var displayWidthPx: Int?
     public var displayHeightPx: Int?
+    /// The grid the panel lays a scene out on, on its display; nil with no display yet (audio-vue
+    /// `control-state`, "The state says the display's grid").
+    public var grid: CellSize?
+    /// What the panel's screen says while its capture will not open as configured and it waits,
+    /// such as the channels a device streams against the pair asked; nil while it draws or does
+    /// anything else (audio-vue `capture-device`; `capture-input`).
+    public var captureWaiting: String?
     /// Each section the host reports as failed, with its reason (audio-vue `control-state`, "A
     /// section that fails is contained").
     public var unavailable: [Section: String] = [:]
@@ -87,6 +94,12 @@ public struct PanelState: Sendable, Equatable {
         endedCalibration = sections.calibration?.ended.flatMap(Self.ended)
         displayWidthPx = sections.display?.widthPx
         displayHeightPx = sections.display?.heightPx
+        grid = sections.display?.grid.flatMap { grid in
+            guard let cols = grid.cols, let rows = grid.rows else { return nil }
+            return CellSize(cols: cols, rows: rows)
+        }
+        captureWaiting =
+            sections.run?.phase == Self.waitingPhase ? sections.run?.screenStatus : nil
         let containers: [Section: OpenAPIObjectContainer?] = [
             .scene: sections.scene?.additionalProperties,
             .capture: sections.capture?.additionalProperties,
@@ -106,6 +119,9 @@ public struct PanelState: Sendable, Equatable {
             arm: arm, outcome: outcome, kind: ended.kind, runID: ended.runId,
             applicable: ended.applicable, reason: ended.reason)
     }
+
+    /// The run's phase while the panel waits on something it cannot open.
+    private static let waitingPhase = "waiting"
 
     private static func condition(_ payload: Components.Schemas.State.ConditionPayload)
         -> Condition

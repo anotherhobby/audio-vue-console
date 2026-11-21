@@ -25,7 +25,7 @@ public struct ImageStore: Sendable {
 
     /// Fetches `id` from the host unless the store holds it, answering whether it holds it after.
     /// An id of another form, or one the host does not have, is not held: the helper then draws the
-    /// fallback and says the image is missing. An id once held is never fetched again, since an
+    /// default backdrop and says the image is missing. An id once held is never fetched again, since an
     /// upload's id is its checksum and a shipped image's changes with it.
     public func fetch(_ id: String, at address: HostAddress, token: HostToken)
         async throws(HostFailure) -> Bool

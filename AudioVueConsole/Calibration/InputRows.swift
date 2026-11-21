@@ -27,6 +27,50 @@ struct CaptureFormatRow: View {
     }
 }
 
+/// Which two of the device's channels the panel measures, as left and right, offered only where
+/// the device streams more than two (`capture-input`). Channels are counted from 1 here and from
+/// 0 in the block.
+struct ChannelPairRows: View {
+    /// The channels the device streams, or nil where the host does not say.
+    let channels: Int?
+    @Binding var pair: [Int]
+
+    var body: some View {
+        if let channels, channels > InputChoice.firstPair.count {
+            Picker("Left Channel (audio-vue)", selection: channel(0)) { choices(channels) }
+            Picker("Right Channel (audio-vue)", selection: channel(1)) { choices(channels) }
+        }
+    }
+
+    private func choices(_ channels: Int) -> some View {
+        ForEach(0..<channels, id: \.self) { Text(verbatim: "Channel \($0 + 1)").tag($0) }
+    }
+
+    /// The pair's left (0) or right (1) channel, set with the other kept.
+    private func channel(_ side: Int) -> Binding<Int> {
+        Binding(
+            get: { pair.indices.contains(side) ? pair[side] : side },
+            set: { chosen in
+                var next = pair.count == InputChoice.firstPair.count ? pair : InputChoice.firstPair
+                next[side] = chosen
+                pair = next
+            })
+    }
+}
+
+/// The panel waiting on a capture it cannot open as configured, in its own sentence.
+struct CaptureWaitingRow: View {
+    let sentence: String
+
+    var body: some View {
+        Label(
+            "The panel is waiting for its input: \(sentence)",
+            systemImage: "exclamationmark.triangle.fill"
+        )
+        .foregroundStyle(.orange)
+    }
+}
+
 /// A format under 24 bits, flagged: it limits the noise floor the panel can read.
 struct ShallowRow: View {
     let text: String

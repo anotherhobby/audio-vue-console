@@ -7,6 +7,7 @@ import Testing
 @MainActor struct PanelInputTests {
     private static let kept = Pairing(hostID: "h1", token: HostToken("secret"), clientID: "me")
     private static let d10s = "hw:CARD=D10s,DEV=0"
+    private static let m2x4 = "hw:CARD=m2x4HD,DEV=0"
 
     private static let schema = FakeTransport.Answer.status(
         200,
@@ -14,7 +15,9 @@ import Testing
             + #"{"default": 48000, "enum": [44100, 48000, 88200, 96000, 192000]}, "#
             + #""fmt": {"default": "S16_LE", "enum": ["S16_LE", "S32_LE"]}}}}}"#)
     private static let devices = FakeTransport.Answer.status(
-        200, #"{"devices": ["\#(d10s)", "hw:CARD=Device,DEV=0"]}"#)
+        200,
+        #"{"devices": [{"name": "\#(d10s)", "streams": null}, {"name": "\#(m2x4)", "streams": "#
+            + #"[{"format": "S32_LE", "channels": 4, "rates": [48000, 96000]}]}]}"#)
 
     private static func install(_ input: String) -> FakeTransport.Answer {
         .status(200, #"{"blocks": [\#(input)]}"#)
@@ -53,6 +56,27 @@ import Testing
         #expect(input.devices.count == 2 && input.isDeviceAttached)
         #expect(input.format == "S16_LE" && input.formats == ["S16_LE", "S32_LE"])
         #expect(input.isFormatOffered)
+    }
+
+    @Test func aFourChannelDeviceOffersItsFormatRatesAndAPair() async throws {
+        let block =
+            #"{"block": "input", "rev": 3, "doc": {"device": "\#(Self.m2x4)", "fmt": "S32_LE", "#
+            + #""rate": 96000, "pair": [2, 3]}}"#
+        let input = try model(FakeTransport(Self.answers(input: block)))
+        await input.load()
+        #expect(input.pair == [2, 3] && input.channels == 4)
+        #expect(input.formatChoices == ["S32_LE"] && input.rateChoices == [48_000, 96_000])
+        let picked = InputChoice(device: Self.m2x4, rate: 192_000, format: "S16_LE", pair: [4, 5])
+        #expect(
+            input.fitted(picked) == InputChoice(device: Self.m2x4, rate: 96_000, format: "S32_LE"))
+    }
+
+    @Test func aDeviceTheHostCannotReadOffersNoPair() async throws {
+        let block = #"{"block": "input", "rev": 3, "doc": {"device": "\#(Self.d10s)"}}"#
+        let input = try model(FakeTransport(Self.answers(input: block)))
+        await input.load()
+        #expect(input.channels == nil && input.pair == [0, 1])
+        #expect(input.formatChoices == ["S16_LE", "S32_LE"])
     }
 
     @Test func anInstalledFormatTheHostDoesNotOfferShowsAsItIs() async throws {
@@ -96,7 +120,7 @@ import Testing
         let input = try model(transport)
         await input.load()
         await transport.answer(.calibrated, with: .status(200, #"{"rates": []}"#))
-        await input.write(device: Self.d10s, rate: 48_000, format: nil)
+        await input.write(InputChoice(device: Self.d10s, rate: 48_000))
         #expect(input.calibrations == [:])
     }
 
@@ -115,7 +139,11 @@ import Testing
         let transport = FakeTransport(answers)
         let input = try model(transport)
         await input.load()
-        #expect(await input.write(device: Self.d10s, rate: 96_000, format: "S32_LE"))
+        var choice = try #require(input.installed)
+        choice.device = Self.d10s
+        choice.rate = 96_000
+        choice.format = "S32_LE"
+        #expect(await input.write(choice))
         let request = try #require(await transport.requests(to: .writeInstall("input")).first)
         let body = try JSONDecoder().decode(JSONValue.self, from: try #require(request.httpBody))
         #expect(body["base_rev"] == .integer(4))
@@ -136,7 +164,7 @@ import Testing
         await input.load()
         await transport.answer(
             .install, with: Self.install(#"{"block": "input", "rev": 5, "doc": {"rate": 88200}}"#))
-        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
+        #expect(!(await input.write(InputChoice(device: nil, rate: 96_000))))
         #expect(input.note == .changedElsewhere)
         #expect(input.rate == 88_200)
         #expect(await transport.requests(to: .install).count == 2)
@@ -151,7 +179,7 @@ import Testing
         await input.load()
         await transport.answer(
             .install, with: Self.install(#"{"block": "input", "rev": 5, "doc": {"rate": 96000}}"#))
-        #expect(await input.write(device: nil, rate: 96_000, format: nil))
+        #expect(await input.write(InputChoice(device: nil, rate: 96_000)))
         #expect(input.note == .unanswered)
         #expect(input.rate == 96_000)
     }
@@ -162,7 +190,7 @@ import Testing
         answers[.writeInstall("input")] = .failure(URLError(.timedOut))
         let input = try model(FakeTransport(answers))
         await input.load()
-        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
+        #expect(!(await input.write(InputChoice(device: nil, rate: 96_000))))
         #expect(input.note == .unanswered)
         #expect(input.rate == 48_000)
     }
@@ -195,7 +223,7 @@ import Testing
         answers[.writeInstall("input")] = .status(409, #"{"detail": "\#(words)"}"#)
         let input = try model(FakeTransport(answers))
         await input.load()
-        #expect(!(await input.write(device: nil, rate: 96_000, format: nil)))
+        #expect(!(await input.write(InputChoice(device: nil, rate: 96_000))))
         #expect(input.note == .refused(words))
         #expect(input.rate == 48_000)
     }

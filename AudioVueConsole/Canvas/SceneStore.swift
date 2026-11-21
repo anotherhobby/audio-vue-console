@@ -11,8 +11,11 @@ final class SceneStore {
     let tiles = LibraryTiles()
     /// The question asked before unsaved scenes would be lost.
     let unsaved = UnsavedScenes()
-    /// The paired panel's scenes as the Scenes page last read them, which a save writes to.
+    /// The paired panel's scenes as the window read them once paired, which a save writes to.
     var scenes: PanelScenes?
+    /// The grid the panel lays scenes out on, from its live state; nil until it says one, and
+    /// while it has no display (`scene-layout`, "A scene is laid out on the panel's grid").
+    private(set) var grid: CellSize?
     /// The card kind being dragged from the library, set as the drag starts, so the canvas can
     /// preview its size before the drop delivers it.
     var draggedKind: String?
@@ -34,6 +37,18 @@ final class SceneStore {
         guard let id, id != hostID else { return }
         forget()
         hostID = id
+    }
+
+    /// Follows the panel's grid: drafts are laid out again on a new one, what was drawn on the
+    /// old one is dropped, and the thumbnails kept from the last launch are shown.
+    func follow(grid: CellSize?) {
+        guard grid != self.grid else { return }
+        self.grid = grid
+        guard let grid else { return }
+        drafts.relay(on: grid)
+        thumbnails.forget()
+        tiles.forget()
+        restoreThumbnails()
     }
 
     /// Notes a save of the scene `id`, behind on the panel where it is the one on screen.
@@ -73,10 +88,53 @@ final class SceneStore {
         scenes.map(writes(to:))
     }
 
+    /// Draws every scene's thumbnail, then the library's tiles in each scene's settings, ahead of
+    /// the Scenes page or a scene being opened, so both show at once (`scene-rendering`, "Scenes
+    /// and tiles are drawn ahead"). Nothing is drawn until the scenes are read and the renderer
+    /// has compared its card code with the panel's, or where no card may be drawn.
+    func drawAhead(with renderer: Renderer) async {
+        guard let scenes, scenes.state == .loaded, let facts = scenes.facts, let grid,
+            let queue = renderer.queue
+        else { return }
+        let drift: CardDrift?
+        switch renderer.verdict {
+        case .same?: drift = nil
+        case .differs(let differs)? where !differs.sharesNothing: drift = differs
+        default: return
+        }
+        let listed = listed(scenes, on: grid)
+        // A thumbnail is kept for the next launch only where it is drawn by the panel's code.
+        await thumbnails.draw(
+            listed.map { ($0.laidOut, $0.content) }, context: scenes.context, through: queue,
+            keeping: drift == nil ? ThumbnailCache(digest: scenes.cards.digest) : nil)
+        let source = LibraryTiles.Source(
+            cards: facts.placeable, drift: drift, context: scenes.context, queue: queue)
+        for draft in listed.prefix(LibraryTiles.kept) {
+            await tiles.prepare(for: draft, from: source)
+        }
+    }
+
+    /// Shows the thumbnails kept from the last launch for the scenes as they are now, as soon as
+    /// the scenes are read and before the renderer is ready.
+    func restoreThumbnails() {
+        guard let scenes, scenes.state == .loaded, let grid else { return }
+        thumbnails.restore(
+            listed(scenes, on: grid).map { ($0.laidOut, $0.content) }, context: scenes.context,
+            from: ThumbnailCache(digest: scenes.cards.digest))
+    }
+
+    /// Every scene listed, as edited where it has a draft and as read otherwise.
+    private func listed(_ scenes: PanelScenes, on grid: CellSize) -> [Draft] {
+        drafts.listing(scenes.scenes).compactMap { document in
+            drafts.draft(document.id) ?? ScenesPage.laidOut(document, on: grid).map(Draft.init)
+        }
+    }
+
     /// Forgets the edits, copies, thumbnails and tiles, as when another panel is shown.
     func forget() {
         drafts.forget()
         thumbnails.forget()
         tiles.forget()
+        grid = nil
     }
 }

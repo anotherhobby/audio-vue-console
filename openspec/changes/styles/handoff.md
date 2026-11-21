@@ -1,5 +1,9 @@
 # Styles: what the console needs from audio-vue
 
+**Answered** by audio-vue's `scene-styles` (deployed 2026-11-19); what it built, and where it
+decided otherwise, is in `scene-styles-handoff.md` and this change's proposal. Kept as the record
+of the ask.
+
 From the console (audio-vue-console, change `styles`), 2026-11-08. The maintainer's rulings are
 marked; everything else is a proposal for audio-vue to settle in its own change. Where audio-vue
 decides otherwise, say so in the reply and the console follows.

@@ -134,8 +134,9 @@ host comes first (Recommended).
   saves the open scene and puts it on the panel. Save stores without changing the panel, Revert
   discards unsaved edits, and earlier versions are restored from the host's kept revisions (Ruled,
   2026-11-07).
-- **Scenes are tied to a display shape** (Ruled), the grid's `cols:rows`. The app offers "duplicate
-  for this panel" where a scene's shape does not match (Recommended).
+- **A scene has no shape of its own** (Ruled, 2026-11-21, replacing "tied to a display shape"):
+  it is laid out on the grid of whichever panel shows it. One that reaches past a panel's last
+  column is too wide for it: opened, edited and saved there, but not applied until it fits.
 - **Built-in scenes are read-only**, shown with "duplicate to edit" (Ruled, 2026-11-02).
 - **Backup is the app's job** (Ruled): versioned and dated, a copy of the host's store and its
   calibration records, since a user's scenes otherwise live only on an SD card. A backup leaves out

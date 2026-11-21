@@ -58,16 +58,20 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   once paired and the Panel page's Status shows as its Renderer row.
 - `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
   `PanelScenes`, compares the card code once the renderer is ready, draws the thumbnails, and opens
-  scenes), `SceneGallery` and `SceneRow` (My Scenes, Built-in Scenes, then Other Shapes, none dimmed,
-  split by `ConsoleCore`'s `GallerySections`, `gallery-sections` 2026-11-08; thumbnails or boxes,
-  Duplicate),
+  scenes), `SceneGallery` and `SceneRow` (My Scenes then Built-in Scenes, split by `ConsoleCore`'s
+  `GallerySections`; a "Too wide for this panel" note; thumbnails or boxes, Duplicate; `host-grid`
+  2026-11-21),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
   `SceneInspector` (a card's place and settings; several cards' Group/Ungroup, shared settings,
   then a collapsed section per card), `CardSettings` (`CardSettingsList`,
-  `SettingRow`, `SettingControl`, `NumberField`, `ColourWell`, `SwatchChip`; `card-settings`
-  2026-11-09; an unset colour shows its `InheritedColour`), `SceneSettings` (`SceneSettingsPanel`,
-  `BlockSection`, `BlockSettingRow`, `GridEditor`), `BackdropEditor` (`GradientStops`) and
-  `ImagePicker` (`ImageTile`) (`scene-settings`, built 2026-11-09),
+  `SettingRow`, `SettingControl`) and `SettingControls` (`RoleMenu`, `SwatchChip`, `NumberField`,
+  `AmountSlider` for a number from 0 to 1, `ColourWell`; `card-settings`
+  2026-11-09; a card's colour is a well beside `RoleMenu`, showing its `DrawnColour`, its colours
+  under one Colours disclosure), `SceneSettings` (`SceneSettingsPanel` with the tabs Scene, Style
+  and Analysis, `BlockSection`, `BlockSettingRow`, `SceneSettingRow`, `GridEditor`),
+  `ColourSettings` (`ColourGroups`, `ColourCell`), `BackdropEditor` (`GradientStops`) and
+  `ImagePicker` (`ImageTile`) (`scene-settings`, built 2026-11-09, rebuilt on audio-vue's
+  `scene-styles` 2026-11-19),
   `CardLibrary` (the schema's placeable cards under the
   panel's categories, from `SchemaFacts.library`, `gallery-sections` 2026-11-08), and
   `SceneMetrics`. From `scene-save` (2026-11-07): `SceneCommands` (File ▸ Save and Revert to Saved
@@ -129,7 +133,7 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   edit returns a new one or a refusal, and the editor owns selection and undo. Since
   `scene-settings` (2026-11-09) the editor's undoable state is a `SceneContent` (layout plus the
   scene's blocks), which `Draft`, `SceneDrafts`, `SceneRendering` and `SceneThumbnails` hold too;
-  `GridDensity`, `BackdropSource`, `SceneColours` (swatches, elements, the colour lookup) and
+  `BackdropSource`, `SceneColours` (roles, scales, the colour lookup) and
   `CalibrationCoverage` are its pure parts, and `HostClient+Images` lists and uploads images.
   Its host side (`panel-client`, 2026-11-05): the `HostAPI` target holds `openapi.json`, the host
   contract as `tools/refresh-contract.sh` writes it, and `swift-openapi-generator`'s build plugin
@@ -157,9 +161,9 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Scene rendering (`scene-render`, 2026-11-07): `HostClient+Scenes` and `HostClient+Cards` (scenes,
   install, schema, images, the card manifest), `JSONValue` (documents passed through whole),
   `SceneDocument` and `LaidOutScene` (a document as a layout and back), `SchemaFacts` (placeable
-  cards, minimums, the grid's defaults, each card's `SettingGroup`), `SettingGroup` and
+  cards, minimums, each card's `SettingGroup`), `SettingGroup` and
   `SettingValues` (declarations in declared order, shared settings, effective values, off-standard
-  notes, numbers written to range and step; `card-settings`), `HexColour`, `DisplayShape`, `PanelScenes` (made by
+  notes, numbers written to range and step; `card-settings`), `HexColour`, `PanelScenes` (made by
   `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,
   2026-11-07): `Draft` (a scene's parse, its layout and its base revision; unsaved by layout, by a
   loaded version or as a copy), `HostClient+SceneWrites` (create, write, delete; `.stale`,

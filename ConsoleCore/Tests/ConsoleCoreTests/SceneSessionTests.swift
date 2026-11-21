@@ -21,7 +21,7 @@ struct SceneSessionTests {
                 scenes: scenes, drafts: SceneDrafts(), thumbnails: SceneThumbnails())
             let mine = try #require(scenes.scenes.last)
             let draft = try writes.drafts.draft(
-                for: mine, defaultGrid: CellSize(cols: 64, rows: 36))
+                for: mine, panel: CellSize(cols: 64, rows: 36))
             manager = UndoManager()
             manager.groupsByEvent = false
             editor = SceneEditor(content: draft.content, undoManager: manager) {
@@ -36,6 +36,46 @@ struct SceneSessionTests {
     private static func moveFirst(_ editor: SceneEditor) throws {
         editor.select(try #require(editor.layout.cards.first).id)
         editor.move(by: CellOffset(cols: 10, rows: 0))
+    }
+
+    /// `scene-gallery`, "A new scene is the app's alone until it holds a card".
+    @Test func aSceneWithNoCardsCannotBeSaved() async throws {
+        let (scenes, _) = try await PanelScenesTests.loadedWithMine()
+        let writes = SceneWrites(
+            scenes: scenes, drafts: SceneDrafts(), thumbnails: SceneThumbnails())
+        let new = try writes.drafts.new(on: CellSize(cols: 64, rows: 36), among: scenes.scenes)
+        let draft = try #require(writes.drafts.draft(new.id))
+        let editor = SceneEditor(content: draft.content, undoManager: UndoManager()) {
+            writes.drafts.keep($0, for: new.id)
+        }
+        let session = SceneSession(id: new.id, writes: writes)
+        session.attach(editor)
+        #expect(session.isUnsaved && !session.hasCards && !session.canSave)
+    }
+
+    /// `scene-apply`, "Apply works on any scene that fits the panel", and `scene-saving`, "Only
+    /// an editable scene is saved": a scene too wide is saved, not applied, until it is moved in.
+    @Test func aSceneTooWideIsSavedButNotApplied() async throws {
+        let (scenes, _) = try await PanelScenesTests.loadedWithMine()
+        let writes = SceneWrites(
+            scenes: scenes, drafts: SceneDrafts(), thumbnails: SceneThumbnails())
+        let mine = try #require(scenes.scenes.last)
+        let wide = try LaidOutScene(mine, panel: CellSize(cols: 64, rows: 36)).layout
+        let furthest = try #require(wide.cards.max { $0.cells.maxCol < $1.cells.maxCol })
+        // A panel one column short of the scene's reach.
+        let panel = CellSize(cols: furthest.cells.maxCol - 1, rows: 36)
+        let draft = try writes.drafts.draft(for: mine, panel: panel)
+        let editor = SceneEditor(content: draft.content, undoManager: UndoManager()) {
+            writes.drafts.keep($0, for: "u1")
+        }
+        let session = SceneSession(id: "u1", writes: writes)
+        session.attach(editor)
+        #expect(session.isTooWide && !session.canApply)
+        let last = try #require(
+            editor.layout.cards.max { $0.cells.maxCol < $1.cells.maxCol })
+        editor.select(last.id)
+        editor.resize(last.id, edges: .right, by: CellOffset(cols: -1, rows: 0))
+        #expect(!session.isTooWide && session.canApply && session.canSave)
     }
 
     @Test func aRevertIsUndoneBackToTheEdit() async throws {

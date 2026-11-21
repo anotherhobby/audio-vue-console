@@ -18,19 +18,21 @@ public struct PixelSize: Sendable, Hashable {
 }
 
 /// What every render request for one panel carries besides the scene: the panel's display size,
-/// the install's fonts block, where the host's images are kept, and the backdrop drawn for an
-/// image that is not there (`scene-rendering`, "A request carries the host's scene and settings").
+/// the install's viewing block, where the host's images are kept, and the stored styles scenes
+/// name, by id (`scene-rendering`, "A request carries the host's scene and settings").
 public struct RenderContext: Sendable, Equatable {
     public let display: PixelSize
-    public let fonts: JSONValue
+    public let viewing: JSONValue
     public let images: URL
-    public let fallback: JSONValue
+    public let styles: [String: JSONValue]
 
-    public init(display: PixelSize, fonts: JSONValue, images: URL, fallback: JSONValue) {
+    public init(
+        display: PixelSize, viewing: JSONValue, images: URL, styles: [String: JSONValue] = [:]
+    ) {
         self.display = display
-        self.fonts = fonts
+        self.viewing = viewing
         self.images = images
-        self.fallback = fallback
+        self.styles = styles
     }
 }
 
@@ -59,13 +61,20 @@ public struct RenderRequest: Sendable, Equatable {
         self.backdrop = backdrop
     }
 
+    /// The stored styles `doc` names, as the context holds them; the helper carries the built-in
+    /// ones itself.
+    private var namedStyles: [String: JSONValue] {
+        let named = (doc["styles"]?.arrayValue ?? []).compactMap(\.stringValue)
+        return context.styles.filter { named.contains($0.key) }
+    }
+
     /// The request as the helper reads it.
     public var message: JSONValue {
         var fields: [String: JSONValue] = [
             "op": .string("render"), "scene": doc, "built_in": .bool(builtIn),
             "display": .array([.integer(context.display.width), .integer(context.display.height)]),
-            "fonts": context.fonts, "rate": .integer(Self.previewRate),
-            "images": .string(context.images.path), "fallback": context.fallback,
+            "viewing": context.viewing, "rate": .integer(Self.previewRate),
+            "images": .string(context.images.path), "styles": .object(namedStyles),
             "backdrop": .bool(backdrop),
         ]
         if let plates { fields["plates"] = .array(plates.map(JSONValue.integer)) }

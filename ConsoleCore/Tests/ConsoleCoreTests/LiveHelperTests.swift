@@ -29,9 +29,9 @@ struct LiveHelperTests {
         let scene = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: fixture))
         var fields: [String: JSONValue] = [
             "op": .string("render"), "scene": scene, "built_in": .bool(true),
-            "display": .array([.integer(1920), .integer(720)]), "fonts": .object([:]),
+            "display": .array([.integer(1920), .integer(720)]), "viewing": .object([:]),
             "rate": .integer(48000), "images": .string(NSTemporaryDirectory()),
-            "fallback": .object(["color": .string("#223344")]),
+            "styles": .object([:]),
         ]
         fields.merge(extra) { $1 }
         return .object(fields)
@@ -68,6 +68,38 @@ struct LiveHelperTests {
                 try Self.request(["plates": .array([.integer(0)]), "backdrop": .bool(false)]))
         }
         #expect(plate.header["layers"]?.arrayValue?.count == 1)
+    }
+
+    /// audio-vue `scene-grid` as the bundle draws it: a card with no spans fills an 8:3 display
+    /// and a 16:9 one, and a scene reaching column 96 is drawn on the first and refused on the
+    /// second (`scene-rendering`, "A scene too wide is drawn as boxes").
+    @Test func theGridIsTheDisplays() async throws {
+        let helper = Self.helper()
+        defer { Task { await helper.stop() } }
+        let bars = JSONValue.object(["card": .string("rta_bars")])
+        let right = JSONValue.object([
+            "card": .string("rta_bars"), "col": .integer(48), "colspan": .integer(48),
+        ])
+        for (width, height) in [(1920, 720), (1920, 1080)] {
+            let display = JSONValue.array([.integer(width), .integer(height)])
+            let whole = try await helper.ask(
+                try Self.request([
+                    "scene": .object(["name": .string("Whole"), "cards": .array([bars])]),
+                    "display": display,
+                ]))
+            let plate = try #require(
+                whole.header["layers"]?.arrayValue?.first { $0["kind"] == .string("plate") })
+            print("unset spans on \(width) × \(height): \(plate["rect"] ?? .null)")
+            let reaching = try Self.request([
+                "scene": .object(["name": .string("Wide"), "cards": .array([right])]),
+                "display": display,
+            ])
+            if width * 3 == height * 8 {
+                _ = try await helper.ask(reaching)
+            } else {
+                await #expect(throws: RenderFailure.self) { try await helper.ask(reaching) }
+            }
+        }
     }
 
     /// The app's compositing, `Thumbnail.flatten` at the display's own width, against audio-vue's

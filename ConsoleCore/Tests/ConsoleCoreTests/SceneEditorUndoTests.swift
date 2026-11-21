@@ -189,9 +189,9 @@ import Testing
 
     init() throws {
         manager.groupsByEvent = false
-        let palette = JSONValue.object(["signal": .string("#00FF88")])
+        let colours = JSONValue.object(["series": .string("#00FF88")])
         editor = SceneEditor(
-            content: SceneContent(layout: try layout([left]), blocks: ["palette": palette]),
+            content: SceneContent(layout: try layout([left]), blocks: ["colors": colours]),
             undoManager: manager)
     }
 
@@ -209,11 +209,21 @@ import Testing
     }
 
     @Test func useDefaultOnTheLastKeyRemovesTheBlock() throws {
-        editor.useDefault(block: "palette", key: "signal", label: "Signal")
-        #expect(editor.content.blocks["palette"] == nil)
-        #expect(manager.undoActionName == "Use Default for Signal")
+        editor.useDefault(block: "colors", key: "series", label: "Series")
+        #expect(editor.content.blocks["colors"] == nil)
+        #expect(manager.undoActionName == "Use Default for Series")
         manager.undo()
-        #expect(editor.content.blocks["palette"]?["signal"] == .string("#00FF88"))
+        #expect(editor.content.blocks["colors"]?["series"] == .string("#00FF88"))
+    }
+
+    @Test func theScenesOwnSettingIsSetAndLeftUnset() throws {
+        editor.setScene("typeface", to: .string("oxanium"), label: "Typeface")
+        #expect(editor.content.blocks["typeface"] == .string("oxanium"))
+        #expect(manager.undoActionName == "Change Typeface")
+        editor.useDefault(scene: "typeface", label: "Typeface")
+        #expect(editor.content.blocks["typeface"] == nil)
+        manager.undo()
+        #expect(editor.content.blocks["typeface"] == .string("oxanium"))
     }
 
     @Test func aWholeBlockIsOneStep() throws {
@@ -229,8 +239,8 @@ import Testing
         let readOnly = SceneEditor(
             content: SceneContent(layout: try layout([left]), blocks: editor.content.blocks),
             readOnly: .builtIn)
-        readOnly.setBlock("palette", "signal", to: .string("#FFFFFF"), label: "Signal")
-        readOnly.useDefault(block: "palette", key: "signal", label: "Signal")
+        readOnly.setBlock("colors", "series", to: .string("#FFFFFF"), label: "Series")
+        readOnly.useDefault(block: "colors", key: "series", label: "Series")
         #expect(readOnly.content.blocks == editor.content.blocks)
         #expect(readOnly.refusal == .readOnly(.builtIn))
     }

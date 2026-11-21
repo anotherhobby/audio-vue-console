@@ -6,36 +6,46 @@ import Foundation
 public struct LaidOutScene: Sendable, Equatable {
     public let document: SceneDocument
     public let layout: SceneLayout
+    /// The panel's grid, which the layout's is unless a card reaches past its last column.
+    public let panel: CellSize
     /// Each card's entry as the document gave it, by the id the layout gave the card.
     let entries: [UUID: JSONValue]
 
-    /// `document` laid out on its grid, or on `defaultGrid` where it declares none. A card's unset
-    /// `col` or `row` is 0, and an unset span covers the grid (audio-vue `scene-grid`). Where `ids`
-    /// has one id per card, the cards take them in order: a scene read again after a save keeps
-    /// the ids the editor holds, since the host stores the cards in the order they were sent.
-    public init(_ document: SceneDocument, defaultGrid: CellSize, ids: [UUID]? = nil)
-        throws(LayoutRefusal)
-    {
-        let grid = CellSize(
-            cols: document.doc["grid"]?["cols"]?.intValue ?? defaultGrid.cols,
-            rows: document.doc["grid"]?["rows"]?.intValue ?? defaultGrid.rows)
+    /// `document` laid out on `panel`, the panel's grid, or on as many columns as its furthest
+    /// card reaches where that is more (`scene-layout`, "A scene too wide for the panel is laid
+    /// out on its reach"). A card's unset `col` or `row` is 0, and an unset span covers the
+    /// panel's grid (audio-vue `scene-grid`). Where `ids` has one id per card, the cards take them
+    /// in order: a scene read again after a save keeps the ids the editor holds, since the host
+    /// stores the cards in the order they were sent. `keeping` is a layout this one replaces
+    /// under an open editor, whose columns it keeps: a scene too wide stays as wide until it is
+    /// opened again.
+    public init(
+        _ document: SceneDocument, panel: CellSize, ids: [UUID]? = nil,
+        keeping old: SceneLayout? = nil
+    ) throws(LayoutRefusal) {
         let read = document.doc["cards"]?.arrayValue ?? []
         let ids = ids?.count == read.count ? ids : nil
         var cards: [LayoutCard] = []
         var entries: [UUID: JSONValue] = [:]
         for (index, entry) in read.enumerated() {
-            let card = try Self.card(entry, on: grid, id: ids?[index] ?? UUID())
+            let card = try Self.card(entry, on: panel, id: ids?[index] ?? UUID())
             cards.append(card)
             entries[card.id] = entry
         }
+        let reach = max(cards.map(\.cells.maxCol).max() ?? 0, old?.grid.cols ?? 0)
         self.document = document
-        self.layout = try SceneLayout(grid: grid, cards: cards)
+        self.panel = panel
+        self.layout = try SceneLayout(
+            grid: CellSize(cols: max(panel.cols, reach), rows: panel.rows), cards: cards)
         self.entries = entries
     }
 
-    private init(document: SceneDocument, layout: SceneLayout, entries: [UUID: JSONValue]) {
+    private init(
+        document: SceneDocument, layout: SceneLayout, panel: CellSize, entries: [UUID: JSONValue]
+    ) {
         self.document = document
         self.layout = layout
+        self.panel = panel
         self.entries = entries
     }
 
@@ -43,32 +53,47 @@ public struct LaidOutScene: Sendable, Equatable {
     /// keeps its id and the entry this scene writes for it, so the copy needs no second parse.
     func copy(_ layout: SceneLayout, as document: SceneDocument) -> LaidOutScene {
         LaidOutScene(
-            document: document, layout: layout,
+            document: document, layout: layout, panel: panel,
             entries: Dictionary(uniqueKeysWithValues: layout.cards.map { ($0.id, entry(for: $0)) }))
     }
 
-    /// The scene as read: its layout and its blocks.
+    /// The scene as read: its layout and its blocks, the grid block without a size, which the
+    /// host no longer takes (`scene-saving`, "A saved scene declares no grid size").
     public var content: SceneContent {
-        SceneContent(layout: layout, blocks: SceneContent.blocks(of: document.doc))
+        var blocks = SceneContent.blocks(of: document.doc)
+        if var grid = blocks[Self.gridBlock]?.objectValue {
+            for key in Self.gridSize { grid[key] = nil }
+            blocks[Self.gridBlock] = grid.isEmpty ? nil : .object(grid)
+        }
+        return SceneContent(layout: layout, blocks: blocks)
     }
+
+    /// Whether the document as stored sets a grid size, so the host refuses it until it is saved
+    /// again without one.
+    public var declaresGridSize: Bool {
+        Self.gridSize.contains { document.doc[Self.gridBlock]?[$0] != nil }
+    }
+
+    private static let gridBlock = "grid"
+    private static let gridSize = ["cols", "rows"]
 
     /// The document's `doc` with its blocks as `content` holds them and its cards as its layout
     /// places them, in its order: each card's original entry with its cells, group and `params`
     /// replaced, and a new card's entry those alone. A card with no settings is written with no
-    /// `params`. The grid's `cols` and `rows` are written where the layout's grid is not the one
-    /// read, so a scene that declares no grid is written with none until its grid changes
-    /// (`scene-settings`, design D1).
+    /// `params`. No grid size is written: the grid is the panel's (`scene-saving`, "A saved scene
+    /// declares no grid size").
     public func doc(for content: SceneContent) -> JSONValue {
         var fields = content.blocks
         fields["name"] = document.doc["name"]
         fields["cards"] = .array(content.layout.cards.map(entry(for:)))
-        if content.layout.grid != layout.grid {
-            var grid = fields["grid"]?.objectValue ?? [:]
-            grid["cols"] = .integer(content.layout.grid.cols)
-            grid["rows"] = .integer(content.layout.grid.rows)
-            fields["grid"] = .object(grid)
-        }
         return .object(fields)
+    }
+
+    /// Whether `content`, an edit of this scene, places a card past the panel's last column, so
+    /// the panel would refuse to draw it (audio-vue `scene-grid`, "A scene too wide for the
+    /// display is refused").
+    public func isTooWide(_ content: SceneContent) -> Bool {
+        content.layout.cards.contains { $0.cells.maxCol > panel.cols }
     }
 
     /// The document with the blocks as read and the cards as `layout` places them, as a library
@@ -81,8 +106,15 @@ public struct LaidOutScene: Sendable, Equatable {
         var fields = entries[card.id]?.objectValue ?? ["card": .string(card.kind)]
         fields["col"] = .integer(card.cells.col)
         fields["row"] = .integer(card.cells.row)
-        fields["colspan"] = .integer(card.cells.cols)
-        fields["rowspan"] = .integer(card.cells.rows)
+        // A span the entry leaves unset stays unset while the card still covers the panel's
+        // grid that way, so it covers any panel's (`scene-saving`, "An unset span is kept until
+        // its card is resized").
+        let fillsCols = card.cells.col == 0 && card.cells.cols == panel.cols
+        let fillsRows = card.cells.row == 0 && card.cells.rows == panel.rows
+        fields["colspan"] =
+            fields["colspan"] == nil && fillsCols ? nil : .integer(card.cells.cols)
+        fields["rowspan"] =
+            fields["rowspan"] == nil && fillsRows ? nil : .integer(card.cells.rows)
         fields["group"] = card.group.map(JSONValue.string)
         fields["params"] = card.settings.isEmpty ? nil : .object(card.settings)
         return .object(fields)

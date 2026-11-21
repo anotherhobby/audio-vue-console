@@ -9,7 +9,8 @@ struct SceneEditorView: View {
     let scenes: PanelScenes
     let renderer: Renderer
     let verdict: CardCodeVerdict?
-    let panel: DisplayShape
+    /// The panel's grid, which the scene is laid out on.
+    let panel: CellSize
     /// The panel's live state, which says the scene on screen.
     let live: LiveState?
     /// The panel's input: its installed rate and the rates it is calibrated at.
@@ -30,9 +31,6 @@ struct SceneEditorView: View {
 
     var body: some View {
         panes
-            .safeAreaInset(edge: .top, spacing: 0) {
-                if let banner { EditorBanner(text: banner) }
-            }
             .toolbar { toolbar }
             .navigationTitle(document.name ?? document.id)
             .toolbar(removing: .title)
@@ -41,10 +39,9 @@ struct SceneEditorView: View {
             .onAppear(perform: make)
             .onChange(of: session?.parses) { drawNewParse() }
             .onChange(of: editor?.content) { session?.note = nil }
-            // Tiles are drawn in the scene's settings as edited, so a block or the grid changing
-            // draws them again (`scene-settings`, design D6).
+            // Tiles are drawn in the scene's settings as edited, so a block changing draws them
+            // again (`scene-settings`, design D6).
             .onChange(of: editor?.content.blocks) { Task { await drawTiles() } }
-            .onChange(of: editor?.layout.grid) { Task { await drawTiles() } }
             .onDisappear { editor?.detach() }
             .task(id: Drawing(phase: renderer.phase, made: made)) { await follow(renderer.phase) }
             .onChange(of: verdict) { _, verdict in
@@ -65,6 +62,12 @@ struct SceneEditorView: View {
             library
             canvas.frame(minWidth: SceneMetrics.canvasMinWidth)
         }
+        // The banner sits over the library and the canvas alone. Set outside the inspector, it
+        // moved the inspector's safe area each time it came and went, which left the settings
+        // scrolled part-way under the top with no way back (maintainer, 2026-11-20).
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if let banner { EditorBanner(text: banner) }
+        }
         .inspector(isPresented: $showsInspector) {
             SceneInspector(editor: editor, document: document, scenes: scenes, input: input)
                 // One fixed width, so the column does not jump between scene and card settings.
@@ -75,6 +78,7 @@ struct SceneEditorView: View {
     private var library: some View {
         CardLibrary(
             shelves: scenes.facts?.library ?? [], tiles: store.tiles.tiles,
+            backdrop: store.tiles.backdrop?.image,
             sizeOf: { editor?.minimums[$0] }
         )
         .frame(
@@ -85,7 +89,8 @@ struct SceneEditorView: View {
     @ViewBuilder private var canvas: some View {
         if let editor {
             SceneCanvas(
-                editor: editor, panelAspect: panel.aspect, sizeOf: { editor.minimums[$0] },
+                editor: editor, panelAspect: ScenesPage.aspect(of: scenes), panelCols: panel.cols,
+                sizeOf: { editor.minimums[$0] },
                 rendering: rendering,
                 title: SceneNameTitle(
                     name: document.name ?? document.id, isUnsaved: session?.isUnsaved == true,
@@ -99,18 +104,11 @@ struct SceneEditorView: View {
     /// parse so every card keeps its entry (design D1).
     private func make() {
         guard editor == nil, let facts = scenes.facts,
-            let draft = ScenesPage.draft(document, in: store.drafts, facts: facts)
+            let draft = ScenesPage.draft(document, in: store.drafts, on: panel)
         else { return }
-        let grid = draft.layout.grid
-        let scene = DisplayShape(width: grid.cols, height: grid.rows)
-        let readOnly: ReadOnlyReason? =
-            document.builtIn
-            ? .builtIn
-            : panel.matches(scene)
-                ? nil : .shape(scene: scene.description, panel: panel.description)
         let editor = SceneEditor(
-            content: draft.content, readOnly: readOnly,
-            minimums: facts.minimums(forRows: SchemaFacts.referenceRows), undoManager: undoManager
+            content: draft.content, readOnly: document.builtIn ? .builtIn : nil,
+            minimums: facts.minimums, undoManager: undoManager
         ) { [store, document] in store.drafts.keep($0, for: document.id) }
         let session = SceneSession(id: document.id, writes: store.writes(to: scenes))
         session.attach(editor)
@@ -166,7 +164,9 @@ struct SceneEditorView: View {
             return
         }
         await store.tiles.draw(
-            for: draft, cards: cards, drift: drift, context: scenes.context, through: queue)
+            for: draft,
+            from: LibraryTiles.Source(
+                cards: cards, drift: drift, context: scenes.context, queue: queue))
     }
 
     /// The scene's tools in the middle of the toolbar, Reset set apart after them, as it acts on the
@@ -175,15 +175,16 @@ struct SceneEditorView: View {
         ToolbarItemGroup(placement: .principal) {
             Button("Save", systemImage: "square.and.arrow.down") { save() }
                 .disabled(session?.canSave != true)
+                .help(session?.hasCards == false ? "Add a card to save this scene" : "Save")
             Button("Revert", systemImage: "arrow.uturn.backward") { session?.revert() }
                 .disabled(session?.canRevert != true)
             if let session {
                 VersionsMenu(session: session)
             }
             Button("Apply", systemImage: "play.rectangle") { apply() }
-                .disabled(editor == nil)
+                .disabled(editor == nil || session?.canApply != true)
+                .help(applyHelp)
             Button("Duplicate", systemImage: "plus.square.on.square") { duplicate() }
-                .disabled(isOtherShape)
         }
         ToolbarItem(placement: .principal) {
             Color.clear.frame(width: SceneMetrics.toolbarGap)
@@ -200,15 +201,16 @@ struct SceneEditorView: View {
     }
 
     private func duplicate() {
-        guard let facts = scenes.facts,
-            let draft = ScenesPage.draft(document, in: store.drafts, facts: facts)
-        else { return }
+        guard let draft = ScenesPage.draft(document, in: store.drafts, on: panel) else { return }
         open(store.drafts.duplicate(draft, among: scenes.scenes).id)
     }
 
-    /// Whether the scene's shape is not the panel's, so it is not duplicated here.
-    private var isOtherShape: Bool {
-        editor?.readOnly.map { if case .shape = $0 { true } else { false } } ?? false
+    /// Why Apply is disabled, or what it does (`scene-apply`, "Apply works on any scene that
+    /// fits the panel").
+    private var applyHelp: String {
+        if session?.isTooWide == true { return "This scene is too wide for this panel" }
+        if session?.hasCards == false { return "Add a card to apply this scene" }
+        return "Apply"
     }
 
     /// The banner's line: the last Apply's or Reset's outcome, else the panel-behind note.

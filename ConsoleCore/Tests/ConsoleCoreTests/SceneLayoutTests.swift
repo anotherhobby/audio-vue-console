@@ -81,11 +81,8 @@ struct SceneLayoutTests {
         let refusals: [LayoutRefusal] = [
             .offGrid, .spaceTaken, .largerThanGrid, .cardIsGrouped, .tooFewCards, .alreadyAGroup,
             .notARectangle, .cardInTheWay, .readOnly(.builtIn),
-            .readOnly(.shape(scene: "16:9", panel: "8:3")),
         ]
         #expect(Set(refusals.map(\.description)).count == refusals.count)
-        #expect(
-            LayoutRefusal.readOnly(.shape(scene: "16:9", panel: "8:3")).description.contains("8:3"))
     }
 }
 

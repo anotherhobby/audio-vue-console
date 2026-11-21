@@ -13,19 +13,18 @@ struct LibraryTilesTests {
         SchemaFacts.Card(name: "waveform", minimum: CellSize(cols: 10, rows: 6), placeable: true),
     ]
 
-    /// A 64 × 36 scene named `name` in `palette`, holding one meter away from the corner.
-    private static func scene(_ name: String, palette: String = "a") throws -> LaidOutScene {
+    /// A 64 × 36 scene named `name` in `colours`, holding one meter away from the corner.
+    private static func scene(_ name: String, colours: String = "a") throws -> LaidOutScene {
         let meter: JSONValue = .object([
             "card": .string("meter"), "col": .integer(20), "row": .integer(10),
             "colspan": .integer(8), "rowspan": .integer(8), "group": .string("g"),
         ])
         let doc: JSONValue = .object([
-            "name": .string(name), "palette": .string(palette),
-            "grid": .object(["cols": .integer(64), "rows": .integer(36)]),
+            "name": .string(name), "colors": .string(colours),
             "cards": .array([meter]),
         ])
         let document = SceneDocument(id: name, name: name, builtIn: false, fixed: false, doc: doc)
-        return try LaidOutScene(document, defaultGrid: CellSize(cols: 64, rows: 36))
+        return try LaidOutScene(document, panel: CellSize(cols: 64, rows: 36))
     }
 
     private static func renders(_ fixture: RenderingFixture) -> [JSONValue] {
@@ -35,6 +34,47 @@ struct LibraryTilesTests {
     /// The card a tile request asks for.
     private nonisolated static func card(of request: JSONValue) -> String? {
         request["scene"]?["cards"]?.arrayValue?.first?["card"]?.stringValue
+    }
+
+    private static func source(
+        _ fixture: RenderingFixture, cards: [SchemaFacts.Card] = cards, drift: CardDrift? = nil
+    ) -> LibraryTiles.Source {
+        LibraryTiles.Source(
+            cards: cards, drift: drift, context: RenderRequestTests.context, queue: fixture.queue)
+    }
+
+    /// `scene-rendering`, "Scenes and tiles are drawn ahead": a scene's tiles and backdrop drawn
+    /// ahead are shown with no request once it is opened, and so is a scene opened again.
+    @Test func tilesDrawnAheadAreShownWithNoRequest() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        let (first, second) = (try Self.scene("A"), try Self.scene("B", colours: "b"))
+        await tiles.prepare(for: Draft(first), from: Self.source(fixture))
+        await tiles.prepare(for: Draft(second), from: Self.source(fixture))
+        #expect(tiles.tiles.isEmpty && tiles.backdrop == nil)
+        let sent = Self.renders(fixture).count
+        #expect(sent == 2 * (Self.cards.count + 1))
+
+        await draw(tiles, first, in: fixture)
+        #expect(tiles.tiles.count == Self.cards.count && tiles.backdrop != nil)
+        await draw(tiles, second, in: fixture)
+        await draw(tiles, first, in: fixture)
+        #expect(tiles.tiles.count == Self.cards.count)
+        #expect(Self.renders(fixture).count == sent)
+    }
+
+    @Test func onlyTheLastScenesTilesAreKept() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        let first = try Self.scene("first", colours: "first")
+        await tiles.prepare(for: Draft(first), from: Self.source(fixture))
+        for index in 0..<LibraryTiles.kept {
+            let scene = try Self.scene("s\(index)", colours: "c\(index)")
+            await tiles.prepare(for: Draft(scene), from: Self.source(fixture))
+        }
+        let sent = Self.renders(fixture).count
+        await draw(tiles, first, in: fixture)
+        #expect(Self.renders(fixture).count == sent + Self.cards.count)
     }
 
     private func draw(
@@ -48,23 +88,21 @@ struct LibraryTilesTests {
         _ tiles: LibraryTiles, _ draft: Draft, in fixture: RenderingFixture,
         cards: [SchemaFacts.Card] = cards, drift: CardDrift? = nil
     ) async {
-        await tiles.draw(
-            for: draft, cards: cards, drift: drift, context: RenderRequestTests.context,
-            through: fixture.queue)
+        await tiles.draw(for: draft, from: Self.source(fixture, cards: cards, drift: drift))
     }
 
     // MARK: The scene as edited (`scene-settings`, design D6)
 
-    @Test func anEditedPaletteDrawsTheTilesAgainInIt() async throws {
+    @Test func editedColoursDrawTheTilesAgainInThem() async throws {
         let fixture = try RenderingFixture()
         let tiles = LibraryTiles()
         var draft = Draft(try Self.scene("A"))
         await draw(tiles, draft, in: fixture)
         #expect(Self.renders(fixture).count == Self.cards.count)
-        draft.content.blocks["palette"] = .string("b")
+        draft.content.blocks["colors"] = .string("b")
         await draw(tiles, draft, in: fixture)
         #expect(Self.renders(fixture).count == 2 * Self.cards.count)
-        #expect(Self.renders(fixture).last?["scene"]?["palette"] == .string("b"))
+        #expect(Self.renders(fixture).last?["scene"]?["colors"] == .string("b"))
     }
 
     @Test func aLayoutEditDrawsNoTile() async throws {
@@ -89,7 +127,7 @@ struct LibraryTilesTests {
             "colspan": .integer(8), "rowspan": .integer(6),
         ])
         #expect(request["scene"]?["cards"] == .array([entry]))
-        #expect(request["scene"]?["palette"] == .string("a"))
+        #expect(request["scene"]?["colors"] == .string("a"))
         #expect(request["scene"]?["name"] == .string("A"))
         #expect(request["plates"] == .array([.integer(0)]))
         #expect(request["backdrop"] == .bool(false))
@@ -106,28 +144,28 @@ struct LibraryTilesTests {
     }
 
     @Test func aSceneWithOtherSettingsEmptiesTheTilesAndDrawsAgain() async throws {
-        // Palette b's tiles are refused, so the tiles left show what was emptied.
+        // Colours b's tiles are refused, so the tiles left show what was emptied.
         let fixture = try RenderingFixture { request in
-            request["scene"]?["palette"] == .string("b")
+            request["scene"]?["colors"] == .string("b")
                 ? .answer(#"{"ok": false, "refused": "no"}"#) : FakeRender.reply(to: request)
         }
         let tiles = LibraryTiles()
         await draw(tiles, try Self.scene("A"), in: fixture)
         #expect(tiles.tiles.count == Self.cards.count)
-        await draw(tiles, try Self.scene("C", palette: "b"), in: fixture)
+        await draw(tiles, try Self.scene("C", colours: "b"), in: fixture)
         #expect(Self.renders(fixture).count == 2 * Self.cards.count)
         #expect(tiles.tiles.isEmpty)
     }
 
     @Test func aDrawForOtherSettingsDropsTheFirstsAnswers() async throws {
-        // The first request is held; each answer names its palette in `unfit`.
+        // The first request is held; each answer names its colours in `unfit`.
         let first = AtomicFlag()
         let fixture = try RenderingFixture { request in
             guard request["op"] == .string("render") else { return FakeRender.reply(to: request) }
-            let palette = request["scene"]?["palette"]?.stringValue ?? ""
+            let colours = request["scene"]?["colors"]?.stringValue ?? ""
             let header =
                 #"{"ok": true, "layers": [{"kind": "plate", "placements": [0], "#
-                + #""rect": [0, 0, 1, 1], "unfit": ["\#(palette)"], "bytes": 4}]}"#
+                + #""rect": [0, 0, 1, 1], "unfit": ["\#(colours)"], "bytes": 4}]}"#
             let pixel = Data([10, 20, 30, 255])
             return first.setOnce()
                 ? .heldWith(header, payload: pixel) : .answer(header, payload: pixel)
@@ -143,7 +181,7 @@ struct LibraryTilesTests {
             name: "logo", minimum: CellSize(cols: 6, rows: 4), placeable: true)
         let newer = Task {
             await draw(
-                tiles, try Self.scene("C", palette: "b"), in: fixture,
+                tiles, try Self.scene("C", colours: "b"), in: fixture,
                 cards: Self.cards.dropFirst() + [logo])
         }
         for _ in 0..<200 where fixture.queue.waiting < Self.cards.count {
@@ -218,6 +256,33 @@ struct LibraryTilesTests {
         #expect(tiles.tiles["meter"]?.unfit == [])
     }
 
+    /// `scene-gallery`, "A new scene is the app's alone until it holds a card": its backdrop is
+    /// asked for once, around a card of the library's, naming no plate.
+    @Test func aSceneWithNoCardsHasItsBackdropAskedForOnce() async throws {
+        let fixture = try RenderingFixture()
+        let drafts = SceneDrafts()
+        let new = try drafts.new(on: CellSize(cols: 64, rows: 36), among: [])
+        let draft = try #require(drafts.draft(new.id))
+        let tiles = LibraryTiles()
+        await draw(tiles, draft, in: fixture)
+        await draw(tiles, draft, in: fixture)
+        let asked = Self.renders(fixture).filter { $0["backdrop"] == .bool(true) }
+        #expect(asked.count == 1)
+        #expect(asked.first?["plates"] == .array([]))
+        #expect(asked.first?["scene"]?["cards"]?.arrayValue?.count == 1)
+        #expect(tiles.backdrop != nil)
+        let meter = try #require(tiles.tiles["meter"])
+        #expect(meter.image !== meter.layer.image)
+    }
+
+    @Test func aSceneWithCardsLeavesItsBackdropToTheCanvas() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        await draw(tiles, try Self.scene("A"), in: fixture)
+        #expect(Self.renders(fixture).allSatisfy { $0["backdrop"] == .bool(false) })
+        #expect(tiles.backdrop == nil)
+    }
+
     @Test func theBackdropArrivingRestacksEveryTileWithNoRequest() async throws {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)
@@ -253,7 +318,7 @@ struct LibraryTilesTests {
         let tiles = LibraryTiles()
         await draw(tiles, try Self.scene("A"), in: fixture)
         tiles.show(backdrop: try #require(fixture.rendering.backdrop))
-        await draw(tiles, try Self.scene("C", palette: "b"), in: fixture)
+        await draw(tiles, try Self.scene("C", colours: "b"), in: fixture)
         #expect(tiles.backdrop == nil)
     }
 }

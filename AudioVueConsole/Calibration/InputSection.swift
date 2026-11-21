@@ -1,18 +1,13 @@
 import ConsoleCore
 import SwiftUI
 
-/// A device, rate and format for the panel's input: nil for the host's default device, and for
-/// a format the host declares none of.
-struct InputChoice: Equatable {
-    var device: String?
-    var rate: Int
-    var format: String?
-}
-
 /// The Input section's values, as `PanelInput` read them.
 struct InputShown: Equatable {
     var choice: InputChoice
+    /// The host's capture devices by name.
     var devices: [String]
+    /// The channels the installed device streams, or nil where the host does not say.
+    var channels: Int?
     var devicesReason: String?
     var rateChoices: [Int]
     var formatChoices: [String] = []
@@ -25,9 +20,10 @@ struct InputShown: Equatable {
     var isWriting = false
 
     @MainActor init?(_ input: PanelInput) {
-        guard let rate = input.rate else { return nil }
-        choice = InputChoice(device: input.device, rate: rate, format: input.format)
-        devices = input.devices
+        guard let installed = input.installed else { return nil }
+        choice = installed
+        devices = input.devices.map(\.name)
+        channels = input.channels
         devicesReason = input.devicesReason
         rateChoices = input.rateChoices
         formatChoices = input.formatChoices
@@ -75,6 +71,8 @@ struct InputSection: View {
     let output: MacOutput?
     let isPanelDown: Bool
     let lock: InputLock
+    /// What the panel says while it waits on a capture it cannot open, if it does.
+    var waiting: String?
     /// A choice waiting on the user's answer to the restart question.
     @State private var asked: InputChoice?
     /// A choice being written, shown until the write returns, so the pickers do not show the old
@@ -83,7 +81,7 @@ struct InputSection: View {
 
     var body: some View {
         InputFields(
-            listing: listing, selection: selection, lock: lock,
+            listing: listing, selection: selection, lock: lock, waiting: waiting,
             output: output.map { OutputShown($0, input: input) }, outputActions: outputActions
         ) {
             Task { await input?.endHold() }
@@ -106,8 +104,7 @@ struct InputSection: View {
 
     /// The choice waiting on the restart question, else the one being written, else the installed.
     private var shownChoice: InputChoice {
-        asked ?? writing
-            ?? InputChoice(device: input?.device, rate: input?.rate ?? 0, format: input?.format)
+        asked ?? writing ?? input?.installed ?? InputChoice(rate: 0)
     }
 
     private var isAsking: Binding<Bool> {
@@ -123,7 +120,10 @@ struct InputSection: View {
         }
     }
 
-    private func choose(_ choice: InputChoice) {
+    /// Takes `picked` as its device can stream it, so no input the panel cannot open is written
+    /// (`capture-input`).
+    private func choose(_ picked: InputChoice) {
+        let choice = input?.fitted(picked) ?? picked
         guard choice != shownChoice else { return }
         guard isPanelDown else {
             asked = choice
@@ -139,9 +139,7 @@ struct InputSection: View {
         asked = nil
         let isNewRate = choice.rate != input?.rate
         Task {
-            let stored =
-                await input?.write(device: choice.device, rate: choice.rate, format: choice.format)
-                ?? false
+            let stored = await input?.write(choice) ?? false
             writing = nil
             guard stored, isNewRate, let output else { return }
             let follow = RateSync.afterCapture(
@@ -165,7 +163,9 @@ struct InputSection: View {
         switch action {
         case .setOutput(let rate): output.setRate(rate)
         case .writeCapture(let rate):
-            choose(InputChoice(device: shownChoice.device, rate: rate, format: shownChoice.format))
+            var choice = shownChoice
+            choice.rate = rate
+            choose(choice)
         }
     }
 
@@ -186,6 +186,8 @@ struct InputFields: View {
     /// The device and rate shown, and set when the user picks one.
     @Binding var selection: InputChoice
     let lock: InputLock
+    /// What the panel says while it waits on a capture it cannot open, if it does.
+    var waiting: String?
     /// This Mac's output, nil where the section shows none.
     var output: OutputShown?
     var outputActions = OutputActions()
@@ -230,6 +232,7 @@ struct InputFields: View {
                 }
             }
             CaptureFormatRow(shown: shown, selection: $selection.format)
+            ChannelPairRows(channels: shown.channels, pair: $selection.pair)
         }
         .disabled(lock != .free || shown.isWriting)
         if let output {
@@ -237,6 +240,7 @@ struct InputFields: View {
                 shown: output, isDisabled: lock != .free || shown.isWriting,
                 actions: outputActions)
         }
+        if let waiting { CaptureWaitingRow(sentence: waiting) }
         if case .holding(let rate) = lock {
             HoldRow(rate: rate, returnToScene: returnToScene)
         }
@@ -343,7 +347,8 @@ struct InputFields: View {
         choice: InputChoice(device: "hw:CARD=m2x4HD,DEV=0", rate: 96_000, format: "S32_LE"),
         devices: ["hw:CARD=m2x4HD,DEV=0", "hw:CARD=CODEC,DEV=0"],
         rateChoices: [44_100, 48_000, 88_200, 96_000, 192_000])
-    shown.formatChoices = ["S16_LE", "S32_LE"]
+    shown.formatChoices = ["S32_LE"]
+    shown.channels = 4
     return Form {
         InputFields(
             listing: .shown(shown), selection: .constant(shown.choice),

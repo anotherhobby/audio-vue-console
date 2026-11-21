@@ -7,8 +7,11 @@ import Testing
 /// `scene-rendering`: what a request carries, and how an answer's layers are read.
 struct RenderRequestTests {
     static let context = RenderContext(
-        display: PixelSize(width: 1920, height: 720), fonts: .object(["value_px": .integer(80)]),
-        images: URL(filePath: "/tmp/images"), fallback: .object(["color": .string("#223344")]))
+        display: PixelSize(width: 1920, height: 720),
+        viewing: .object(["distance_in": .integer(40)]), images: URL(filePath: "/tmp/images"),
+        styles: [
+            "warm": .object(["name": .string("Warm")]), "cool": .object(["name": .string("Cool")]),
+        ])
 
     @Test func theRequestCarriesTheHelpersFields() {
         let doc = JSONValue.object(["cards": .array([])])
@@ -17,12 +20,19 @@ struct RenderRequestTests {
         #expect(message["scene"] == doc)
         #expect(message["built_in"] == .bool(true))
         #expect(message["display"] == .array([.integer(1920), .integer(720)]))
-        #expect(message["fonts"]?["value_px"] == .integer(80))
+        #expect(message["viewing"]?["distance_in"] == .integer(40))
         #expect(message["rate"] == .integer(48_000))
         #expect(message["images"] == .string("/tmp/images"))
-        #expect(message["fallback"]?["color"] == .string("#223344"))
+        #expect(message["styles"] == .object([:]))
+        #expect(message["fonts"] == nil && message["fallback"] == nil)
         #expect(message["backdrop"] == .bool(true))
         #expect(message["plates"] == nil)
+    }
+
+    @Test func theRequestCarriesTheStylesItsSceneNames() {
+        let doc = JSONValue.object(["cards": .array([]), "styles": .array([.string("warm")])])
+        let message = RenderRequest(doc: doc, builtIn: false, context: Self.context).message
+        #expect(message["styles"] == .object(["warm": .object(["name": .string("Warm")])]))
     }
 
     @Test func namedPlatesWithoutTheBackdrop() {

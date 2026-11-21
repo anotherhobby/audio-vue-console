@@ -2,8 +2,8 @@ import Foundation
 import Observation
 
 /// A paired panel's scenes and what drawing them needs from its host (design D7): each scene's
-/// document, the install's fonts block, the schema's facts, the default scene's backdrop as the
-/// fallback, and every backdrop image those name, fetched into the app's store.
+/// document, the install's viewing block, the schema's facts, and every backdrop image the scenes
+/// name, fetched into the app's store.
 @MainActor @Observable
 public final class PanelScenes {
     public enum State: Equatable, Sendable {
@@ -30,8 +30,12 @@ public final class PanelScenes {
     private let store: any TokenStore
     private let images: ImageStore
     private let onUnpaired: @MainActor () -> Void
-    private var fonts = JSONValue.object([:])
-    private var fallback = JSONValue.null
+    private var viewing = JSONValue.object([:])
+    /// Each install block's document as the host stores it, by the block's name: what a scene
+    /// takes where its block of the same name leaves a setting unset.
+    public private(set) var installed: [String: JSONValue] = [:]
+    /// The default look's backdrop, which a scene with none of its own shows.
+    public private(set) var defaultBackdrop: JSONValue?
 
     init(
         address: HostAddress, host: HostIdentity?, cards: CardCode, client: HostClient,
@@ -55,13 +59,13 @@ public final class PanelScenes {
     /// What every request for this panel carries besides the scene.
     public var context: RenderContext {
         RenderContext(
-            display: display ?? .unknownPanel, fonts: fonts, images: images.directory,
-            fallback: fallback)
+            display: display ?? .unknownPanel, viewing: viewing, images: images.directory)
     }
 
-    /// Reads the scenes and what drawing them needs, then fetches the images they name.
+    /// Reads the scenes and what drawing them needs, then fetches the images they name. Read
+    /// again once loaded, the scenes held stay shown until the new ones replace them.
     public func load() async {
-        state = .loading
+        if state != .loaded { state = .loading }
         do throws(HostFailure) {
             let token = pairing.token
             let listed = try await client.scenes(at: address, token: token)
@@ -73,9 +77,11 @@ public final class PanelScenes {
             guard
                 let facts = SchemaFacts(schema: try await client.schema(at: address, token: token))
             else { throw .unexpectedAnswer }
-            fonts = install["fonts"] ?? .object([:])
-            fallback = documents.first { $0.id == Self.defaultScene }?.doc["backdrop"] ?? .null
-            for id in Self.images(in: documents.map(\.doc) + [.object(["backdrop": fallback])]) {
+            let standard = try await client.style(Self.defaultStyle, at: address, token: token)
+            viewing = install["viewing"] ?? .object([:])
+            installed = install
+            defaultBackdrop = standard["backdrop"]
+            for id in Self.images(in: documents.map(\.doc)) {
                 _ = try await images.fetch(id, at: address, token: token)
             }
             self.facts = facts
@@ -85,6 +91,9 @@ public final class PanelScenes {
             fail(error)
         }
     }
+
+    /// The built-in style every scene takes what it does not set from (audio-vue `styles`).
+    private static let defaultStyle = "default"
 
     /// Compares the card code a helper carries with the panel's (`card-code`).
     public func cardCode(helperDigest: String, bundled: CardManifest?) async -> CardCodeVerdict? {
@@ -261,9 +270,6 @@ public final class PanelScenes {
         if failure == .tokenRefused { fail(failure) }
         return failure
     }
-
-    /// The scene the panel falls back to when a backdrop image is missing (audio-vue `scene.py`).
-    static let defaultScene = "default"
 
     /// The backdrop image ids `docs` name, once each.
     private static func images(in docs: [JSONValue]) -> [String] {

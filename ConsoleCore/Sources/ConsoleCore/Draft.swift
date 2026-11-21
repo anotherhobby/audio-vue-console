@@ -14,7 +14,8 @@ public struct Draft: Sendable, Equatable {
     /// The revision the parse was read from: `rev`, or an earlier one loaded from Versions.
     public internal(set) var source: Int?
 
-    init(_ laidOut: LaidOutScene) {
+    /// The scene as read, with no edit.
+    public init(_ laidOut: LaidOutScene) {
         self.laidOut = laidOut
         content = laidOut.content
         name = laidOut.document.name
@@ -36,10 +37,12 @@ public struct Draft: Sendable, Equatable {
     public var layout: SceneLayout { content.layout }
 
     /// Whether the host does not hold what the draft shows: a copy never saved, an earlier version
-    /// loaded, or content that differs from the one read. Both layouts carry the parse's card ids,
-    /// so undoing back to the content read clears it, a block changed and changed back included.
+    /// loaded, content that differs from the one read, or a stored grid size, which a save
+    /// removes. Both layouts carry the parse's card ids, so undoing back to the content read
+    /// clears it, a block changed and changed back included.
     public var isUnsaved: Bool {
         SceneDrafts.isCopy(id) || source != rev || content != laidOut.content
+            || laidOut.declaresGridSize
     }
 
     /// The document a save writes: the parse's document with the blocks and cards as `content`

@@ -125,13 +125,19 @@ struct HostClientTests {
         }
     }
 
-    /// `capture-input`: the host's capture devices as ALSA names them.
+    /// `capture-input`: the host's capture devices, each with how it streams where known.
     @Test func theCaptureDevicesAreRead() async throws {
-        let body = #"{"devices": ["hw:CARD=D10s,DEV=0", "hw:CARD=Device,DEV=0"]}"#
+        let body =
+            #"{"devices": [{"name": "hw:CARD=D10s,DEV=0"}, {"name": "hw:CARD=m2x4HD,DEV=0", "#
+            + #""streams": [{"format": "S32_LE", "channels": 4, "rates": [48000, 96000]}]}]}"#
         let transport = FakeTransport([.devices: .status(200, body)])
         let read = try await HostClient(transport: transport).captureDevices(
             at: try #require(address), token: HostToken("secret"))
-        #expect(read.devices == ["hw:CARD=D10s,DEV=0", "hw:CARD=Device,DEV=0"])
+        #expect(read.devices.map(\.name) == ["hw:CARD=D10s,DEV=0", "hw:CARD=m2x4HD,DEV=0"])
+        #expect(read.devices[0].streams == nil)
+        #expect(
+            read.devices[1].streams
+                == [.init(format: "S32_LE", channels: 4, rates: [48_000, 96_000])])
         #expect(read.reason == nil)
     }
 

@@ -79,24 +79,24 @@ struct HostClientScenesTests {
 
     @Test func theInstallBlocksAreReadByName() async throws {
         let body =
-            #"{"blocks": [{"block": "fonts", "rev": 0, "doc": {"value_px": 80.0}},"#
+            #"{"blocks": [{"block": "viewing", "rev": 0, "doc": {"distance_in": 80.0}},"#
             + #"{"block": "input", "rev": 2, "doc": {"rate": 96000}}]}"#
         let transport = FakeTransport([.install: .status(200, body)])
         let blocks = try await HostClient(transport: transport).install(
             at: try address(), token: token)
-        #expect(blocks["fonts"]?["value_px"] == .integer(80))
+        #expect(blocks["viewing"]?["distance_in"] == .integer(80))
         #expect(blocks["input"]?["rate"] == .integer(96000))
     }
 
     /// Design D2: each block's revision is read beside its document, the one a write is made on.
     @Test func theInstallBlocksAreReadWithTheirRevisions() async throws {
         let body =
-            #"{"blocks": [{"block": "fonts", "rev": 0, "doc": {}},"#
+            #"{"blocks": [{"block": "viewing", "rev": 0, "doc": {}},"#
             + #"{"block": "input", "rev": 4, "doc": {"rate": 96000, "pair": [2, 3]}}]}"#
         let transport = FakeTransport([.install: .status(200, body)])
         let blocks = try await HostClient(transport: transport).installBlocks(
             at: try address(), token: token)
-        #expect(blocks["fonts"] == InstallBlockState(doc: [:], rev: 0))
+        #expect(blocks["viewing"] == InstallBlockState(doc: [:], rev: 0))
         #expect(blocks["input"]?.rev == 4)
         #expect(blocks["input"]?.doc["pair"] == .array([.integer(2), .integer(3)]))
     }

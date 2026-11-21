@@ -1,130 +1,127 @@
-/// The colours cards draw, as the host's schema declares them, and the lookup that resolves an
-/// element's colour in a scene as the panel does (audio-vue `card-colours`, "A colour resolves by
-/// lookup"; `scene-settings`, design D8). Every name and default is read; no rule is copied.
+/// The colours a scene draws in, as the host's schema declares them: a colour per role, the things
+/// seen on screen, and the steps of each meaning scale, with the lookup that resolves a card's
+/// colour as the panel does (audio-vue `card-colours`; `scene-settings`, design D8). Every name
+/// and default is read; no rule is copied.
 public struct SceneColours: Sendable, Equatable {
-    /// One palette entry: a concrete colour a scene may set.
-    public struct Swatch: Sendable, Equatable, Identifiable {
-        public let name: String
-        public let family: String
+    /// One thing cards draw, such as titles, holding a colour a scene may set.
+    public struct Role: Sendable, Equatable, Identifiable {
+        public let id: String
+        /// The group the inspector lists it under, such as `text`.
+        public let group: String
         public let label: String
-        /// The colour where a scene's palette leaves it unset.
+        /// The colour where a scene leaves it unset.
         public let defaultColour: HexColour
 
-        public var id: String { name }
+        public init(id: String, group: String, label: String, defaultColour: HexColour) {
+            self.id = id
+            self.group = group
+            self.label = label
+            self.defaultColour = defaultColour
+        }
     }
 
-    /// One thing cards draw, pointed at a swatch.
-    public struct Element: Sendable, Equatable, Identifiable {
-        public let name: String
-        public let family: String
+    /// A meaning scale, such as Warnings, and its steps' keys in the scene's colours.
+    public struct Scale: Sendable, Equatable, Identifiable {
+        public let id: String
         public let label: String
-        /// The swatch it is drawn in where a scene's `elements:` block leaves it unset.
-        public let swatch: String
+        public let steps: [String]
 
-        public var id: String { name }
+        public init(id: String, label: String, steps: [String]) {
+            self.id = id
+            self.label = label
+            self.steps = steps
+        }
     }
 
-    /// A block's settings that belong to one family, in declared order.
-    public struct Family: Sendable, Equatable, Identifiable {
-        public let name: String
+    /// The colour settings listed under one heading: a group of roles, or a scale's steps.
+    public struct Group: Sendable, Equatable, Identifiable {
+        public let label: String
         public let settings: [SettingDeclaration]
 
-        public var id: String { name }
+        public var id: String { label }
     }
 
-    /// The swatches in declared order.
-    public let swatches: [Swatch]
-    /// The elements in declared order.
-    public let elements: [Element]
+    /// The scene block that holds a colour per role and step.
+    public static let block = "colors"
 
-    public static let none = SceneColours(swatches: [], elements: [])
+    /// The roles in declared order.
+    public let roles: [Role]
+    /// The scales in declared order.
+    public let scales: [Scale]
 
-    public init(swatches: [Swatch], elements: [Element]) {
-        self.swatches = swatches
-        self.elements = elements
+    public static let none = SceneColours(roles: [], scales: [])
+
+    public init(roles: [Role], scales: [Scale]) {
+        self.roles = roles
+        self.scales = scales
     }
 
-    /// The colours in `schema`, the body of `/v1/schema`: the swatches in `block.palette`'s
-    /// order with the root's `x-swatches` families, and the elements in `block.elements`' order
-    /// with the root's `x-elements` families and swatches. A decoded object keeps no order, so the
-    /// blocks' `x-settings` give it.
+    /// The colours in `schema`, the body of `/v1/schema`: the root's `x-roles` and `x-scales`, in
+    /// their order, each role labelled as `block.colors` labels its setting.
     public init(schema: JSONValue) {
-        let palette = SettingGroup(definition: schema["$defs"]?["block.palette"] ?? .null)
-        let pointers = SettingGroup(definition: schema["$defs"]?["block.elements"] ?? .null)
-        let swatches = palette.settings.compactMap { setting -> Swatch? in
-            guard let family = schema["x-swatches"]?[setting.key]?["family"]?.stringValue,
-                let colour = setting.defaultValue?.stringValue.flatMap(HexColour.init)
+        let declared = SettingGroup(definition: schema["$defs"]?["block.colors"] ?? .null)
+        let roles = (schema["x-roles"]?.arrayValue ?? []).compactMap { entry -> Role? in
+            guard let id = entry["id"]?.stringValue, let group = entry["group"]?.stringValue,
+                let colour = entry["default"]?.stringValue.flatMap(HexColour.init)
             else { return nil }
-            return Swatch(
-                name: setting.key, family: family, label: setting.label, defaultColour: colour)
+            return Role(
+                id: id, group: group, label: declared[id]?.label ?? id, defaultColour: colour)
         }
-        let elements = pointers.settings.compactMap { setting -> Element? in
-            let declared = schema["x-elements"]?[setting.key]
-            guard let family = declared?["family"]?.stringValue,
-                let swatch = declared?["swatch"]?.stringValue
+        let scales = (schema["x-scales"]?.arrayValue ?? []).compactMap { entry -> Scale? in
+            guard let id = entry["id"]?.stringValue, let label = entry["label"]?.stringValue
             else { return nil }
-            return Element(name: setting.key, family: family, label: setting.label, swatch: swatch)
+            let steps = (entry["steps"]?.arrayValue ?? []).compactMap { $0["id"]?.stringValue }
+            return Scale(id: id, label: label, steps: steps)
         }
-        self.init(swatches: swatches, elements: elements)
+        self.init(roles: roles, scales: scales)
     }
 
-    public func swatch(_ name: String) -> Swatch? {
-        swatches.first { $0.name == name }
+    public func role(_ id: String) -> Role? {
+        roles.first { $0.id == id }
     }
 
-    public func element(_ name: String) -> Element? {
-        elements.first { $0.name == name }
+    /// The colour a scene with `blocks` gives `role`: its own, else the role's default.
+    public func colour(of role: String, in blocks: [String: JSONValue]) -> HexColour? {
+        blocks[Self.block]?[role]?.stringValue.flatMap(HexColour.init)
+            ?? self.role(role)?.defaultColour
     }
 
-    /// The swatch a scene with `blocks` draws `element` in: the one its `elements:` block points
-    /// it at, else the element's own.
-    public func swatch(of element: String, in blocks: [String: JSONValue]) -> Swatch? {
-        let pointed = blocks["elements"]?[element]?.stringValue ?? self.element(element)?.swatch
-        return pointed.flatMap(swatch)
-    }
-
-    /// The colour `swatch` takes in a scene with `blocks`: its palette's, else the default.
-    public func colour(ofSwatch swatch: String, in blocks: [String: JSONValue]) -> HexColour? {
-        blocks["palette"]?[swatch]?.stringValue.flatMap(HexColour.init)
-            ?? self.swatch(swatch)?.defaultColour
-    }
-
-    /// The colour a scene with `blocks` draws `element` in, where no card sets its own.
-    public func colour(of element: String, in blocks: [String: JSONValue]) -> HexColour? {
-        swatch(of: element, in: blocks).flatMap { colour(ofSwatch: $0.name, in: blocks) }
-    }
-
-    /// `settings`, a block's settings, grouped under the family each one's swatch or element
-    /// belongs to, families in the order they first appear. Nil where `block` is neither the
-    /// palette nor the elements.
-    public func families(of settings: SettingGroup, in block: String) -> [Family]? {
-        let family: (String) -> String?
-        switch block {
-        case "palette": family = { swatch($0)?.family }
-        case "elements": family = { element($0)?.family }
-        default: return nil
-        }
+    /// `settings`, the colours block's, under their headings: each group of roles in the order it
+    /// first appears, then each scale. A setting that is neither, such as the shadow's amount, is
+    /// in none.
+    public func groups(of settings: SettingGroup) -> [Group] {
         var order: [String] = []
         var members: [String: [SettingDeclaration]] = [:]
-        for setting in settings.settings {
-            let name = family(setting.key) ?? ""
-            if members[name] == nil { order.append(name) }
-            members[name, default: []].append(setting)
+        for role in roles {
+            guard let setting = settings[role.id] else { continue }
+            if members[role.group] == nil { order.append(role.group) }
+            members[role.group, default: []].append(setting)
         }
-        return order.map { Family(name: $0, settings: members[$0] ?? []) }
+        let grouped = order.map { Group(label: $0.capitalized, settings: members[$0] ?? []) }
+        let scaled = scales.map { scale in
+            Group(label: scale.label, settings: scale.steps.compactMap { settings[$0] })
+        }
+        return (grouped + scaled).filter { !$0.settings.isEmpty }
+    }
+
+    /// The colours block's settings no heading holds, in declared order.
+    public func ungrouped(of settings: SettingGroup) -> [SettingDeclaration] {
+        let held = Set(groups(of: settings).flatMap(\.settings).map(\.key))
+        return settings.settings.filter { !held.contains($0.key) }
     }
 }
 
-/// The colour an unset card colour is drawn in, and where it comes from: the element it
-/// overrides and the swatch the scene points that element at (`card-settings`, "A setting shows
-/// the scene's value or the card's default").
-public struct InheritedColour: Sendable, Equatable {
-    public let element: SceneColours.Element
-    public let swatch: SceneColours.Swatch
+/// The colour a card's colour setting is drawn in, and the scene's role it comes from where it is
+/// not a colour of the card's own (`card-settings`, "A setting shows the scene's value or the
+/// card's default").
+public struct DrawnColour: Sendable, Equatable {
     public let colour: HexColour
+    /// The role whose colour this is, or nil for a colour the card holds itself.
+    public let role: SceneColours.Role?
 
-    /// What the inspector says under the colour, such as "Uses Grid minor, in Line".
-    public var caption: String {
-        "Uses \(element.label), in \(swatch.label)"
+    /// What the inspector says under the colour, such as "Uses the scene's Title colour"; nil for
+    /// a colour of the card's own.
+    public var caption: String? {
+        role.map { "Uses the scene's \($0.label) colour" }
     }
 }

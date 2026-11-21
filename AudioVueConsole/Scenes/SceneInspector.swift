@@ -12,7 +12,7 @@ struct SceneInspector: View {
 
     /// Each card kind's settings, as the panel's schema declares them.
     private var settings: [String: SettingGroup] { scenes.facts?.settings ?? [:] }
-    private var colours: SceneColours { scenes.facts?.colours ?? .none }
+    private var look: SceneLook { SceneLook(scenes) }
 
     var body: some View {
         let cards = editor?.selectedCards ?? []
@@ -49,7 +49,7 @@ struct SceneInspector: View {
             if !shared.settings.isEmpty {
                 Section("Shared Settings") {
                     CardSettingsList(
-                        declared: shared, cards: cards, groups: settings, colours: colours,
+                        declared: shared, cards: cards, groups: settings, scene: look,
                         editor: editor)
                 }
             }
@@ -82,8 +82,7 @@ struct SceneInspector: View {
     @ViewBuilder private func ownSettings(_ card: LayoutCard, _ editor: SceneEditor) -> some View {
         if let declared = settings[card.kind], !declared.settings.isEmpty {
             CardSettingsList(
-                declared: declared, cards: [card], groups: settings, colours: colours,
-                editor: editor)
+                declared: declared, cards: [card], groups: settings, scene: look, editor: editor)
         } else {
             Text("This card has no settings.").foregroundStyle(.secondary)
         }

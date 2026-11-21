@@ -42,8 +42,36 @@ struct SchemaFactsTests {
         #expect(SchemaFacts.inputFormats(schema) == nil)
     }
 
-    @Test func theGridsDefaults() throws {
-        #expect(try Self.facts().defaultGrid == CellSize(cols: 64, rows: 36))
+    /// `scene-settings`, "An unset setting the panel also holds shows the panel's value".
+    @Test func anUnsetDisplaySettingTakesThePanels() throws {
+        let facts = try Self.facts()
+        let after = try #require(facts.block("display")?.settings["saver_after_min"])
+        let stored = ["display": JSONValue.object(["saver_after_min": .integer(10)])]
+        #expect(after.defaultValue == nil)
+        #expect(after.inherits == .init(document: "install", block: "display"))
+        #expect(facts.inheritedValue(of: after, scene: [:], installed: stored) == .integer(10))
+        #expect(
+            facts.inheritedValue(of: after, scene: [:], installed: [:])
+                == facts.installSettings["display"]?["saver_after_min"]?.defaultValue)
+        let saver = try #require(facts.block("display")?.settings["saver"])
+        #expect(
+            facts.inheritedValue(of: saver, scene: [:], installed: [:]) == .string("bounce"))
+        let opacity = try #require(facts.block("glass")?.settings["opacity"])
+        #expect(opacity.defaultValue?.numberValue == 0.6)
+        #expect(facts.inheritedValue(of: opacity, scene: [:], installed: stored) == nil)
+    }
+
+    @Test func aNumberFromNoneToAllIsAnAmount() throws {
+        let facts = try Self.facts()
+        #expect(facts.block("glass")?.settings["opacity"]?.isAmount == true)
+        #expect(facts.block("glass")?.settings["radius"]?.isAmount == false)
+        #expect(facts.block("type")?.settings["title"]?.isAmount == false)
+    }
+
+    /// `scene-layout`, "A scene is laid out on the panel's grid": the schema's grid block holds
+    /// only its gap, and the facts need no grid from it.
+    @Test func theGridBlockHoldsOnlyItsGap() throws {
+        #expect(try Self.facts().block("grid")?.settings.settings.map(\.key) == ["gap"])
     }
 
     @Test func onlyPlaceableCardsAreOfferedInTheLibrarysOrder() throws {
@@ -71,15 +99,12 @@ struct SchemaFactsTests {
         #expect(facts.cards["calibration"]?.placeable == false)
     }
 
-    @Test func aMinimumScalesByRowsRoundingUp() {
-        let minimum = CellSize(cols: 17, rows: 10)
-        #expect(SchemaFacts.scaled(minimum, toRows: 36) == minimum)
-        #expect(SchemaFacts.scaled(minimum, toRows: 72) == CellSize(cols: 34, rows: 20))
-        #expect(SchemaFacts.scaled(minimum, toRows: 24) == CellSize(cols: 12, rows: 7))
+    @Test func theMinimumsAreAsDeclared() throws {
+        #expect(try Self.facts().minimums["waveform"] == CellSize(cols: 12, rows: 7))
     }
 
-    @Test func aSchemaWithoutTheGridsDefaults() {
-        #expect(SchemaFacts(schema: .object(["$defs": .object([:])])) == nil)
+    @Test func aSchemaWithoutDefinitionsGivesNoFacts() {
+        #expect(SchemaFacts(schema: .object([:])) == nil)
     }
 
     // MARK: Settings (`card-settings`, design D2)
@@ -87,13 +112,15 @@ struct SchemaFactsTests {
     @Test func aVUMetersSettingsInDeclaredOrderWithTheirShapes() throws {
         let vu = try #require(try Self.facts().settings["vu_meter"])
         #expect(
-            vu.settings.map(\.key) == [
+            vu.settings.prefix(5).map(\.key) == [
                 "channel", "alignment", "reference_dbfs", "lamp_hold_s", "show_face",
             ])
         #expect(
-            vu.settings.map(\.label) == [
+            vu.settings.prefix(5).map(\.label) == [
                 "Channel", "Alignment", "0 VU at (custom)", "Lamp hold", "Scale and labels",
             ])
+        #expect(vu.settings.dropFirst(5).first?.key == "series_color")
+        #expect(vu.settings.last?.key == "shadow")
         #expect(vu["channel"]?.shape == .choice([.string("left"), .string("right")]))
         #expect(vu["channel"]?.settingClass == "chain")
         #expect(
@@ -110,13 +137,18 @@ struct SchemaFactsTests {
         #expect(vu["show_face"]?.help == "Show the scale and its labels.")
     }
 
-    @Test func rtaBarsColoursHaveNoDefault() throws {
+    @Test func rtaBarsColoursTakeARoleOrAColourAndHaveNoDefault() throws {
         let bars = try #require(try Self.facts().settings["rta_bars"])
-        #expect(bars["major_color"]?.shape == .colour)
-        #expect(bars["major_color"]?.defaultValue == nil)
+        guard case .roleColour(let roles)? = bars["grid_major_color"]?.shape else {
+            Issue.record("grid_major_color takes no role")
+            return
+        }
+        #expect(roles.count == 17 && roles.contains("tick") && !roles.contains("ok"))
+        #expect(bars["grid_major_color"]?.defaultValue == nil)
+        #expect(bars["grid_major_color"]?.role == "grid_major")
         #expect(bars["major_weight_px"]?.shape == .integer(.init(minimum: 1, maximum: 8, step: 1)))
         #expect(bars.settings.first?.key == "floor_db")
-        #expect(bars.settings.count == 13)
+        #expect(bars.settings.count == 18)
     }
 
     // MARK: Scene blocks (`scene-settings`, design D2)
@@ -124,25 +156,33 @@ struct SchemaFactsTests {
     @Test func theScenesBlocksInTheInspectorsOrder() throws {
         let names = try Self.facts().blocks.map(\.name)
         #expect(names == SchemaFacts.blockOrder)
-        #expect(names.first == "backdrop" && names.last == "grid")
+        #expect(names.first == "backdrop" && names.last == "analysis")
     }
 
-    @Test func thePaletteHoldsEverySwatchWithItsDefault() throws {
-        let palette = try #require(try Self.facts().block("palette")?.settings)
-        #expect(palette.settings.count == 21)
-        #expect(palette.settings.allSatisfy { $0.shape == .colour && $0.defaultValue != nil })
-        #expect(palette["track"]?.defaultValue == .string("#1e2944"))
-        #expect(palette["grid"] == nil)
+    @Test func theColoursHoldEveryRoleAndStepWithItsDefaultAndTheShadow() throws {
+        let colours = try #require(try Self.facts().block("colors")?.settings)
+        #expect(colours.settings.count == 24)
+        #expect(colours.settings.filter { $0.shape == .colour }.count == 23)
+        #expect(colours.settings.allSatisfy { $0.defaultValue != nil })
+        #expect(colours["track"]?.defaultValue == .string("#1e2944"))
+        #expect(colours["shadow"]?.shape == .number(.init(minimum: 0, maximum: 1, step: 0.05)))
     }
 
-    @Test func anElementIsAChoiceOfSwatch() throws {
-        let title = try #require(try Self.facts().block("elements")?.settings["title"])
-        #expect(title.defaultValue == .string("text_muted"))
-        guard case .choice(let swatches) = title.shape else {
-            Issue.record("title is not a choice")
-            return
-        }
-        #expect(swatches.count == 21 && swatches.contains(.string("line")))
+    @Test func aTextRoleTakesASizeWithinItsOwnBounds() throws {
+        let type = try #require(try Self.facts().block("type")?.settings)
+        #expect(type.settings.map(\.key).first == "title" && type.settings.count == 7)
+        #expect(type["title"]?.shape == .number(.init(minimum: 24, maximum: 75, step: 1)))
+        #expect(type["title"]?.defaultValue?.numberValue == 45)
+        #expect(type["title"]?.unit == "px")
+    }
+
+    @Test func theTypefaceIsTheScenesOwnSettingWithLabelledChoices() throws {
+        let scene = try Self.facts().sceneSettings
+        #expect(scene.settings.map(\.key) == ["typeface"])
+        let typeface = try #require(scene["typeface"])
+        #expect(typeface.defaultValue == .string("inter"))
+        #expect(typeface.label(of: .string("oxanium")) == "Oxanium")
+        #expect(typeface.label(of: .string("unknown")) == "unknown")
     }
 
     @Test func aGradientIsAListOfAtLeastTwoColours() throws {

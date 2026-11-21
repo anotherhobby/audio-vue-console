@@ -186,6 +186,14 @@ public final class SceneRendering {
     /// Draws `target` as `content` holds the scene.
     private func draw(_ content: SceneContent, _ target: Target, through queue: RenderQueue) async {
         let layout = content.layout
+        // A scene with no cards is the app's alone until one is placed (`scene-gallery`, "New
+        // Scene"): the host holds and draws none, so nothing is asked and the grid shows bare.
+        // One too wide for the panel the helper would refuse, so it stays as boxes
+        // (`scene-rendering`, "A scene too wide is drawn as boxes").
+        guard !layout.cards.isEmpty, !scene.isTooWide(content) else {
+            clear(.drawn)
+            return
+        }
         let ids = layout.cards.map(\.id)
         let request = RenderRequest(
             doc: scene.doc(for: content), builtIn: scene.document.builtIn, context: context,

@@ -2,7 +2,7 @@ import Foundation
 
 /// What a setting holds across the selected cards (`card-settings`, design D3).
 public enum SettingValue: Sendable, Equatable {
-    /// Every card takes `value`, nil for a colour left to the palette. `isSet` where any card's
+    /// Every card takes `value`, nil for a colour left to the scene. `isSet` where any card's
     /// entry sets the setting, so Use Default has something to remove.
     case same(JSONValue?, isSet: Bool)
     /// The cards take different values.
@@ -29,7 +29,7 @@ public enum SettingNote: Sendable, Equatable {
 
 extension SettingDeclaration {
     /// The value a card with `settings` takes: its own, else the default, else nil for a colour
-    /// that follows the palette.
+    /// that follows the scene's.
     public func effectiveValue(in settings: [String: JSONValue]) -> JSONValue? {
         settings[key] ?? defaultValue
     }
@@ -178,15 +178,24 @@ extension SettingDeclaration {
         return .same(own ?? defaultValue, isSet: own != nil)
     }
 
-    /// The colour a card draws this setting's element in where the card leaves it unset, in a
-    /// scene with `blocks`; nil for a setting that names no element (`scene-settings`, design D8).
-    public func inheritedColour(in blocks: [String: JSONValue], colours: SceneColours)
-        -> InheritedColour?
-    {
-        guard let name = element, let element = colours.element(name),
-            let swatch = colours.swatch(of: name, in: blocks),
-            let colour = colours.colour(ofSwatch: swatch.name, in: blocks)
+    /// The colour a card draws this setting in, in a scene with `blocks`, where it holds
+    /// `value`, its own or nil for unset: a colour as it is; a role's id as the scene's colour for
+    /// that role; unset as the role the setting takes, else its own default, a colour or a role
+    /// read the same way. Nil for a setting that is no card colour (`scene-settings`, design D8).
+    public func drawnColour(
+        _ value: JSONValue?, in blocks: [String: JSONValue], colours: SceneColours
+    ) -> DrawnColour? {
+        guard case .roleColour = shape, let named = value?.stringValue ?? role ?? ownDefault
         else { return nil }
-        return InheritedColour(element: element, swatch: swatch, colour: colour)
+        if let colour = HexColour(named) { return DrawnColour(colour: colour, role: nil) }
+        guard let role = colours.role(named), let colour = colours.colour(of: named, in: blocks)
+        else { return nil }
+        return DrawnColour(colour: colour, role: role)
+    }
+
+    /// Whether this is an amount from none to all, a number from 0 to 1, which a slider sets.
+    public var isAmount: Bool {
+        guard case .number(let limits) = shape else { return false }
+        return limits.minimum == 0 && limits.maximum == 1
     }
 }
