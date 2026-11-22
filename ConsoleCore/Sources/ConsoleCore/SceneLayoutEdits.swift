@@ -140,6 +140,17 @@ extension SceneLayout {
         changingSettings(of: ids) { $0[key] = nil }
     }
 
+    /// The cards `ids` each taking `transform` of their own value of `key`, a nil result leaving it
+    /// unset, so each card's entry changes by its own value (`meter-scales-editor`, design D3).
+    public func changingSetting(
+        _ key: String, on ids: Set<UUID>, _ transform: (JSONValue?) -> JSONValue?
+    ) -> SceneLayout {
+        changingSettings(of: ids) { settings in
+            let next = transform(settings[key])
+            settings[key] = next
+        }
+    }
+
     private func changingSettings(
         of ids: Set<UUID>, _ change: (inout [String: JSONValue]) -> Void
     ) -> SceneLayout {

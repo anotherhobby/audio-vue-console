@@ -337,3 +337,11 @@ Calibrate…'s 16-bit warning never shows for it (measured by audio-vue on the p
   which was left scrolled part-way down with no way back to its top. Apply such an inset to the
   content the inspector is attached to, before `.inspector`. Not reproduced by an agent; the fix
   is by reading, confirmed or not by the maintainer's run.
+
+## A keyed block's schema nests its settings per key, and the card checks the product's anchor (2026-11-21)
+
+The meter's `scales` export puts each field's settings under `properties[<field>]` (its own `lo`, `hi`,
+`anchor`, `required`, `x-rules`), not once for the block; `x-keys` lists the fields in order. The card
+checks an override's anchor against the one it draws with, so a blank anchor takes the product's and
+the span must still hold it (`card.py`, `checked_scales`). The export's `x-rules` says "where set".
+Measured in the console's `KeyedBlock.edit`: `correlation` at 0.2 to 1 with no anchor is refused.

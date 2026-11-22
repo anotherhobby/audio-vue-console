@@ -132,7 +132,7 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   `x-unit`, `x-class`, `x-standard` (`null` off the measurement class, `{document: null, values: []}`
   where none governs it), `x-live` and `x-step` (always present, null for none, never a
   constraint). Each `card.<name>`, `block.<name>` and `install.<name>` lists its keys in declared
-  order as `x-settings`, since a decoded JSON object keeps no order. Every card number has a range
+  order as `x-settings`, since a decoded JSON object keeps no order. A block with `x-keys` is a keyed block: its keys in `x-keys` order, each with its own `properties`, and `x-keyed-by` names the card setting that picks its key, such as the meter's `field` (`meter-scales-editor`, read 2026-11-21, `KeyedBlock`). Every card number has a range
   and a step; block numbers mostly have neither. The app reads them into `SettingGroup`
   (`SchemaFacts.settings`, by card).
 - **Settings with no effect** (Built, audio-vue `unused-settings`, 2026-11-09): a card setting may

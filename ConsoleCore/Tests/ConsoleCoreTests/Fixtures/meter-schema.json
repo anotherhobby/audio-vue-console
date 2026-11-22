@@ -1,0 +1,1975 @@
+{
+ "additionalProperties": false,
+ "properties": {
+  "bar": {
+   "default": "thin",
+   "enum": [
+    "thin",
+    "medium",
+    "thick"
+   ],
+   "x-choice-labels": [
+    "Thin",
+    "Medium",
+    "Thick"
+   ],
+   "x-class": "appearance",
+   "x-help": "The bar's thickness: thicker fills a short slot with signal.",
+   "x-inherits": null,
+   "x-label": "Bar",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "bar_body_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "A plain bar's body, at its foot; unset uses the scene's bar body.",
+   "x-inherits": null,
+   "x-label": "Bar body colour",
+   "x-live": false,
+   "x-role": "bar_body",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": "",
+   "x-unused-when": [
+    {
+     "reason": "This field is coloured by its thresholds: OK, Caution and Alert.",
+     "when": {
+      "field": [
+       "true_peak_max",
+       "crest_peak",
+       "ppm_peak",
+       "sample_peak"
+      ]
+     }
+    },
+    {
+     "reason": "This field is coloured by its reading: Wide, Centred and Anti-phase.",
+     "when": {
+      "field": [
+       "correlation"
+      ]
+     }
+    },
+    {
+     "reason": "A tick is drawn in the tip colour alone.",
+     "when": {
+      "style": [
+       "tick",
+       "segment-tick"
+      ]
+     }
+    }
+   ]
+  },
+  "bar_tip_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "A plain bar's tip, at its top; unset uses the scene's bar tip.",
+   "x-inherits": null,
+   "x-label": "Bar tip colour",
+   "x-live": false,
+   "x-role": "bar_tip",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": "",
+   "x-unused-when": [
+    {
+     "reason": "This field is coloured by its thresholds: OK, Caution and Alert.",
+     "when": {
+      "field": [
+       "true_peak_max",
+       "crest_peak",
+       "ppm_peak",
+       "sample_peak"
+      ]
+     }
+    },
+    {
+     "reason": "This field is coloured by its reading: Wide, Centred and Anti-phase.",
+     "when": {
+      "field": [
+       "correlation"
+      ]
+     }
+    }
+   ]
+  },
+  "field": {
+   "default": "program_loudness",
+   "enum": [
+    "program_loudness",
+    "true_peak_max",
+    "short_term_loudness",
+    "momentary_loudness",
+    "loudness_range",
+    "short_term_max",
+    "short_term_min",
+    "peak_to_loudness",
+    "crest_factor",
+    "psr",
+    "crest_peak",
+    "crest_rms",
+    "dynamic_range_bits",
+    "adc_bits_used",
+    "correlation",
+    "ppm_peak",
+    "sample_peak",
+    "rms_peak",
+    "balance",
+    "mid_level",
+    "side_level",
+    "mono_deviation"
+   ],
+   "x-choice-labels": [
+    "Program Loudness",
+    "True-peak Max",
+    "Short-term Loudness",
+    "Momentary Loudness",
+    "Loudness Range",
+    "Short-term Max",
+    "Short-term Min",
+    "Peak to Loudness",
+    "Crest Factor",
+    "Peak to Short-term",
+    "Crest Peak",
+    "Crest RMS",
+    "Dynamic Range",
+    "ADC Bits Used",
+    "Correlation",
+    "PPM Peak",
+    "Sample Peak",
+    "RMS Peak",
+    "Balance",
+    "Mid Level",
+    "Side Level",
+    "Mono Deviation (S)"
+   ],
+   "x-class": "appearance",
+   "x-help": "Which reading the bar shows.",
+   "x-inherits": null,
+   "x-label": "Field",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "notice_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "What a card says when it cannot show its reading; unset uses the scene's notice.",
+   "x-inherits": null,
+   "x-label": "Notice colour",
+   "x-live": false,
+   "x-role": "notice",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "scale_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "Scale numerals and axis labels; unset uses the scene's scale.",
+   "x-inherits": null,
+   "x-label": "Scale colour",
+   "x-live": false,
+   "x-role": "scale",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "scales": {
+   "additionalProperties": false,
+   "properties": {
+    "adc_bits_used": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "balance": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "correlation": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "crest_factor": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "crest_peak": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "crest_rms": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "dynamic_range_bits": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "loudness_range": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "mid_level": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "momentary_loudness": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "mono_deviation": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "peak_to_loudness": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "ppm_peak": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "program_loudness": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "psr": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "rms_peak": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "sample_peak": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "short_term_loudness": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "short_term_max": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "short_term_min": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "side_level": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    },
+    "true_peak_max": {
+     "additionalProperties": false,
+     "properties": {
+      "anchor": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "Where the fill starts, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Anchor",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "hi": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's high end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "High",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      },
+      "lo": {
+       "type": "number",
+       "x-class": "display_range",
+       "x-help": "The scale's low end, in the field's unit.",
+       "x-inherits": null,
+       "x-label": "Low",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
+      }
+     },
+     "required": [
+      "lo",
+      "hi"
+     ],
+     "type": "object",
+     "x-rules": [
+      "lo < hi",
+      "anchor, where set, lies between lo and hi"
+     ],
+     "x-settings": [
+      "lo",
+      "hi",
+      "anchor"
+     ]
+    }
+   },
+   "type": "object",
+   "x-class": "display_range",
+   "x-help": "A field's own scale in place of its default: low, high, optional anchor.",
+   "x-inherits": null,
+   "x-keyed-by": "field",
+   "x-keys": [
+    {
+     "anchor": null,
+     "label": "Program Loudness",
+     "name": "program_loudness",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "LUFS"
+    },
+    {
+     "anchor": null,
+     "label": "True-peak Max",
+     "name": "true_peak_max",
+     "range": [
+      -60.0,
+      3.0
+     ],
+     "unit": "dBTP"
+    },
+    {
+     "anchor": null,
+     "label": "Short-term Loudness",
+     "name": "short_term_loudness",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "LUFS"
+    },
+    {
+     "anchor": null,
+     "label": "Momentary Loudness",
+     "name": "momentary_loudness",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "LUFS"
+    },
+    {
+     "anchor": null,
+     "label": "Loudness Range",
+     "name": "loudness_range",
+     "range": [
+      0.0,
+      20.0
+     ],
+     "unit": "LU"
+    },
+    {
+     "anchor": null,
+     "label": "Short-term Max",
+     "name": "short_term_max",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "LUFS"
+    },
+    {
+     "anchor": null,
+     "label": "Short-term Min",
+     "name": "short_term_min",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "LUFS"
+    },
+    {
+     "anchor": null,
+     "label": "Peak to Loudness",
+     "name": "peak_to_loudness",
+     "range": [
+      0.0,
+      20.0
+     ],
+     "unit": "dB"
+    },
+    {
+     "anchor": null,
+     "label": "Crest Factor",
+     "name": "crest_factor",
+     "range": [
+      0.0,
+      20.0
+     ],
+     "unit": "dB"
+    },
+    {
+     "anchor": null,
+     "label": "Peak to Short-term",
+     "name": "psr",
+     "range": [
+      0.0,
+      20.0
+     ],
+     "unit": "dB"
+    },
+    {
+     "anchor": null,
+     "label": "Crest Peak",
+     "name": "crest_peak",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": null,
+     "label": "Crest RMS",
+     "name": "crest_rms",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": null,
+     "label": "Dynamic Range",
+     "name": "dynamic_range_bits",
+     "range": [
+      0.0,
+      20.0
+     ],
+     "unit": "bits"
+    },
+    {
+     "anchor": null,
+     "label": "ADC Bits Used",
+     "name": "adc_bits_used",
+     "range": [
+      0.0,
+      24.0
+     ],
+     "unit": "bits"
+    },
+    {
+     "anchor": 0.0,
+     "label": "Correlation",
+     "name": "correlation",
+     "range": [
+      -1.0,
+      1.0
+     ],
+     "unit": ""
+    },
+    {
+     "anchor": null,
+     "label": "PPM Peak",
+     "name": "ppm_peak",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": null,
+     "label": "Sample Peak",
+     "name": "sample_peak",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": null,
+     "label": "RMS Peak",
+     "name": "rms_peak",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": 0.0,
+     "label": "Balance",
+     "name": "balance",
+     "range": [
+      -1.0,
+      1.0
+     ],
+     "unit": ""
+    },
+    {
+     "anchor": null,
+     "label": "Mid Level",
+     "name": "mid_level",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": null,
+     "label": "Side Level",
+     "name": "side_level",
+     "range": [
+      -60.0,
+      0.0
+     ],
+     "unit": "dBFS"
+    },
+    {
+     "anchor": 0.0,
+     "label": "Mono Deviation (S)",
+     "name": "mono_deviation",
+     "range": [
+      -4.0,
+      4.0
+     ],
+     "unit": "LU"
+    }
+   ],
+   "x-label": "Scales",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "segments": {
+   "default": 21,
+   "maximum": 61,
+   "minimum": 3,
+   "type": "integer",
+   "x-class": "appearance",
+   "x-help": "Segments in a segmented style. Odd centres one on a symmetric neutral point.",
+   "x-inherits": null,
+   "x-label": "Segments",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": 2,
+   "x-unit": "",
+   "x-unused-when": [
+    {
+     "reason": "Only the segmented styles draw segments.",
+     "when": {
+      "style": [
+       "fill",
+       "tick"
+      ]
+     }
+    }
+   ]
+  },
+  "style": {
+   "default": "fill",
+   "enum": [
+    "fill",
+    "tick",
+    "segment-fill",
+    "segment-tick"
+   ],
+   "x-class": "appearance",
+   "x-help": "Fill, a tick, segments lit along the way, or one marker on segments.",
+   "x-inherits": null,
+   "x-label": "Style",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "tick_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "Scale ticks; unset uses the scene's tick.",
+   "x-inherits": null,
+   "x-label": "Tick colour",
+   "x-live": false,
+   "x-role": "tick",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": "",
+   "x-unused-when": [
+    {
+     "reason": "No tick marks are drawn.",
+     "when": {
+      "ticks": [
+       "0"
+      ]
+     }
+    }
+   ]
+  },
+  "ticks": {
+   "default": "0",
+   "enum": [
+    "0",
+    "3",
+    "5",
+    "9"
+   ],
+   "x-class": "appearance",
+   "x-help": "Marks under the bar, evenly spaced; with 9, every other one is labelled.",
+   "x-inherits": null,
+   "x-label": "Ticks",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "title_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "Card titles; unset uses the scene's title.",
+   "x-inherits": null,
+   "x-label": "Title colour",
+   "x-live": false,
+   "x-role": "title",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "track_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "An unfilled bar, arc or progress track; unset uses the scene's track.",
+   "x-inherits": null,
+   "x-label": "Track colour",
+   "x-live": false,
+   "x-role": "track",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "unit_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "Units; unset uses the scene's unit.",
+   "x-inherits": null,
+   "x-label": "Unit colour",
+   "x-live": false,
+   "x-role": "unit",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "value": {
+   "default": "left",
+   "enum": [
+    "left",
+    "right",
+    "off"
+   ],
+   "x-choice-labels": [
+    "Left",
+    "Right",
+    "Off"
+   ],
+   "x-class": "appearance",
+   "x-help": "The number under the name, on the name's line at the right, or not shown.",
+   "x-inherits": null,
+   "x-label": "Value",
+   "x-live": true,
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  },
+  "value_color": {
+   "anyOf": [
+    {
+     "enum": [
+      "card",
+      "title",
+      "value",
+      "label",
+      "unit",
+      "scale",
+      "caption",
+      "notice",
+      "grid_major",
+      "grid_minor",
+      "outline",
+      "tick",
+      "track",
+      "series",
+      "bar_body",
+      "bar_tip",
+      "peak_hold"
+     ]
+    },
+    {
+     "pattern": "^#[0-9a-fA-F]{6}$",
+     "type": "string"
+    }
+   ],
+   "x-class": "appearance",
+   "x-help": "The number a card leads with; unset uses the scene's value.",
+   "x-inherits": null,
+   "x-label": "Value colour",
+   "x-live": false,
+   "x-role": "value",
+   "x-standard": null,
+   "x-step": null,
+   "x-unit": ""
+  }
+ },
+ "type": "object",
+ "x-category": "readouts",
+ "x-min-cells": [
+  8,
+  4
+ ],
+ "x-placeable": true,
+ "x-settings": [
+  "field",
+  "bar",
+  "ticks",
+  "style",
+  "segments",
+  "value",
+  "scales",
+  "track_color",
+  "bar_body_color",
+  "bar_tip_color",
+  "tick_color",
+  "title_color",
+  "value_color",
+  "unit_color",
+  "scale_color",
+  "notice_color"
+ ],
+ "x-sizing": "free"
+}

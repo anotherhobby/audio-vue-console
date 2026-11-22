@@ -28,6 +28,8 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
         case roleColour(roles: [String])
         /// A list of `#rrggbb` colours holding at least `minimum`, such as a gradient's stops.
         case colours(minimum: Int)
+        /// A block of keys, each taking a span, as the schema lists them under `x-keys`.
+        case keyed(KeyedBlock)
         /// A shape the inspector shows but does not edit, such as a list of colours.
         case other
     }
@@ -186,6 +188,7 @@ public struct SettingDeclaration: Sendable, Equatable, Identifiable {
 
     private static func shape(_ property: JSONValue) -> Shape {
         if let choices = property["enum"]?.arrayValue { return .choice(choices) }
+        if let block = KeyedBlock(property: property) { return .keyed(block) }
         if let either = property["anyOf"]?.arrayValue,
             either.contains(where: { $0["pattern"]?.stringValue == colourPattern }),
             let roles = either.lazy.compactMap({ $0["enum"]?.arrayValue }).first

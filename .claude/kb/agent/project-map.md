@@ -63,7 +63,7 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   2026-11-21),
   `SceneEditorView` (library, canvas and inspector over a `SceneEditor` and a `SceneRendering`),
   `SceneInspector` (a card's place and settings; several cards' Group/Ungroup, shared settings,
-  then a collapsed section per card), `CardSettings` (`CardSettingsList`,
+  then a collapsed section per card), `CardSettings` (`CardSettingsList`, `KeyedBlockRows`: a keyed block's group of rows, `meter-scales-editor` 2026-11-21,
   `SettingRow`, `SettingControl`) and `SettingControls` (`RoleMenu`, `SwatchChip`, `NumberField`,
   `AmountSlider` for a number from 0 to 1, `ColourWell`; `card-settings`
   2026-11-09; a card's colour is a well beside `RoleMenu`, showing its `DrawnColour`, its colours
@@ -162,6 +162,7 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   install, schema, images, the card manifest), `JSONValue` (documents passed through whole),
   `SceneDocument` and `LaidOutScene` (a document as a layout and back), `SchemaFacts` (placeable
   cards, minimums, each card's `SettingGroup`), `SettingGroup` and
+  `KeyedBlock` (a keyed block from `x-keys`, its span check and `edit`, `meter-scales-editor` 2026-11-21),
   `SettingValues` (declarations in declared order, shared settings, effective values, off-standard
   notes, numbers written to range and step; `card-settings`), `HexColour`, `PanelScenes` (made by
   `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,

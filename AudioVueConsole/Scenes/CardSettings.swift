@@ -14,12 +14,29 @@ struct CardSettingsList: View {
     let editor: SceneEditor
 
     var body: some View {
-        ForEach(declared.settings.filter { !Self.isColour($0) }) { row($0) }
+        ForEach(declared.settings.filter { !Self.isColour($0) }) { rowView($0) }
         let colours = declared.settings.filter(Self.isColour)
         if !colours.isEmpty {
             DisclosureGroup("Colours") {
                 ForEach(colours) { row($0) }
             }
+        }
+    }
+
+    /// A keyed block is a group of its keys' rows; any other setting is one row.
+    @ViewBuilder
+    private func rowView(_ declaration: SettingDeclaration) -> some View {
+        if case .keyed(let block) = declaration.shape {
+            KeyedBlockRows(
+                declaration: declaration,
+                block: block,
+                keys: block.keys(
+                    picked: KeyedBlock.picked(
+                        by: block.keyedBy, across: cards, declaredBy: groups)),
+                value: SettingGroup.value(of: declaration.key, across: cards, declaredBy: groups),
+                set: blockEdit(declaration, block))
+        } else {
+            row(declaration)
         }
     }
 
@@ -68,6 +85,27 @@ struct CardSettingsList: View {
         return SettingEdit(
             set: { [editor] in editor.set(key, to: $0, label: label, on: ids) },
             useDefault: { [editor] in editor.useDefault(key, label: label, on: ids) })
+    }
+}
+
+/// Writes one key's span of a keyed block on the cards, each card's own block taking the span
+/// where the span checks; nil where the scene is read-only (`meter-scales-editor`, design D3).
+extension CardSettingsList {
+    fileprivate func blockEdit(
+        _ declaration: SettingDeclaration, _ block: KeyedBlock
+    ) -> ((String, KeyedBlock.Span) -> Void)? {
+        guard editor.readOnly == nil else { return nil }
+        let (ids, key, label) = (Set(cards.map(\.id)), declaration.key, declaration.label)
+        return { [editor] name, span in
+            editor.editSetting(key, label: label, on: ids) { current in
+                switch block.edit(
+                    current, key: name, lo: span.lo, hi: span.hi, anchor: span.anchor)
+                {
+                case .success(let next): next
+                case .failure: current
+                }
+            }
+        }
     }
 }
 
@@ -205,6 +243,9 @@ struct SettingControl: View {
                 NumberField(
                     declaration: declaration, value: shown ?? fromScene.value, set: edit?.set,
                     isMixed: isMixed)
+            case .keyed:
+                // A keyed block's rows are `KeyedBlockRows`, never a single control.
+                EmptyView()
             case .other, .colours:
                 Text(shown?.text ?? "None").foregroundStyle(.secondary)
             }

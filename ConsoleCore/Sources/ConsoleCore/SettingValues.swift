@@ -86,7 +86,7 @@ extension SettingDeclaration {
     private static let measurementClass = "measurement"
 
     /// A whole number as an integer and any other as a decimal, the forms `JSONValue` decodes.
-    private static func json(_ number: Double) -> JSONValue {
+    static func json(_ number: Double) -> JSONValue {
         Int(exactly: number).map(JSONValue.integer) ?? .decimal(number)
     }
 

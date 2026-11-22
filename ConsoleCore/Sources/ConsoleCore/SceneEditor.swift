@@ -168,6 +168,16 @@ public final class SceneEditor {
         }
     }
 
+    /// Changes the setting `key`, declared as `label`, on each card in `ids` to `transform` of that
+    /// card's own value, as one step (`meter-scales-editor`, design D3).
+    public func editSetting(
+        _ key: String, label: String, on ids: Set<UUID>, _ transform: (JSONValue?) -> JSONValue?
+    ) {
+        commit("Change \(label)") { () throws(LayoutRefusal) in
+            layout.changingSetting(key, on: ids, transform)
+        }
+    }
+
     /// Leaves the setting `key`, declared as `label`, unset on the cards `ids`, so each takes its
     /// own default. Not called reset, which is the panel's measurement reset.
     public func useDefault(_ key: String, label: String, on ids: Set<UUID>) {
