@@ -158,6 +158,10 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   install's `viewing` block (`distance_in`, `display_diagonal_in`), which replaced `fonts`; until
   both are stored the state's `install.viewing_set` is false and a reference pixel is the
   display's height over 1,080.
+- **Case** (Built, audio-vue `text-case`, 2026-11-22): `case:` holds `title`, `label`, `caption`
+  and `notice`, each a labelled choice of `all_caps` (the default) or `title_case`. Title Case is
+  the text as the card writes it; units, numbers and symbols keep their case. No per-card case. The
+  helper draws it; the app only edits the block (Style tab, after Text).
 - **`x-inherits`** (audio-vue `scene-editor-settings`, 2026-11-20): every setting exports it,
   null or `<document>.<block>`. Where set, the setting declares no `default`, and unset it takes
   the setting of the same key in that block: a scene's `display.saver`, `saver_after_min` and
@@ -171,8 +175,8 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   holds a card (maintainer, 2026-11-20): never send a scene with no cards to the helper or the
   host.
 - **Styles** (Built, audio-vue `scene-styles`; the app's side is the `styles` change): a style
-  holds a `name` and any of the five look categories, `colors`, `typeface`, `type`, `backdrop` and
-  `glass`. A scene names styles in `styles:`; each category comes from the scene's own key, else
+  holds a `name` and any of the six look categories, `colors`, `typeface`, `type`, `case`,
+  `backdrop` and `glass`. A scene names styles in `styles:`; each category comes from the scene's own key, else
   the one named style holding it, else the built-in `default` style, and a category set in two
   places is refused on a scene write and on a style write alike. A scene with no backdrop draws
   `default`'s. Routes under `/v1/styles` mirror the scenes' (list, read, revisions, validate,

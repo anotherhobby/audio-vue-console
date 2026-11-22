@@ -2,8 +2,8 @@
 
 ## Why
 
-A scene's look is its colours, typeface, text sizes, backdrop and glass, and each scene holds its
-own copy (`scene-settings`). Making several scenes look alike, or changing a colour everywhere,
+A scene's look is its colours, typeface, text sizes, text case, backdrop and glass, and each scene
+holds its own copy (`scene-settings`). Making several scenes look alike, or changing a colour everywhere,
 means editing each one. A style names a look once, and every scene that names it follows it.
 
 audio-vue built the host side as `scene-styles` (deployed 2026-11-19), answering this change's
@@ -13,15 +13,16 @@ styles, the one-source rule, and the render request carrying them. What is left 
 ## What Changes
 
 - **A style is à la carte** (maintainer, 2026-11-08; built by audio-vue): a named document holding
-  any of the five look categories, at least one: colours, a typeface, text sizes, a backdrop and
-  glass, each exactly as a scene declares it.
+  any of the six look categories, at least one: colours, a typeface, text sizes, a text case, a
+  backdrop and glass, each exactly as a scene declares it. Text case is audio-vue's `text-case`
+  (2026-11-22).
 - **Scenes link to styles, several at once** (maintainer, 2026-11-08, confirmed 2026-11-19: a link,
   not a copy). A scene names styles by id; each category comes from the scene's own key, else the
   one named style holding it, else the built-in Default. Editing a style changes every scene that
   names it, on the panel at its next reload or switch.
 - **Each look category says where it comes from** (proposed, 2026-11-19). In the scene inspector,
-  Typeface, Colours, Text Sizes, Backdrop and Glass each carry a source: This Scene, a style that
-  holds the category, or Default. The canvas, the library tiles and the card inspector's colours
+  Typeface, Colours, Text Sizes, Text Case, Backdrop and Glass each carry a source: This Scene, a
+  style that holds the category, or Default. The canvas, the library tiles and the card inspector's colours
   draw from the look as resolved, so a card's unset colour shows the style's.
 - **No category is set twice.** Choosing a style for a category removes the scene's own key for
   every category that style holds, as one undoable step, saying which, and is refused where another

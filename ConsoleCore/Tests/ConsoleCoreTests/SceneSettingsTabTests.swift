@@ -30,11 +30,24 @@ struct SceneSettingsTabTests {
         #expect(facts.settingsTabs == [.scene, .style, .analysis])
         #expect(
             facts.blocks(on: .scene).map(\.name) == ["backdrop", "glass", "grid", "display"])
-        #expect(facts.blocks(on: .style).map(\.name) == ["colors", "type"])
+        #expect(facts.blocks(on: .style).map(\.name) == ["colors", "type", "case"])
         #expect(facts.blocks(on: .analysis).map(\.name) == ["analysis"])
         #expect(facts.sceneSettings(with: "type").map(\.key) == ["typeface"])
         #expect(facts.sceneSettings(with: "colors").isEmpty)
         #expect(facts.sceneSettings(on: .style).isEmpty && facts.sceneSettings(on: .other).isEmpty)
+    }
+
+    /// "The case follows the sizes": a case for each settable role, ALL CAPS unless set.
+    @Test func theCaseBlockSetsEachRoleToOneOfTwoCases() throws {
+        let block = try #require(try Self.facts().block("case"))
+        let settings = block.settings.settings
+        #expect(settings.map(\.key) == ["title", "label", "caption", "notice"])
+        for setting in settings {
+            #expect(setting.shape == .choice([.string("all_caps"), .string("title_case")]))
+            #expect(setting.label(of: .string("all_caps")) == "ALL CAPS")
+            #expect(setting.label(of: .string("title_case")) == "Title Case")
+            #expect(setting.defaultValue == .string("all_caps"))
+        }
     }
 
     @Test func anUnknownBlockHasAnOtherTab() throws {

@@ -83,7 +83,7 @@ public struct SchemaFacts: Sendable, Equatable {
 
     /// The blocks the app shows first, in this order.
     public static let blockOrder = [
-        "backdrop", "glass", "grid", "display", "colors", "type", "analysis",
+        "backdrop", "glass", "grid", "display", "colors", "type", "case", "analysis",
     ]
 
     /// What the schema declares of a scene itself: its blocks, its colours and its own settings.

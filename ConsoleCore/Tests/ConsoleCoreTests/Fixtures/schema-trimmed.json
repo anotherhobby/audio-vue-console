@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "x-schema-version": 20,
+  "x-schema-version": 21,
   "x-categories": [
     {
       "cards": [
@@ -771,6 +771,94 @@
         "label",
         "unit",
         "scale",
+        "caption",
+        "notice"
+      ]
+    },
+    "block.case": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "enum": [
+            "all_caps",
+            "title_case"
+          ],
+          "default": "all_caps",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Every card's title. Units, numbers and symbols keep their case.",
+          "x-label": "Title case",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "ALL CAPS",
+            "Title Case"
+          ]
+        },
+        "label": {
+          "enum": [
+            "all_caps",
+            "title_case"
+          ],
+          "default": "all_caps",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A reading's name. Units, numbers and symbols keep their case.",
+          "x-label": "Label case",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "ALL CAPS",
+            "Title Case"
+          ]
+        },
+        "caption": {
+          "enum": [
+            "all_caps",
+            "title_case"
+          ],
+          "default": "all_caps",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "A short word on a plot, a scale's words among them. Units, numbers and symbols keep their case.",
+          "x-label": "Caption case",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "ALL CAPS",
+            "Title Case"
+          ]
+        },
+        "notice": {
+          "enum": [
+            "all_caps",
+            "title_case"
+          ],
+          "default": "all_caps",
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "What a card says when it cannot show its reading. Units, numbers and symbols keep their case.",
+          "x-label": "Notice case",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "ALL CAPS",
+            "Title Case"
+          ]
+        }
+      },
+      "x-settings": [
+        "title",
+        "label",
         "caption",
         "notice"
       ]
@@ -9031,6 +9119,9 @@
         "type": {
           "$ref": "#/$defs/block.type"
         },
+        "case": {
+          "$ref": "#/$defs/block.case"
+        },
         "analysis": {
           "$ref": "#/$defs/block.analysis"
         },
@@ -9082,6 +9173,9 @@
         "type": {
           "$ref": "#/$defs/block.type"
         },
+        "case": {
+          "$ref": "#/$defs/block.case"
+        },
         "backdrop": {
           "$ref": "#/$defs/block.backdrop"
         },
@@ -9107,6 +9201,11 @@
         },
         {
           "required": [
+            "case"
+          ]
+        },
+        {
+          "required": [
             "backdrop"
           ]
         },
@@ -9121,6 +9220,7 @@
         "colors",
         "typeface",
         "type",
+        "case",
         "backdrop",
         "glass"
       ]

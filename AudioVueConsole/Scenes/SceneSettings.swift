@@ -118,11 +118,14 @@ struct BlockSection: View {
     private static let descriptions = [
         "colors": "What each part of a card is drawn in. Hover over one for what it is.",
         "type": "The typeface, and the size of each kind of text.",
+        "case": "How each kind of text is written. Units, numbers and symbols keep their case.",
     ]
 
     /// The titles of the blocks whose names do not read as one: `glass` is the plates under the
-    /// cards.
-    private static let titles = ["colors": "Colours", "type": "Text", "glass": "Cards"]
+    /// cards, `case` the letter case of the text.
+    private static let titles = [
+        "colors": "Colours", "type": "Text", "case": "Text Case", "glass": "Cards",
+    ]
 
     /// A block's section title from its name, since a block declares no label.
     static func title(_ name: String) -> String {

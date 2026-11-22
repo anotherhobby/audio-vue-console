@@ -20,7 +20,7 @@ public enum SceneSettingsTab: String, Sendable, CaseIterable, Identifiable {
     var blockNames: [String] {
         switch self {
         case .scene: ["backdrop", "glass", "grid", "display"]
-        case .style: ["colors", "type"]
+        case .style: ["colors", "type", "case"]
         case .analysis: ["analysis"]
         case .other: []
         }
