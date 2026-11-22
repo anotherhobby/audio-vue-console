@@ -10,11 +10,12 @@ schema.
 ### Requirement: The inspector shows the scene's settings when no card is selected
 
 With no card selected, the inspector SHALL show tabs: Scene (Backdrop, Cards, Grid, Display), Style
-(Colours, then Text: the typeface, then the sizes), Analysis, and Other for any other block or
-setting, by its name. Cards is the `glass` block. Settings SHALL behave as `card-settings` says.
+(Colours, then Text: the typeface, then the sizes, then Text Case), Analysis, and Other for any
+other block or setting, by its name. Cards is the `glass` block. Settings SHALL behave as
+`card-settings` says.
 
 Source: `product.md`: every scene setting through the app. Maintainer, 2026-11-08 to 2026-11-20:
-the tabs; Cards, not Glass; the typeface with the sizes.
+the tabs; Cards, not Glass; the typeface with the sizes. audio-vue `text-case`: the case too.
 
 #### Scenario: Opening a scene
 
@@ -26,6 +27,18 @@ the tabs; Cards, not Glass; the typeface with the sizes.
 
 - **WHEN** the user opens the Style tab
 - **THEN** Text lists Typeface first, then a size for each kind of text
+
+#### Scenario: The case follows the sizes
+
+- **WHEN** the user opens the Style tab
+- **THEN** Text Case follows Text, with a case for titles, labels, captions and the notice, each
+  offering ALL CAPS and Title Case, and ALL CAPS shown while the scene sets none
+
+#### Scenario: Captions in Title Case
+
+- **WHEN** the scene sets no case and the user sets Caption case to Title Case
+- **THEN** the scene's `case` block sets `caption: title_case` alone, every card's captions are
+  drawn again as written, and Caption case offers Use Default
 
 #### Scenario: A colour
 
