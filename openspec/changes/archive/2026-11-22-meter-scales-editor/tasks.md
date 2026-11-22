@@ -12,9 +12,9 @@
 
 ## 3. Inspector rows
 
-- [ ] 3.1 Render `.keyed` in `SettingControls.swift` and `CardSettings.swift` as a `DisclosureGroup` titled with the setting's label, collapsed, with one row per key the cards pick by `x-keyed-by` (`KeyedBlock.keys(picked:)`), set keys first, each row showing the key's label, unit, product range and anchor hint, and fields for Low, High and Anchor. Mixed blocks show Mixed, with blank fields, and a commit edits each card's own block. Verify with `BuildProject` (clean build) and a preview of a meter card with one set key.
-- [ ] 3.2 Commit a row on Return (the only commit path built; leaving focus does not commit), through `KeyedBlock.edit` and `SceneEditor.editSetting`; a refusal leaves the card's value and shows its words beside the row. Verify with a preview in each state (valid, missing end, refused anchor) and by the unit tests in 1.2 and 2.2.
-- [ ] 3.3 Confirm `segments` is disabled unless `style` is a segmented style (`segment-fill`, `segment-tick`) and `value` is a switch, using the existing controls and unused-case display. Verify in a preview of a meter card with `style` set to `fill`.
+- [x] 3.1 Render `.keyed` in `SettingControls.swift` and `CardSettings.swift` as a `DisclosureGroup` titled with the setting's label, collapsed, with one row per key the cards pick by `x-keyed-by` (`KeyedBlock.keys(picked:)`), set keys first, each row showing the key's label, unit, product range and anchor hint, and fields for Low, High and Anchor. Mixed blocks show Mixed, with blank fields, and a commit edits each card's own block. Verify with `BuildProject` (clean build) and a preview of a meter card with one set key.
+- [x] 3.2 Commit a row on Return (the only commit path built; leaving focus does not commit), through `KeyedBlock.edit` and `SceneEditor.editSetting`; a refusal leaves the card's value and shows its words beside the row. Verify with a preview in each state (valid, missing end, refused anchor) and by the unit tests in 1.2 and 2.2.
+- [x] 3.3 Confirm `segments` is disabled unless `style` is a segmented style (`segment-fill`, `segment-tick`) and `value` is a switch, using the existing controls and unused-case display. Verify in a preview of a meter card with `style` set to `fill`.
 
 ## 4. Specs and build
 
