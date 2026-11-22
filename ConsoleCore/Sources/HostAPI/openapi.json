@@ -4798,6 +4798,7 @@
                 "colors",
                 "typeface",
                 "type",
+                "case",
                 "backdrop",
                 "glass"
               ]
@@ -4860,6 +4861,7 @@
                 "colors",
                 "typeface",
                 "type",
+                "case",
                 "backdrop",
                 "glass"
               ]
