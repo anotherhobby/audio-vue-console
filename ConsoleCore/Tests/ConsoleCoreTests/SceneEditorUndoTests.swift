@@ -18,7 +18,7 @@ import Testing
 
     @Test func undoingAndRedoingAMove() throws {
         editor.select(right.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
         #expect(manager.undoActionName == "Move")
         manager.undo()
         #expect(editor.layout.card(right.id)?.cells.col == 4)
@@ -57,8 +57,8 @@ import Testing
 
     @Test func aRefusedEditAddsNoStep() throws {
         editor.select(right.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
-        editor.move(by: CellOffset(cols: -6, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
+        editor.nudge(by: CellOffset(cols: -6, rows: 0), within: testPane)
         #expect(editor.refusal == .spaceTaken)
         manager.undo()
         #expect(editor.layout.card(right.id)?.cells.col == 4)
@@ -67,14 +67,14 @@ import Testing
 
     @Test func anEditThatChangesNothingAddsNoStep() throws {
         editor.select(left.id)
-        editor.move(by: CellOffset(cols: -3, rows: 0))
+        editor.nudge(by: CellOffset(cols: -3, rows: 0), within: testPane)
         #expect(!manager.canUndo)
     }
 
     @Test func aRevertIsUndoneByName() throws {
         let saved = editor.content
         editor.select(right.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
         let edited = editor.layout
         editor.revert(to: saved)
         #expect(editor.content == saved)
@@ -85,7 +85,7 @@ import Testing
 
     @Test func aReplaceLeavesNoUndo() throws {
         editor.select(right.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
         let other = try layout([card("c", rect(10, 0, 4, 4))])
         editor.replace(with: SceneContent(layout: other))
         #expect(editor.layout == other)
@@ -95,7 +95,7 @@ import Testing
 
     @Test func detachingRemovesTheEditorsActions() throws {
         editor.select(right.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
         editor.detach()
         #expect(!manager.canUndo)
     }
@@ -197,7 +197,7 @@ import Testing
 
     @Test func undoingAcrossKindsOfEdit() throws {
         editor.select(left.id)
-        editor.move(by: CellOffset(cols: 2, rows: 0))
+        editor.nudge(by: CellOffset(cols: 2, rows: 0), within: testPane)
         editor.setBlock("backdrop", "color", to: .string("#102030"), label: "Colour")
         #expect(editor.content.blocks["backdrop"] == .object(["color": .string("#102030")]))
         #expect(manager.undoActionName == "Change Colour")

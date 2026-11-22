@@ -5,14 +5,17 @@ import SwiftUI
 /// then each plate at its rect, scaled by the outline's width over the display's. On a scene
 /// laid out wider than the panel's grid the display is the first `panelCols` columns. A plate drawn at
 /// other cells than it is shown at is slid or stretched, edge by edge, until it is drawn again
-/// there. A card whose code differs from the panel's is a plain box over its plate.
+/// there. A card whose code differs from the panel's is a plain box over its plate. A parked plate
+/// is drawn the same way at its cells off the grid, outside the outline, or as a plain box while
+/// it has no layer (`card-parking`).
 struct LayerStack: View {
     let rendering: SceneRendering
     let grid: CellSize
     /// How many columns the panel's grid has.
     let panelCols: Int
-    /// Where each card is shown now: as a gesture would leave it, or as it is.
-    let shown: SceneLayout
+    /// Where each card is shown now, on the grid or parked: as a gesture would leave it, or as it
+    /// is.
+    let shown: SceneContent
 
     var body: some View {
         GeometryReader { proxy in
@@ -24,9 +27,12 @@ struct LayerStack: View {
                     layerImage(backdrop.image).frame(
                         width: displayWidth, height: proxy.size.height)
                 }
-                ForEach(rendering.orderedPlates, id: \.layer.cardIDs) { placed in
+                ForEach(plates, id: \.layer.cardIDs) { placed in
                     layerImage(placed.layer.image)
                         .placed(at: rect(of: placed, scale: scale, cells: cells))
+                }
+                ForEach(shown.parked.filter { !drawn.contains($0.id) }) { card in
+                    PlainBox(kind: card.kind).placed(at: cells.rect(of: card.cells))
                 }
                 ForEach(shown.cards.filter { rendering.boxedCards.contains($0.id) }) { card in
                     PlainBox(kind: card.kind).placed(at: cells.rect(of: card.cells))
@@ -34,6 +40,16 @@ struct LayerStack: View {
             }
         }
         .allowsHitTesting(false)
+    }
+
+    /// The plates on the grid, in the helper's order, then the parked ones.
+    private var plates: [SceneRendering.PlacedLayer] {
+        rendering.orderedPlates + Array(rendering.parked.layers.values)
+    }
+
+    /// Every card a layer is held for.
+    private var drawn: Set<UUID> {
+        Set(plates.flatMap(\.layer.cardIDs))
     }
 
     private func layerImage(_ image: CGImage) -> some View {

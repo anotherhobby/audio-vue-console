@@ -18,6 +18,10 @@ enum CanvasMetrics {
     static let labelPadding: CGFloat = 4
 
     static let canvasPadding: CGFloat = 24
+    /// The space between the scene's name, the panel and the line below it, a `VStack`'s.
+    nonisolated static let stackSpacing: CGFloat = 8
+    /// The least change of the panel's scale worth laying the canvas out again for.
+    static let fitTolerance: CGFloat = 0.001
     static let bezelWidth: CGFloat = 10
     static let bezelCornerRadius: CGFloat = 14
     static let selectionLineWidth: CGFloat = 2

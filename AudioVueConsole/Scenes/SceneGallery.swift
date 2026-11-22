@@ -128,7 +128,8 @@ struct SceneGallery: View {
 
     @ViewBuilder private func menu(_ item: Item) -> some View {
         Button("Edit") { open(item.id) }
-        Button("Duplicate") { duplicate(item.document) }.disabled(item.laidOut == nil)
+        Button("Duplicate") { duplicate(item.document) }
+            .disabled(item.laidOut == nil || store.drafts.draft(item.id)?.hasParked == true)
         if !item.document.builtIn {
             Divider()
             Button("Rename…") { renaming = item.document }
@@ -186,6 +187,9 @@ struct SceneRow: View {
             if isTooWide {
                 Text("Too wide for this panel").font(.callout).foregroundStyle(.secondary)
             }
+            if let parked = store.drafts.draft(item.id)?.parkedCount, parked > 0 {
+                Text(ParkingText.note(parked)).font(.callout).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -239,6 +243,18 @@ struct SceneRow: View {
     }
 }
 
+#Preview("Gallery, a scene with a parked card") {
+    if let preview = GalleryPreview.scenes,
+        let store = GalleryPreview.storeWithParked(in: preview, on: CellSize(cols: 64, rows: 36))
+    {
+        SceneGallery(scenes: preview, grid: CellSize(cols: 64, rows: 36), aspect: 16.0 / 9.0) {
+            _ in
+        }
+        .environment(store)
+        .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
+    }
+}
+
 /// Two built-in scenes and two stored ones on a 16:9 panel, read as the host gives scene
 /// documents; "My RTA" reaches past the panel's last column.
 private enum GalleryPreview {
@@ -248,6 +264,26 @@ private enum GalleryPreview {
         ("s1", "My RTA", false, #"{"cards": [{"card": "rta_bars", "colspan": 96}]}"#),
         ("s2", "Wide", false, #"{"cards": [{"card": "waveform", "colspan": 32}]}"#),
     ]
+
+    /// A store holding "Wide" with its card parked below the panel (`card-parking`).
+    @MainActor static func storeWithParked(in scenes: [SceneDocument], on grid: CellSize)
+        -> SceneStore?
+    {
+        let store = SceneStore()
+        let pane = CellRect(col: 0, row: 0, cols: grid.cols, rows: grid.rows * 2)
+        guard let wide = scenes.first(where: { $0.id == "s2" }),
+            let draft = ScenesPage.draft(wide, in: store.drafts, on: grid)
+        else { return nil }
+        do {
+            let parked = try draft.content.dragging(
+                Set(draft.layout.cards.map(\.id)), by: CellOffset(cols: 0, rows: grid.rows),
+                within: pane)
+            store.drafts.keep(parked, for: wide.id)
+            return store
+        } catch {
+            return nil
+        }
+    }
 
     /// A store holding a copy of the first scene, never saved.
     @MainActor static func storeWithCopy(of scenes: [SceneDocument], on grid: CellSize)

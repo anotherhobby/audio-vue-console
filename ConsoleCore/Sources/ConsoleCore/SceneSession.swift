@@ -58,14 +58,21 @@ public final class SceneSession {
     /// new scene is the app's alone until then.
     public var hasCards: Bool { draft?.layout.cards.isEmpty == false }
 
-    public var canSave: Bool { isEditable && isUnsaved && hasCards }
+    /// Whether a card is parked off the panel, which holds back Save, Apply and Duplicate
+    /// (`card-parking`).
+    public var hasParked: Bool { draft?.hasParked ?? false }
+
+    public var canSave: Bool { isEditable && isUnsaved && hasCards && !hasParked }
 
     /// Whether a card reaches past the panel's last column, so the panel would refuse the scene.
     public var isTooWide: Bool { draft.map { $0.laidOut.isTooWide($0.content) } ?? false }
 
     /// Apply: a scene the panel can show (`scene-apply`, "Apply works on any scene that fits the
     /// panel").
-    public var canApply: Bool { hasCards && !isTooWide }
+    public var canApply: Bool { hasCards && !isTooWide && !hasParked }
+
+    /// Duplicate: a scene with no card parked (`scene-gallery`).
+    public var canDuplicate: Bool { !hasParked }
 
     /// Revert to Saved: an unsaved scene the host holds a revision of.
     public var canRevert: Bool { isEditable && isUnsaved && draft?.rev != nil }
@@ -77,6 +84,7 @@ public final class SceneSession {
     /// stored, or nil where the save failed and `failure` says why.
     @discardableResult
     public func save(overRev: Int? = nil) async -> SceneDocument? {
+        guard !hasParked else { return nil }
         do throws(HostFailure) {
             return try await writes.save(id, overRev: overRev)
         } catch {
@@ -153,6 +161,7 @@ public final class SceneSession {
     /// in `note`. Answers the scene's id after it, the host's for a copy's first save, or nil
     /// where the save failed and `failure` says why.
     public func apply() async -> String? {
+        guard !hasParked else { return nil }
         do throws(HostFailure) {
             let applied = try await writes.apply(id)
             note = EditorNote(kind: .apply, result: applied.outcome)

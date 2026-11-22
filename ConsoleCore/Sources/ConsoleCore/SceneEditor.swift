@@ -50,43 +50,54 @@ public final class SceneEditor {
 
     /// `id` alone, with its group.
     public func select(_ id: UUID) {
-        setSelection(layout.widened([id]))
+        setSelection(content.widened([id]))
     }
 
     /// `id` and its group added to the selection, or taken out if already in it.
     public func toggle(_ id: UUID) {
-        let reached = layout.widened([id])
+        let reached = content.widened([id])
         let isSelected = selection.isSuperset(of: reached)
         setSelection(isSelected ? selection.subtracting(reached) : selection.union(reached))
     }
 
-    /// Every card touching `cells` selected, added to the selection when `adding`.
+    /// Every card touching `cells`, on the grid or parked, selected, added to the selection when
+    /// `adding`.
     public func select(touching cells: CellRect, adding: Bool = false) {
-        let touched = Set(layout.cards.filter { $0.cells.intersects(cells) }.map(\.id))
-        setSelection(layout.widened(touched).union(adding ? selection : []))
+        let touched = Set(content.cards.filter { $0.cells.intersects(cells) }.map(\.id))
+        setSelection(content.widened(touched).union(adding ? selection : []))
     }
 
     public func clearSelection() {
         setSelection([])
     }
 
+    /// The selected cards, on the grid then parked.
     public var selectedCards: [LayoutCard] {
-        layout.cards.filter { selection.contains($0.id) }
+        content.cards.filter { selection.contains($0.id) }
     }
 
-    /// The selected card when it alone is selected, belongs to no group and the scene can be
-    /// edited: the one card that shows resize handles.
+    /// The selected card when it alone is selected, lies on the grid, belongs to no group and the
+    /// scene can be edited: the one card that shows resize handles.
     public var resizableCard: LayoutCard? {
         guard readOnly == nil, selection.count == 1, let card = selectedCards.first,
-            card.group == nil
+            card.group == nil, layout.card(card.id) != nil
         else { return nil }
         return card
     }
 
+    /// Whether any card is parked off the panel (`card-parking`).
+    public var hasParked: Bool { !content.parked.isEmpty }
+
     // MARK: Previews, which commit nothing
 
-    public func previewMove(by offset: CellOffset) -> Result<SceneLayout, LayoutRefusal> {
-        preview { () throws(LayoutRefusal) in try layout.moving(selection, by: offset) }
+    /// The scene as dragging the selection by `offset` would leave it, parked cards included, kept
+    /// to `reach`, the pane in cells (`card-parking`).
+    public func previewDrag(by offset: CellOffset, within reach: CellRect)
+        -> Result<SceneContent, LayoutRefusal>
+    {
+        preview { () throws(LayoutRefusal) in
+            try content.dragging(selection, by: offset, within: reach)
+        }
     }
 
     public func previewResize(_ id: UUID, edges: CardEdges, by offset: CellOffset)
@@ -108,6 +119,9 @@ public final class SceneEditor {
     /// Why the selection cannot be grouped, or nil when it can.
     public var groupRefusal: LayoutRefusal? {
         if let readOnly { return .readOnly(readOnly) }
+        if content.parked.contains(where: { selection.contains($0.id) }) {
+            return .parkedCannotGroup
+        }
         do {
             _ = try layout.grouping(selection)
             return nil
@@ -122,8 +136,20 @@ public final class SceneEditor {
 
     // MARK: Edits
 
-    public func move(by offset: CellOffset) {
-        commit("Move") { () throws(LayoutRefusal) in try layout.moving(selection, by: offset) }
+    /// The selection dragged by `offset`, parking it where it leaves the grid and returning it
+    /// where it lands wholly on it, kept to `reach` (`card-parking`).
+    public func drag(by offset: CellOffset, within reach: CellRect) {
+        commitContent("Move") { () throws(LayoutRefusal) in
+            try content.dragging(selection, by: offset, within: reach)
+        }
+    }
+
+    /// The selection nudged by an arrow key's `offset`, which never takes a card across the
+    /// panel's edge, parked cards kept to `reach` (`card-parking`).
+    public func nudge(by offset: CellOffset, within reach: CellRect) {
+        commitContent("Move") { () throws(LayoutRefusal) in
+            try content.nudging(selection, by: offset, within: reach)
+        }
     }
 
     public func resize(_ id: UUID, edges: CardEdges, by offset: CellOffset) {
@@ -151,11 +177,11 @@ public final class SceneEditor {
     }
 
     public func ungroup() {
-        commit("Ungroup") { () throws(LayoutRefusal) in layout.ungrouping(selection) }
+        commitContent("Ungroup") { () throws(LayoutRefusal) in content.ungrouping(selection) }
     }
 
     public func deleteSelection() {
-        commit("Delete") { () throws(LayoutRefusal) in layout.removing(selection) }
+        commitContent("Delete") { () throws(LayoutRefusal) in content.removing(selection) }
     }
 
     /// Sets the setting `key`, declared as `label`, to `value` on the cards `ids`: the whole
@@ -163,8 +189,8 @@ public final class SceneEditor {
     /// design D4). The cards need not still be selected, so a colour chosen just before the
     /// selection changed still lands on the cards it was chosen for (design D8).
     public func set(_ key: String, to value: JSONValue, label: String, on ids: Set<UUID>) {
-        commit("Change \(label)") { () throws(LayoutRefusal) in
-            layout.setting(key, to: value, on: ids)
+        commitContent("Change \(label)") { () throws(LayoutRefusal) in
+            content.setting(key, to: value, on: ids)
         }
     }
 
@@ -173,16 +199,16 @@ public final class SceneEditor {
     public func editSetting(
         _ key: String, label: String, on ids: Set<UUID>, _ transform: (JSONValue?) -> JSONValue?
     ) {
-        commit("Change \(label)") { () throws(LayoutRefusal) in
-            layout.changingSetting(key, on: ids, transform)
+        commitContent("Change \(label)") { () throws(LayoutRefusal) in
+            content.changingSetting(key, on: ids, transform)
         }
     }
 
     /// Leaves the setting `key`, declared as `label`, unset on the cards `ids`, so each takes its
     /// own default. Not called reset, which is the panel's measurement reset.
     public func useDefault(_ key: String, label: String, on ids: Set<UUID>) {
-        commit("Use Default for \(label)") { () throws(LayoutRefusal) in
-            layout.unsetting(key, on: ids)
+        commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
+            content.unsetting(key, on: ids)
         }
     }
 
@@ -339,7 +365,7 @@ public final class SceneEditor {
             refusal = nil
         case .success(let next):
             registerUndo(name)
-            let kept = Set(next.layout.cards.map(\.id))
+            let kept = Set(next.cards.map(\.id))
             show(next, selection: selection.intersection(kept))
         }
     }

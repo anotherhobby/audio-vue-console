@@ -52,10 +52,10 @@ import Testing
     @Test func previewsCommitNothing() throws {
         let editor = SceneEditor(layout: scene)
         editor.select(loose.id)
-        let moved = try editor.previewMove(by: CellOffset(cols: 2, rows: 0)).get()
-        #expect(moved.card(loose.id)?.cells.col == 22)
+        let moved = try editor.previewDrag(by: CellOffset(cols: 2, rows: 0), within: testPane).get()
+        #expect(moved.layout.card(loose.id)?.cells.col == 22)
         #expect(editor.layout == scene)
-        let refused = editor.previewMove(by: CellOffset(cols: -14, rows: 0))
+        let refused = editor.previewDrag(by: CellOffset(cols: -14, rows: 0), within: testPane)
         #expect(throws: LayoutRefusal.spaceTaken) { try refused.get() }
         #expect(editor.refusal == nil)
     }
@@ -63,7 +63,7 @@ import Testing
     @Test func aRefusalIsKeptUntilTheNextSelection() throws {
         let editor = SceneEditor(layout: scene)
         editor.select(loose.id)
-        editor.move(by: CellOffset(cols: -14, rows: 0))
+        editor.drag(by: CellOffset(cols: -14, rows: 0), within: testPane)
         #expect(editor.refusal == .spaceTaken)
         #expect(editor.layout == scene)
         editor.clearSelection()
@@ -90,8 +90,8 @@ import Testing
         var committed: [SceneLayout] = []
         let editor = SceneEditor(layout: scene) { committed.append($0.layout) }
         editor.select(loose.id)
-        editor.move(by: CellOffset(cols: 1, rows: 0))
-        editor.move(by: CellOffset(cols: -30, rows: 0))
+        editor.nudge(by: CellOffset(cols: 1, rows: 0), within: testPane)
+        editor.nudge(by: CellOffset(cols: -30, rows: 0), within: testPane)
         #expect(committed == [editor.layout])
     }
 
@@ -101,7 +101,7 @@ import Testing
         editor.select(loose.id)
         #expect(editor.selection == [loose.id])
         #expect(editor.resizableCard == nil)
-        editor.move(by: CellOffset(cols: 1, rows: 0))
+        editor.drag(by: CellOffset(cols: 1, rows: 0), within: testPane)
         editor.resize(loose.id, edges: .right, by: CellOffset(cols: 1, rows: 0))
         editor.drop(kind: "meter", size: CellSize(cols: 2, rows: 2), at: Cell(col: 40, row: 20))
         editor.deleteSelection()

@@ -91,3 +91,10 @@ Format:
   `schema-trimmed.json` was refreshed from audio-vue's `json_schema()` (whole, keeping the tests'
   `x-categories`; `ensure_ascii` left on, as the file was written). `xcodebuild -project AudioVueConsole.xcodeproj
   -scheme AudioVueConsole -configuration Debug build` - succeeded, with no `-derivedDataPath`.
+
+- 2026-11-22: `uv run --project /Users/cunnidm/code/claude-qualty-gate python
+  /Users/cunnidm/code/claude-qualty-gate/quality_gate FILE ...` from the repository root - runs the
+  quality gate by hand, printing `clean` or its findings per file. The gate's hook runs only on the
+  Edit and Write tools, so run this on any Swift file changed by a script or `sed`.
+  `cd ConsoleCore && xcrun swift test --disable-xctest` - 796 tests in 102 suites after
+  `park-cards`.

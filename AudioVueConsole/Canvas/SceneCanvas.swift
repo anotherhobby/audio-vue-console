@@ -13,8 +13,9 @@ enum CanvasGesture: Equatable {
 
 /// The scene canvas: the panel's grid filling the display's outline, as the host stretches it,
 /// and wider by the same cells for a scene too wide for the panel (`scene-canvas`, "The canvas
-/// has the display's shape"). It turns pointer and key events into `SceneEditor` calls and draws
-/// their results; every rule is the editor's (`scene-canvas`).
+/// has the display's shape"). Cards parked off the panel are drawn and handled in the region's
+/// own cells, off its grid, around the outline (`card-parking`). It turns pointer and key events
+/// into `SceneEditor` calls and draws their results; every rule is the editor's.
 struct SceneCanvas: View {
     let editor: SceneEditor
     /// The display's width over its height.
@@ -30,40 +31,66 @@ struct SceneCanvas: View {
 
     @Environment(SceneStore.self) private var store
     @State private var gesture: CanvasGesture?
+    @State private var pane = PaneFrame()
+    /// The panel's size over its usual one, below 1 only to keep parked cards in view.
+    @State private var scale: CGFloat = 1
     @FocusState private var isFocused: Bool
 
+    /// The canvas pane's coordinate space, in which the region's frame is read.
+    private static let paneSpace = "scene-canvas-pane"
+
     var body: some View {
-        VStack {
-            if let title { title }
-            display
-            footer
+        paneView
+            // A click anywhere off a card, inside the panel or around it, clears the selection; a
+            // card's own tap wins over this one.
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isFocused = true
+                editor.clearSelection()
+            }
+            .focusable()
+            .focused($isFocused)
+            .focusEffectDisabled()
+            .onDeleteCommand { editor.deleteSelection() }
+            .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { nudge($0) }
+            .focusedSceneValue(\.sceneEditor, editor)
+            // A resize draws its plate again at each cell step; everything else once it is committed,
+            // and a refused gesture's plate as it was (`scene-rendering`).
+            .onChange(of: drawnContent) { _, content in
+                Task { await rendering?.show(content) }
+            }
+    }
+
+    /// The canvas pane: the scene's name, the panel and the line below it, with the open pane
+    /// behind them, measured so cards can be parked around the panel and the panel shrunk to keep
+    /// them in view (`card-parking`).
+    private var paneView: some View {
+        ZStack {
+            // Behind the column: a drag across the open pane draws a marquee there too.
+            Color.clear.contentShape(Rectangle()).gesture(marquee(regionGeometry))
+            CanvasStack(scale: scale) {
+                if let title { title.zIndex(1) }
+                display.layoutValue(key: CanvasStack.Display.self, value: true)
+                footer.zIndex(1)
+            }
+            .padding(CanvasMetrics.canvasPadding)
         }
-        .padding(CanvasMetrics.canvasPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // A click anywhere off a card, inside the panel or around it, clears the selection; a
-        // card's own tap wins over this one.
-        .contentShape(Rectangle())
-        .onTapGesture {
-            isFocused = true
-            editor.clearSelection()
+        .coordinateSpace(.named(Self.paneSpace))
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: {
+            pane.size = $0
         }
-        .focusable()
-        .focused($isFocused)
-        .focusEffectDisabled()
-        .onDeleteCommand { editor.deleteSelection() }
-        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { nudge($0) }
-        .focusedSceneValue(\.sceneEditor, editor)
-        // A resize draws its plate again at each cell step; everything else once it is committed,
-        // and a refused gesture's plate as it was (`scene-rendering`).
-        .onChange(of: drawnContent) { _, content in
-            Task { await rendering?.show(content) }
+        .onChange(of: FitInputs(pane: pane, parked: editor.content.parked.map(\.cells))) {
+            fit()
         }
     }
 
-    /// What the layers are drawn for: the scene's blocks as the editor holds them, and its cards
-    /// as a resize would leave them while one is under way.
+    /// What the layers are drawn for: the scene as the editor holds it, and its cards as a resize
+    /// would leave them while one is under way.
     private var drawnContent: SceneContent {
-        if case .resizing = gesture { return editor.content.with(layout: shownLayout) }
+        if case .resizing = gesture { return shownContent }
         return editor.content
     }
 
@@ -78,11 +105,17 @@ struct SceneCanvas: View {
     /// The canvas's width over its height: the display's, wider by the columns past the panel's.
     private var aspect: Double { panelAspect * Double(grid.cols) / Double(panelCols) }
 
+    /// Where a parked card may go: the pane's whole cells, from the grid's top-left.
+    private var reach: CellRect { pane.reach(grid) }
+
+    /// The region's grid in its own points, which reach past it to the parked cards.
+    private var regionGeometry: GridGeometry { GridGeometry(grid: grid, size: pane.region.size) }
+
     private var display: some View {
         ZStack {
             if let rendering, showsLayers {
                 LayerStack(
-                    rendering: rendering, grid: grid, panelCols: panelCols, shown: shownLayout)
+                    rendering: rendering, grid: grid, panelCols: panelCols, shown: shownContent)
             } else {
                 // A scene with no cards is drawn by no request of the canvas's; the library's
                 // tiles hold its backdrop.
@@ -91,6 +124,11 @@ struct SceneCanvas: View {
             }
             GeometryReader { proxy in
                 region(GridGeometry(grid: grid, size: proxy.size))
+                    .onGeometryChange(for: CGRect.self) {
+                        $0.frame(in: .named(Self.paneSpace))
+                    } action: {
+                        pane.region = $0
+                    }
             }
         }
         .aspectRatio(aspect, contentMode: .fit)
@@ -98,12 +136,15 @@ struct SceneCanvas: View {
         .background(.black, in: RoundedRectangle(cornerRadius: CanvasMetrics.bezelCornerRadius))
     }
 
-    /// The scene's region: the marquee surface, the plates, a hit target per card, the outlines
-    /// and the handles, in that order from the back.
+    /// The scene's region: the marquee surface, the plates, a hit target per card, on the grid
+    /// or parked off it, the outlines and the handles, in that order from the back.
     private func region(_ geometry: GridGeometry) -> some View {
         ZStack(alignment: .topLeading) {
-            marqueeSurface(geometry)
-            if !showsLayers { LayoutPlates(layout: shownLayout).allowsHitTesting(false) }
+            Color.clear.contentShape(Rectangle()).gesture(marquee(geometry))
+            if !showsLayers {
+                LayoutPlates(layout: shownContent.layout).allowsHitTesting(false)
+                ParkedBoxes(cards: shownContent.parked, geometry: geometry)
+            }
             if grid.cols > panelCols {
                 // Over the plates: the columns the panel lacks (`scene-canvas`, "A scene too wide shows the
                 // columns the panel lacks").
@@ -111,8 +152,9 @@ struct SceneCanvas: View {
                     .placed(at: geometry.rect(of: lackingColumns))
                     .allowsHitTesting(false)
             }
-            ForEach(editor.layout.cards) { target($0, geometry) }
-            CanvasOutlines(rects: outlineRects(geometry), isRefused: isRefused, marquee: marquee)
+            ForEach(editor.content.cards) { target($0, geometry) }
+            CanvasOutlines(
+                rects: outlineRects(geometry), isRefused: isRefused, marquee: marqueeRect)
             if let card = editor.resizableCard {
                 CanvasHandles(
                     card: card, rect: geometry.rect(of: shownCells(of: card)),
@@ -148,10 +190,13 @@ struct SceneCanvas: View {
             : nil
     }
 
+    /// The canvas's line: a refusal, why the scene cannot be edited, the parked cards, a scene
+    /// too wide, or the grid's size, the first that holds (`card-parking`, "The canvas says how
+    /// many cards are parked").
     private var footerLine: some View {
         Group {
             if let message = (previewRefusal ?? editor.refusal)?.description
-                ?? editor.readOnly?.description ?? tooWideMessage
+                ?? editor.readOnly?.description ?? parkedMessage ?? tooWideMessage
             {
                 Label(message, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -163,10 +208,14 @@ struct SceneCanvas: View {
         .font(.callout)
     }
 
+    private var parkedMessage: String? {
+        editor.hasParked ? ParkingText.canvas(editor.content.parked.count) : nil
+    }
+
     // MARK: Pointer
 
-    /// A card's click and drag area: a click selects it, shift-click adds or removes it, and a
-    /// drag moves the selection, selecting the card first if it was not.
+    /// A card's click and drag area, on the grid or parked: a click selects it, shift-click adds
+    /// or removes it, and a drag moves the selection, selecting the card first if it was not.
     private func target(_ card: LayoutCard, _ geometry: GridGeometry) -> some View {
         Color.clear
             .contentShape(Rectangle())
@@ -179,26 +228,27 @@ struct SceneCanvas: View {
                         gesture = .moving(geometry.offset(for: value.translation))
                     }
                     .onEnded { value in
-                        editor.move(by: geometry.offset(for: value.translation))
+                        editor.drag(by: geometry.offset(for: value.translation), within: reach)
                         gesture = nil
                     })
     }
 
-    /// The empty region under the cards, where a drag draws a marquee.
-    private func marqueeSurface(_ geometry: GridGeometry) -> some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: CanvasMetrics.marqueeMinimumDistance)
-                    .onChanged { value in
-                        gesture = .marquee(Self.rect(from: value.startLocation, to: value.location))
-                    }
-                    .onEnded { value in
-                        let rect = Self.rect(from: value.startLocation, to: value.location)
-                        isFocused = true
-                        editor.select(touching: geometry.cells(touching: rect), adding: isShiftDown)
-                        gesture = nil
-                    })
+    /// A marquee over the region or the pane around it, read in the pane and kept in the
+    /// region's points, selecting every card it touches, on the grid or parked.
+    private func marquee(_ geometry: GridGeometry) -> some Gesture {
+        DragGesture(
+            minimumDistance: CanvasMetrics.marqueeMinimumDistance,
+            coordinateSpace: .named(Self.paneSpace)
+        )
+        .onChanged { value in
+            gesture = .marquee(regionRect(from: value.startLocation, to: value.location))
+        }
+        .onEnded { value in
+            let rect = regionRect(from: value.startLocation, to: value.location)
+            isFocused = true
+            editor.select(touching: geometry.cellsOnAndOff(touching: rect), adding: isShiftDown)
+            gesture = nil
+        }
     }
 
     private func pick(_ card: LayoutCard) {
@@ -208,10 +258,11 @@ struct SceneCanvas: View {
 
     private var isShiftDown: Bool { NSEvent.modifierFlags.contains(.shift) }
 
-    private static func rect(from start: CGPoint, to end: CGPoint) -> CGRect {
+    /// The rectangle from `start` to `end`, points in the pane, in the region's points.
+    private func regionRect(from start: CGPoint, to end: CGPoint) -> CGRect {
         CGRect(
-            x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x),
-            height: abs(end.y - start.y))
+            x: min(start.x, end.x) - pane.region.minX, y: min(start.y, end.y) - pane.region.minY,
+            width: abs(end.x - start.x), height: abs(end.y - start.y))
     }
 
     // MARK: Keyboard
@@ -227,27 +278,43 @@ struct SceneCanvas: View {
             case .upArrow: CellOffset(cols: 0, rows: -step)
             default: CellOffset(cols: 0, rows: step)
             }
-        editor.move(by: offset)
+        editor.nudge(by: offset, within: reach)
         return .handled
+    }
+
+    // MARK: Fitting the panel to the parked cards
+
+    /// What decides the panel's scale: the pane, and where the cards are parked once committed.
+    private struct FitInputs: Equatable {
+        let pane: PaneFrame
+        let parked: [CellRect]
+    }
+
+    /// Draws the panel as large as it can be, up to its usual size, with every parked card in
+    /// the pane (`card-parking`, "Every parked card stays in view").
+    private func fit() {
+        let next = pane.fitted(grid, parked: editor.content.parked.map(\.cells), from: scale)
+        if abs(next - scale) > CanvasMetrics.fitTolerance { scale = next }
     }
 
     // MARK: What a gesture shows
 
-    private var preview: Result<SceneLayout, LayoutRefusal>? {
-        switch gesture {
-        case .moving(let offset): editor.previewMove(by: offset)
+    private var preview: Result<SceneContent, LayoutRefusal>? {
+        let content = editor.content
+        return switch gesture {
+        case .moving(let offset): editor.previewDrag(by: offset, within: reach)
         case .resizing(let id, let edges, let offset):
-            editor.previewResize(id, edges: edges, by: offset)
+            editor.previewResize(id, edges: edges, by: offset).map(content.with(layout:))
         case .dropping(let kind, let size, let cell):
-            editor.previewDrop(kind: kind, size: size, at: cell)
+            editor.previewDrop(kind: kind, size: size, at: cell).map(content.with(layout:))
         case .marquee, nil: nil
         }
     }
 
-    /// The layout as a successful gesture would leave it, or as it is.
-    private var shownLayout: SceneLayout {
-        if case .success(let layout) = preview { return layout }
-        return editor.layout
+    /// The scene as a successful gesture would leave it, or as it is.
+    private var shownContent: SceneContent {
+        if case .success(let content) = preview { return content }
+        return editor.content
     }
 
     private var previewRefusal: LayoutRefusal? {
@@ -257,57 +324,27 @@ struct SceneCanvas: View {
 
     private var isRefused: Bool { previewRefusal != nil }
 
-    private var marquee: CGRect? {
+    private var marqueeRect: CGRect? {
         if case .marquee(let rect) = gesture { return rect }
         return nil
     }
 
     private func shownCells(of card: LayoutCard) -> CellRect {
-        shownLayout.card(card.id)?.cells ?? card.cells
+        shownContent.card(card.id)?.cells ?? card.cells
     }
 
     /// What to outline: the selection where it is or would go, and a dropped card's cells.
     private func outlineRects(_ geometry: GridGeometry) -> [CGRect] {
-        let layout = editor.layout
         let cells: [CellRect] =
             switch (gesture, preview) {
             case (.dropping(_, let size, let cell), _):
-                [layout.placement(of: size, centredOn: cell)].compactMap(\.self)
+                [editor.layout.placement(of: size, centredOn: cell)].compactMap(\.self)
             case (.moving(let offset), .failure):
-                editor.selectedCards.map {
-                    $0.cells.offset(by: layout.clampedOffset(editor.selection, by: offset))
-                }
+                editor.selectedCards.map { $0.cells.offset(by: offset) }
             default:
                 editor.selectedCards.map(shownCells(of:))
             }
         return cells.map(geometry.rect(of:))
-    }
-}
-
-/// The selection's outlines, red when a gesture is refused, and the marquee's rectangle.
-struct CanvasOutlines: View {
-    let rects: [CGRect]
-    let isRefused: Bool
-    let marquee: CGRect?
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            ForEach(Array(rects.enumerated()), id: \.offset) { _, rect in
-                RoundedRectangle(cornerRadius: CanvasMetrics.plateCornerRadius)
-                    .strokeBorder(
-                        isRefused ? Color.red : .accentColor,
-                        lineWidth: CanvasMetrics.selectionLineWidth
-                    )
-                    .placed(at: rect)
-            }
-            if let marquee {
-                Rectangle()
-                    .fill(Color.accentColor.opacity(CanvasMetrics.marqueeFillOpacity))
-                    .overlay { Rectangle().strokeBorder(Color.accentColor) }
-                    .placed(at: marquee)
-            }
-        }
-        .allowsHitTesting(false)
     }
 }
 
@@ -330,5 +367,20 @@ struct CanvasOutlines: View {
         )
         .environment(SceneStore())
         .frame(width: 900, height: 420)
+    }
+}
+
+#Preview("Canvas, a card parked below the panel") {
+    if let layout = PlatesPreview.layout(on: CellSize(cols: 96, rows: 36)),
+        let waveform = layout.cards.last
+    {
+        let editor = SceneEditor(layout: layout)
+        let _ = editor.select(waveform.id)
+        let _ = editor.drag(
+            by: CellOffset(cols: 0, rows: 20),
+            within: CellRect(col: -20, row: -20, cols: 136, rows: 80))
+        SceneCanvas(editor: editor, panelAspect: 8.0 / 3.0, panelCols: 96, sizeOf: { _ in nil })
+            .environment(SceneStore())
+            .frame(width: 900, height: 600)
     }
 }

@@ -36,6 +36,12 @@ public struct Draft: Sendable, Equatable {
     /// The scene's cards on its grid as edited.
     public var layout: SceneLayout { content.layout }
 
+    /// How many cards are parked off the panel (`card-parking`).
+    public var parkedCount: Int { content.parked.count }
+
+    /// Whether any card is parked, which holds back Save, Apply and Duplicate until none is.
+    public var hasParked: Bool { parkedCount > 0 }
+
     /// Whether the host does not hold what the draft shows: a copy never saved, an earlier version
     /// loaded, content that differs from the one read, or a stored grid size, which a save
     /// removes. Both layouts carry the parse's card ids, so undoing back to the content read

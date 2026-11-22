@@ -85,7 +85,7 @@ final class UnsavedScenes {
             }
             let alert = NSAlert()
             alert.messageText = Self.failureTitle(error)
-            alert.informativeText = WriteFailureText.message(error.failure)
+            alert.informativeText = Self.failureMessage(error)
             alert.runModal()
         }
     }
@@ -109,7 +109,26 @@ final class UnsavedScenes {
     }
 
     static func failureTitle(_ failed: SceneWrites.Failed) -> String {
-        "“\(failed.name ?? failed.id)” Wasn't Saved"
+        switch failed {
+        case .failed(let id, let name, _): "“\(name ?? id)” Wasn't Saved"
+        case .parked: "Nothing Was Saved"
+        }
+    }
+
+    /// Why a Save All stopped: the host's reason, or the scenes with cards off the panel
+    /// (`scene-saving`, "Unsaved scenes are settled before they are lost").
+    static func failureMessage(_ failed: SceneWrites.Failed) -> String {
+        switch failed {
+        case .failed(_, _, let failure):
+            return WriteFailureText.message(failure)
+        case .parked(let names):
+            let quoted = names.map { "“\($0)”" }.joined(separator: ", ")
+            let verb = names.count == 1 ? "has" : "have"
+            return """
+                \(quoted) \(verb) cards off the panel. Move them onto it to save, or choose \
+                Discard.
+                """
+        }
     }
 }
 
@@ -136,7 +155,7 @@ extension View {
         ) { _ in
             Button("OK") {}
         } message: { failed in
-            Text(WriteFailureText.message(failed.failure))
+            Text(UnsavedScenes.failureMessage(failed))
         }
     }
 }

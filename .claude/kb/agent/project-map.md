@@ -124,7 +124,10 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `PanelScenes` last read, `UnsavedScenes`, the ids behind on the panel, the `SceneThumbnails` and
   the `LibraryTiles` (2026-11-07, `library-render`;
   `CardLibrary` shows a tile's image in place of its box); `LayoutPlates` draws any layout as boxes;
-  `CanvasMetrics` holds the palette. It holds no layout rules.
+  `CanvasMetrics` holds the palette. It holds no layout rules. Parked cards (`park-cards`,
+  2026-11-22) are drawn and handled in the region's own cells off its grid, since nothing clips
+  the region; `CanvasStack` (with `PaneFrame`) stacks title, panel and footer and shrinks the panel
+  to keep parked cards in view; `CanvasOutlines.swift` holds the outlines and `ParkedBoxes`.
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
   Swift Testing suite (`Tests/ConsoleCoreTests`). Tools 6.2, Swift 6 mode, macOS 27.2, warnings as
   errors. It must not import SwiftUI or AppKit.
@@ -132,7 +135,10 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `SceneEditor`) holds every canvas rule: a layout value is always one the panel would load, each
   edit returns a new one or a refusal, and the editor owns selection and undo. Since
   `scene-settings` (2026-11-09) the editor's undoable state is a `SceneContent` (layout plus the
-  scene's blocks), which `Draft`, `SceneDrafts`, `SceneRendering` and `SceneThumbnails` hold too;
+  scene's blocks), which `Draft`, `SceneDrafts`, `SceneRendering` and `SceneThumbnails` hold too.
+  Since `park-cards` (2026-11-22) it also holds `parked`, cards set aside off the grid, never
+  written or drawn as the scene; `SceneContent+Parking` holds the drag, nudge and every-card edits,
+  `ParkedPlates` their layers for `SceneRendering`, and `ParkingText` the wording;
   `BackdropSource`, `SceneColours` (roles, scales, the colour lookup) and
   `CalibrationCoverage` are its pure parts, and `HostClient+Images` lists and uploads images.
   Its host side (`panel-client`, 2026-11-05): the `HostAPI` target holds `openapi.json`, the host

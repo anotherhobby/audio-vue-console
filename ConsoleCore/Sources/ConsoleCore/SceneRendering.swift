@@ -35,6 +35,8 @@ public final class SceneRendering {
 
     public private(set) var backdrop: RenderedLayer?
     public private(set) var plates: [Set<UUID>: PlacedLayer] = [:]
+    /// The plates of cards parked off the panel (`card-parking`).
+    public private(set) var parked = ParkedPlates()
     public private(set) var status = Status.waiting
     /// What the helper said about the backdrop's image, such as `BACKDROP IMAGE MISSING`.
     public private(set) var notice: String?
@@ -131,28 +133,56 @@ public final class SceneRendering {
     /// The cards drawn as plain boxes over their plates, their family's code differing.
     public var boxedCards: Set<UUID> {
         guard let drift else { return [] }
-        return Set(layout.cards.filter { drift.boxes($0.kind) }.map(\.id))
+        return Set(content.cards.filter { drift.boxes($0.kind) }.map(\.id))
     }
 
     /// Draws again whatever `content` changed, dropping the layers of plates it no longer has: a
     /// change to the backdrop block alone draws the backdrop, a change to any other block draws
     /// everything, and a layout edit draws the plates it changed (`scene-settings`, design D6).
+    /// A plate parked keeps its layer, and is drawn alone only when it must be (`card-parking`).
     public func show(_ content: SceneContent) async {
         let changedBlocks = Self.changedBlocks(from: self.content.blocks, to: content.blocks)
         self.content = content
         guard let queue else { return }
+        let restyled = !changedBlocks.isSubset(of: [Self.backdropBlock])
+        let alone = parked.sort(content, plates: &plates, restyled: restyled)
         let changes = PlateChanges.needed(drawn: plates.mapValues(\.state), for: content.layout)
         for removed in changes.removed { plates[removed] = nil }
-        guard backdrop != nil, changedBlocks.isSubset(of: [Self.backdropBlock]) else {
-            await draw(content, .everything, through: queue)
-            return
-        }
         let targets =
-            changes.redraw.map(Target.plate) + (changedBlocks.isEmpty ? [] : [Target.backdrop])
+            backdrop == nil || restyled
+            ? [Target.everything]
+            : changes.redraw.map(Target.plate) + (changedBlocks.isEmpty ? [] : [Target.backdrop])
         await withDiscardingTaskGroup { group in
             for target in targets {
                 group.addTask { await self.draw(content, target, through: queue) }
             }
+            for members in alone {
+                group.addTask { await self.drawParked(members, content, through: queue) }
+            }
+        }
+    }
+
+    /// Draws the parked plate `members` of `content` alone, at the grid's top-left, as a library
+    /// tile is drawn, keeping its layer where the plate is still parked (design D7).
+    private func drawParked(
+        _ members: Set<UUID>, _ content: SceneContent, through queue: RenderQueue
+    )
+        async
+    {
+        guard let alone = ParkedPlates.alone(members, of: content) else { return }
+        let request = RenderRequest(
+            doc: scene.doc(for: content.with(layout: alone)), builtIn: scene.document.builtIn,
+            context: context, plates: [0], backdrop: false)
+        let key = "parked:" + members.map(\.uuidString).sorted().joined(separator: ",")
+        begin()
+        let result = await queue.submit(request.message, lane: .canvas, key: key)
+        defer { end() }
+        guard self.queue != nil, case .success(let answer)? = result else { return }
+        do {
+            let layers = try RenderedLayer.layers(of: answer, cardIDs: alone.cards.map(\.id))
+            for layer in layers { parked.take(layer, drawnFor: alone, in: self.content) }
+        } catch {
+            return
         }
     }
 
@@ -191,7 +221,7 @@ public final class SceneRendering {
         // One too wide for the panel the helper would refuse, so it stays as boxes
         // (`scene-rendering`, "A scene too wide is drawn as boxes").
         guard !layout.cards.isEmpty, !scene.isTooWide(content) else {
-            clear(.drawn)
+            clear(.drawn, keepingParked: true)
             return
         }
         let ids = layout.cards.map(\.id)
@@ -234,9 +264,12 @@ public final class SceneRendering {
         }
     }
 
-    private func clear(_ status: Status) {
+    /// Drops every layer, the parked plates' too unless `keepingParked`, which are drawn alone
+    /// whatever the scene's own drawing.
+    private func clear(_ status: Status, keepingParked: Bool = false) {
         backdrop = nil
         plates = [:]
+        if !keepingParked { parked.clear() }
         notice = nil
         self.status = status
     }

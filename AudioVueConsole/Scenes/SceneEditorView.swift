@@ -175,7 +175,7 @@ struct SceneEditorView: View {
         ToolbarItemGroup(placement: .principal) {
             Button("Save", systemImage: "square.and.arrow.down") { save() }
                 .disabled(session?.canSave != true)
-                .help(session?.hasCards == false ? "Add a card to save this scene" : "Save")
+                .help(saveHelp)
             Button("Revert", systemImage: "arrow.uturn.backward") { session?.revert() }
                 .disabled(session?.canRevert != true)
             if let session {
@@ -185,6 +185,8 @@ struct SceneEditorView: View {
                 .disabled(editor == nil || session?.canApply != true)
                 .help(applyHelp)
             Button("Duplicate", systemImage: "plus.square.on.square") { duplicate() }
+                .disabled(session?.canDuplicate == false)
+                .help(session?.hasParked == true ? ParkingText.held : "Duplicate")
         }
         ToolbarItem(placement: .principal) {
             Color.clear.frame(width: SceneMetrics.toolbarGap)
@@ -205,9 +207,18 @@ struct SceneEditorView: View {
         open(store.drafts.duplicate(draft, among: scenes.scenes).id)
     }
 
+    /// Why Save is disabled while it cannot save, or what it does (`scene-saving`, "Only an
+    /// editable scene is saved").
+    private var saveHelp: String {
+        if session?.hasParked == true { return ParkingText.held }
+        if session?.hasCards == false { return "Add a card to save this scene" }
+        return "Save"
+    }
+
     /// Why Apply is disabled, or what it does (`scene-apply`, "Apply works on any scene that
     /// fits the panel").
     private var applyHelp: String {
+        if session?.hasParked == true { return ParkingText.held }
         if session?.isTooWide == true { return "This scene is too wide for this panel" }
         if session?.hasCards == false { return "Add a card to apply this scene" }
         return "Apply"

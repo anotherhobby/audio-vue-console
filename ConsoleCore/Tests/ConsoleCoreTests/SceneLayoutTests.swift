@@ -13,6 +13,9 @@ func rect(_ col: Int, _ row: Int, _ cols: Int, _ rows: Int) -> CellRect {
     CellRect(col: col, row: row, cols: cols, rows: rows)
 }
 
+/// A canvas pane around the 64 × 36 grid with room on every side (`card-parking`).
+let testPane = rect(-30, -20, 124, 76)
+
 /// A 64 × 36 layout of `cards`, the default grid.
 func layout(_ cards: [LayoutCard], cols: Int = 64, rows: Int = 36) throws -> SceneLayout {
     try SceneLayout(grid: CellSize(cols: cols, rows: rows), cards: cards)

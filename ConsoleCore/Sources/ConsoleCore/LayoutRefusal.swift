@@ -12,6 +12,11 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     case alreadyAGroup
     case notARectangle
     case cardInTheWay
+    /// A drag off the panel with no room in the pane beyond the edge it crosses (`card-parking`).
+    case noRoomOffPanel
+    /// An arrow key that would take a parked card onto the panel or out of the pane.
+    case dragToCross
+    case parkedCannotGroup
     case readOnly(ReadOnlyReason)
 
     public var description: String {
@@ -25,6 +30,9 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
         case .alreadyAGroup: "These cards are already a group."
         case .notARectangle: "These cards don't fill a rectangle."
         case .cardInTheWay: "Another card is in the way."
+        case .noRoomOffPanel: "There's no room for that off the panel."
+        case .dragToCross: "Drag a card to move it onto or off the panel."
+        case .parkedCannotGroup: "Move these cards onto the panel to group them."
         case .readOnly(let reason): reason.description
         }
     }

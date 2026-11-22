@@ -35,7 +35,7 @@ struct SceneSessionTests {
 
     private static func moveFirst(_ editor: SceneEditor) throws {
         editor.select(try #require(editor.layout.cards.first).id)
-        editor.move(by: CellOffset(cols: 10, rows: 0))
+        editor.nudge(by: CellOffset(cols: 10, rows: 0), within: testPane)
     }
 
     /// `scene-gallery`, "A new scene is the app's alone until it holds a card".
@@ -170,5 +170,33 @@ struct SceneSessionTests {
         await session.readRevisions()
         #expect(session.revisions.map(\.rev) == [2])
         #expect(session.hasVersions)
+    }
+
+    // MARK: Parked cards (`card-parking`)
+
+    /// `scene-saving`, "Only an editable scene is saved": "A parked card" and "The card returned";
+    /// `scene-apply`: "A parked card"; `scene-gallery`, Duplicate's "A parked card".
+    @Test func aParkedCardHoldsBackSaveApplyAndDuplicate() async throws {
+        let opened = try await Opened()
+        let card = try #require(opened.editor.layout.cards.first)
+        opened.editor.select(card.id)
+        opened.editor.drag(by: CellOffset(cols: 0, rows: 40), within: testPane)
+        #expect(opened.session.hasParked && opened.session.isUnsaved)
+        #expect(!opened.session.canSave && !opened.session.canApply)
+        #expect(!opened.session.canDuplicate)
+        // Back on the grid 5 columns from where it was, so still an edit to save.
+        opened.editor.drag(by: CellOffset(cols: 5, rows: -40), within: testPane)
+        #expect(opened.session.canSave && opened.session.canApply && opened.session.canDuplicate)
+    }
+
+    @Test func saveAndApplySendNothingWhileParked() async throws {
+        let opened = try await Opened()
+        let card = try #require(opened.editor.layout.cards.first)
+        opened.editor.select(card.id)
+        opened.editor.drag(by: CellOffset(cols: 0, rows: 40), within: testPane)
+        let before = await opened.transport.requests.count
+        #expect(await opened.session.save() == nil)
+        #expect(await opened.session.apply() == nil)
+        #expect(await opened.transport.requests.count == before)
     }
 }

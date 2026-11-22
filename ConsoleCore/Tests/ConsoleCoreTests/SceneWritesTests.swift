@@ -37,9 +37,28 @@ struct SceneWritesTests {
         let body = #"{"detail": "invalid", "failures": [{"place": "", "message": "bad"}]}"#
         await transport.answer(.writeScene("u1"), with: .status(422, body))
         let failure = HostFailure.invalid([DocumentFailure(place: "", message: "bad")])
-        await #expect(throws: SceneWrites.Failed(id: "u1", name: "Mine", failure: failure)) {
+        await #expect(throws: SceneWrites.Failed.failed(id: "u1", name: "Mine", failure: failure)) {
             try await writes.saveAll()
         }
+    }
+
+    /// `scene-saving`, "Unsaved scenes are settled before they are lost": "Quitting with a parked
+    /// card". A copy with nothing parked is not saved either.
+    @Test func saveAllWithAParkedCardSavesNothing() async throws {
+        let (scenes, transport) = try await PanelScenesTests.loadedWithMine()
+        let writes = Self.writes(scenes)
+        let draft = try PanelScenesTests.movedDraft("u1", in: scenes, drafts: writes.drafts)
+        _ = writes.drafts.duplicate(draft, among: scenes.scenes)
+        let card = try #require(draft.layout.cards.first)
+        writes.drafts.keep(
+            try draft.content.dragging(
+                [card.id], by: CellOffset(cols: 0, rows: 40), within: testPane),
+            for: "u1")
+        let before = await transport.requests.count
+        await #expect(throws: SceneWrites.Failed.parked(names: ["Mine"])) {
+            try await writes.saveAll()
+        }
+        #expect(await transport.requests.count == before)
     }
 
     @Test func applyWritesAnEditThenSwitches() async throws {

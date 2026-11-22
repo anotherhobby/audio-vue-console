@@ -42,13 +42,17 @@ public struct SceneWrites {
     }
 
     /// Saves every unsaved scene in listing order, stopping at the first that fails, which is
-    /// thrown with the scene's id.
+    /// thrown with the scene's id. Where any has cards parked off the panel, nothing is saved and
+    /// those scenes are thrown by name (`scene-saving`).
     public func saveAll() async throws(Failed) {
-        for draft in drafts.unsaved(scenes.scenes) {
+        let unsaved = drafts.unsaved(scenes.scenes)
+        let parked = unsaved.filter(\.hasParked).map { $0.name ?? $0.id }
+        guard parked.isEmpty else { throw .parked(names: parked) }
+        for draft in unsaved {
             do throws(HostFailure) {
                 _ = try await save(draft.id)
             } catch {
-                throw Failed(id: draft.id, name: draft.name, failure: error)
+                throw .failed(id: draft.id, name: draft.name, failure: error)
             }
         }
     }
@@ -83,10 +87,10 @@ public struct SceneWrites {
         try await scenes.refresh(id)
     }
 
-    /// A save that failed during a Save All: which scene, and why.
-    public struct Failed: Error, Equatable {
-        public let id: String
-        public let name: String?
-        public let failure: HostFailure
+    /// Why a Save All stopped: a save that failed, which scene and why, or the scenes holding
+    /// cards parked off the panel, by name, when nothing was saved.
+    public enum Failed: Error, Equatable {
+        case failed(id: String, name: String?, failure: HostFailure)
+        case parked(names: [String])
     }
 }
