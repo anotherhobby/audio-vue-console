@@ -61,10 +61,7 @@ public struct LaidOutScene: Sendable, Equatable {
     /// host no longer takes (`scene-saving`, "A saved scene declares no grid size").
     public var content: SceneContent {
         var blocks = SceneContent.blocks(of: document.doc)
-        if var grid = blocks[Self.gridBlock]?.objectValue {
-            for key in Self.gridSize { grid[key] = nil }
-            blocks[Self.gridBlock] = grid.isEmpty ? nil : .object(grid)
-        }
+        Self.dropGridSize(from: &blocks)
         return SceneContent(layout: layout, blocks: blocks)
     }
 
@@ -76,6 +73,15 @@ public struct LaidOutScene: Sendable, Equatable {
 
     private static let gridBlock = "grid"
     private static let gridSize = ["cols", "rows"]
+
+    /// Removes the grid's `cols` and `rows` from a scene's blocks, the grid block dropped when nothing
+    /// else is left in it: the host refuses a scene that sets either (`scene-saving`, "A saved scene
+    /// declares no grid size").
+    static func dropGridSize(from fields: inout [String: JSONValue]) {
+        guard var grid = fields[gridBlock]?.objectValue else { return }
+        for key in gridSize { grid[key] = nil }
+        fields[gridBlock] = grid.isEmpty ? nil : .object(grid)
+    }
 
     /// The document's `doc` with its blocks as `content` holds them and its cards as its layout
     /// places them, in its order: each card's original entry with its cells, group and `params`

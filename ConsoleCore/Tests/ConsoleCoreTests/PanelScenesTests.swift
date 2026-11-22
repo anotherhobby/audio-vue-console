@@ -229,6 +229,26 @@ struct PanelScenesTests {
         #expect(body["base_rev"] == .integer(3))
     }
 
+    /// `scene-saving`, "A saved scene declares no grid size": a stored scene that holds `cols` and
+    /// `rows` is renamed without them, since the host refuses a scene that sets either.
+    @Test func aRenameDropsAStoredGridSize() async throws {
+        var answers = Self.answers()
+        answers[.scenes] = Self.listingWithMine
+        let sized = FakeTransport.Answer.status(
+            200,
+            #"{"id": "u1", "name": "Mine", "built_in": false, "rev": 3, "doc": "#
+                + #"{"name": "Mine", "grid": {"gap": 2, "cols": 96, "rows": 36}, "cards": []}}"#)
+        answers[.scene("u1")] = sized
+        let transport = FakeTransport(answers)
+        let scenes = try Self.scenes(transport)
+        await scenes.load()
+        await transport.answer(.writeScene("u1"), with: .status(200, Self.written))
+        await transport.answer(.scene("u1"), with: Self.mine(rev: 4, name: "Studio"))
+        _ = try await scenes.rename("u1", to: "Studio")
+        let body = try Self.sent(await transport.requests(to: .writeScene("u1")).first)
+        #expect(body["doc"]?["grid"] == .object(["gap": .integer(2)]))
+    }
+
     @Test func aStaleRenameIsReadAgainAndWrittenOnce() async throws {
         let (scenes, transport) = try await Self.loadedWithMine()
         await transport.answer(
