@@ -140,61 +140,80 @@ struct AmountSlider: View {
 
 /// A colour through the system colour panel, with no opacity, written as `#RRGGBB` in sRGB. The
 /// panel sends a change for every movement, so a run of changes is held and written once the
-/// colour has rested, or the well goes, as one step and one redraw (design D8).
-struct ColourWell: View {
+/// colour has rested, or the well goes, as one step and one redraw (design D8). An `NSColorWell`
+/// rather than SwiftUI's `ColorPicker`, whose binding ignores a click on the panel's saved swatches.
+struct ColourWell: NSViewRepresentable {
     /// The colour shown: the stored one, or the one an unset colour is drawn in; nil for colours
     /// that differ. A colour chosen equal to it is not written (`scene-settings`, design D8).
     let hex: String?
     let set: ((JSONValue) -> Void)?
-    @State private var pending: String?
-    @State private var settling: Task<Void, Never>?
 
-    var body: some View {
-        ColorPicker("Colour", selection: colour, supportsOpacity: false)
-            .labelsHidden()
-            .onDisappear(perform: commit)
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
     }
 
-    /// The colour shown, as `HexColour` writes it.
-    private var stored: String? {
-        hex.flatMap { HexColour($0) }?.hex
+    func makeNSView(context: Context) -> NSColorWell {
+        let well = NSColorWell()
+        well.target = context.coordinator
+        well.action = #selector(Coordinator.picked(_:))
+        return well
     }
 
-    private var colour: Binding<Color> {
-        Binding(get: { Self.swatch(pending ?? stored) }, set: choose)
-    }
-
-    private func choose(_ picked: Color) {
-        guard let srgb = NSColor(picked).usingColorSpace(.sRGB) else { return }
-        let chosen = HexColour(
-            red: Double(srgb.redComponent), green: Double(srgb.greenComponent),
-            blue: Double(srgb.blueComponent)
-        ).hex
-        guard chosen != (pending ?? stored) else { return }
-        pending = chosen
-        settling?.cancel()
-        settling = Task {
-            do {
-                try await Task.sleep(for: .seconds(SceneMetrics.colourSettleSeconds))
-            } catch {
-                return
-            }
-            commit()
+    func updateNSView(_ well: NSColorWell, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.stored = hex.flatMap { HexColour($0) }?.hex
+        coordinator.set = set
+        well.isEnabled = set != nil
+        if coordinator.pending == nil {
+            well.color = Self.swatch(hex)
         }
     }
 
-    /// Writes the held colour, if it differs from the stored one.
-    private func commit() {
-        settling?.cancel()
-        settling = nil
-        guard let chosen = pending else { return }
-        pending = nil
-        if chosen != stored { set?(.string(chosen)) }
+    @MainActor
+    static func dismantleNSView(_ well: NSColorWell, coordinator: Coordinator) {
+        coordinator.commit()
+    }
+
+    /// Holds the colour the panel last sent, and writes it once it has rested.
+    @MainActor
+    final class Coordinator: NSObject {
+        var stored: String?
+        var set: ((JSONValue) -> Void)?
+        var pending: String?
+        private var settling: Task<Void, Never>?
+
+        @objc func picked(_ well: NSColorWell) {
+            guard let srgb = well.color.usingColorSpace(.sRGB) else { return }
+            let chosen = HexColour(
+                red: Double(srgb.redComponent), green: Double(srgb.greenComponent),
+                blue: Double(srgb.blueComponent)
+            ).hex
+            guard chosen != (pending ?? stored) else { return }
+            pending = chosen
+            settling?.cancel()
+            settling = Task { [weak self] in
+                do {
+                    try await Task.sleep(for: .seconds(SceneMetrics.colourSettleSeconds))
+                } catch {
+                    return
+                }
+                self?.commit()
+            }
+        }
+
+        /// Writes the held colour, if it differs from the stored one.
+        func commit() {
+            settling?.cancel()
+            settling = nil
+            guard let chosen = pending else { return }
+            pending = nil
+            if chosen != stored { set?(.string(chosen)) }
+        }
     }
 
     /// `hex` as an sRGB colour, or clear for none.
-    private static func swatch(_ hex: String?) -> Color {
+    private static func swatch(_ hex: String?) -> NSColor {
         guard let colour = hex.flatMap({ HexColour($0) }) else { return .clear }
-        return Color(.sRGB, red: colour.red, green: colour.green, blue: colour.blue)
+        return NSColor(srgbRed: colour.red, green: colour.green, blue: colour.blue, alpha: 1)
     }
 }
