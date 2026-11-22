@@ -27,6 +27,12 @@ struct LibraryTilesTests {
         return try LaidOutScene(document, panel: CellSize(cols: 64, rows: 36))
     }
 
+    /// The renders one draw of the three cards makes on the 64 × 36 grid: the meter and the waveform each
+    /// probe the ladder from its top, six renders on a binary search (`scene-rendering`, "A tile's size is
+    /// the first size on a ladder"), and the tiny card, which fits at no size, probes once and is
+    /// drawn again at its minimum.
+    private static let rendersPerDraw = 6 + 6 + 2
+
     private static func renders(_ fixture: RenderingFixture) -> [JSONValue] {
         fixture.launcher.requests.filter { $0["op"] == .string("render") }
     }
@@ -53,7 +59,7 @@ struct LibraryTilesTests {
         await tiles.prepare(for: Draft(second), from: Self.source(fixture))
         #expect(tiles.tiles.isEmpty && tiles.backdrop == nil)
         let sent = Self.renders(fixture).count
-        #expect(sent == 2 * (Self.cards.count + 1))
+        #expect(sent == 2 * (Self.rendersPerDraw + 1))
 
         await draw(tiles, first, in: fixture)
         #expect(tiles.tiles.count == Self.cards.count && tiles.backdrop != nil)
@@ -74,7 +80,7 @@ struct LibraryTilesTests {
         }
         let sent = Self.renders(fixture).count
         await draw(tiles, first, in: fixture)
-        #expect(Self.renders(fixture).count == sent + Self.cards.count)
+        #expect(Self.renders(fixture).count == sent + Self.rendersPerDraw)
     }
 
     private func draw(
@@ -98,10 +104,10 @@ struct LibraryTilesTests {
         let tiles = LibraryTiles()
         var draft = Draft(try Self.scene("A"))
         await draw(tiles, draft, in: fixture)
-        #expect(Self.renders(fixture).count == Self.cards.count)
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw)
         draft.content.blocks["colors"] = .string("b")
         await draw(tiles, draft, in: fixture)
-        #expect(Self.renders(fixture).count == 2 * Self.cards.count)
+        #expect(Self.renders(fixture).count == 2 * Self.rendersPerDraw)
         #expect(Self.renders(fixture).last?["scene"]?["colors"] == .string("b"))
     }
 
@@ -113,7 +119,7 @@ struct LibraryTilesTests {
         let meter = try #require(draft.layout.cards.first)
         draft.content.layout = try draft.layout.moving([meter.id], by: CellOffset(cols: 4, rows: 0))
         await draw(tiles, draft, in: fixture)
-        #expect(Self.renders(fixture).count == Self.cards.count)
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw)
     }
 
     @Test func aTileIsOneCardAtTheCornerInTheScenesSettings() async throws {
@@ -121,7 +127,8 @@ struct LibraryTilesTests {
         let tiles = LibraryTiles()
         await draw(tiles, try Self.scene("A"), in: fixture)
 
-        let request = try #require(Self.renders(fixture).first { Self.card(of: $0) == "meter" })
+        // The tile is the last request for the meter: the search's probes come before it.
+        let request = try #require(Self.renders(fixture).last { Self.card(of: $0) == "meter" })
         let entry: JSONValue = .object([
             "card": .string("meter"), "col": .integer(0), "row": .integer(0),
             "colspan": .integer(8), "rowspan": .integer(6),
@@ -139,7 +146,7 @@ struct LibraryTilesTests {
         let tiles = LibraryTiles()
         await draw(tiles, try Self.scene("A"), in: fixture)
         await draw(tiles, try Self.scene("B"), in: fixture)
-        #expect(Self.renders(fixture).count == Self.cards.count)
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw)
         #expect(tiles.tiles.count == Self.cards.count)
     }
 
@@ -153,7 +160,8 @@ struct LibraryTilesTests {
         await draw(tiles, try Self.scene("A"), in: fixture)
         #expect(tiles.tiles.count == Self.cards.count)
         await draw(tiles, try Self.scene("C", colours: "b"), in: fixture)
-        #expect(Self.renders(fixture).count == 2 * Self.cards.count)
+        // A refused probe ends the card's search: one render per card, none drawn.
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw + Self.cards.count)
         #expect(tiles.tiles.isEmpty)
     }
 
@@ -245,7 +253,7 @@ struct LibraryTilesTests {
         #expect(Set(tiles.tiles.keys) == ["meter", "tiny", "waveform"])
         await draw(tiles, try Self.scene("A"), in: fixture, drift: drift)
         #expect(Set(tiles.tiles.keys) == ["meter", "tiny"])
-        #expect(Self.renders(fixture).count == Self.cards.count)
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw)
     }
 
     @Test func aCardTooSmallKeepsItsUnfitName() async throws {

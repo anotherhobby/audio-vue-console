@@ -177,7 +177,9 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `RenderRequest`/`RenderContext`, `RenderedLayer`, `PlateChanges`, `SceneRendering` (+`Messages`),
   `Thumbnail` (`flatten`, and `tile`, a plate over its patch of the backdrop), `SceneThumbnails`,
   `LibraryTiles` (one card's plate per tile, kept by the scene's settings without its cards and
-  name; `LibraryTiles.swift`, 2026-11-07). The code check: `CardDrift`, `CardCodeCheck`. Tests
+  name; `LibraryTiles.swift`, 2026-11-07; a tile is drawn at the smallest size that shows its reading in
+  the scene's font settings, found by `LibraryTiles.Ladder`, archived 2026-11-21). The code check:
+  `CardDrift`, `CardCodeCheck`. Tests
   script the helper with `ScriptedLauncher`/`ScriptedHelper` and `FakeRender`; `LiveHelperTests`
   runs the real one when asked.
 - `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable

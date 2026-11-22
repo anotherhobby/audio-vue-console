@@ -12,12 +12,15 @@ public final class LibraryTiles {
     /// One card's tile: the plate the helper drew, and the image the library shows.
     public struct Tile: Sendable {
         public let layer: RenderedLayer
+        /// The size the plate was drawn at, in cells of the panel's grid.
+        public let size: CellSize
         /// The plate stacked over the patch of the backdrop under it, or the plate alone.
         public let image: CGImage
 
-        /// `layer` over `backdrop` where there is one and the two can be stacked, else alone.
-        public init(layer: RenderedLayer, over backdrop: RenderedLayer?) {
+        /// `layer`, drawn at `size`, over `backdrop` where there is one and the two can be stacked, else alone.
+        public init(layer: RenderedLayer, size: CellSize, over backdrop: RenderedLayer?) {
             self.layer = layer
+            self.size = size
             image = backdrop.flatMap { Thumbnail.tile(plate: layer, over: $0) } ?? layer.image
         }
 
@@ -40,7 +43,7 @@ public final class LibraryTiles {
 
     /// What tiles are drawn from, the same for every scene of a panel: the library's cards, the
     /// cards `drift` boxes, what every request carries, and the queue.
-    public struct Source {
+    public struct Source: Sendable {
         public let cards: [SchemaFacts.Card]
         public let drift: CardDrift?
         public let context: RenderContext
@@ -89,10 +92,59 @@ public final class LibraryTiles {
         }
     }
 
-    /// One card's tile request.
-    private struct TileRequest: Sendable {
-        let card: String
-        let request: RenderRequest
+    /// The sizes a tile is tried at: its declared minimum, grown by whole cells. An aspect-locked card
+    /// grows in its declared aspect, so its tile keeps the card's shape (`scene-rendering`).
+    @MainActor
+    enum Ladder {
+        /// The size `step` cells up the ladder from `card`'s minimum.
+        static func size(_ card: SchemaFacts.Card, step: Int) -> CellSize {
+            guard let aspect = card.aspect, aspect > 0 else {
+                return CellSize(
+                    cols: card.minimum.cols + step, rows: card.minimum.rows + step)
+            }
+            return CellSize(
+                cols: card.minimum.cols + step,
+                rows: card.minimum.rows + Int((Double(step) / aspect).rounded()))
+        }
+
+        /// The highest step on `grid` that the card still fits, or nil where its minimum does not.
+        static func top(_ card: SchemaFacts.Card, grid: CellSize) -> Int? {
+            func fits(_ size: CellSize) -> Bool { size.cols <= grid.cols && size.rows <= grid.rows }
+            guard fits(size(card, step: 0)) else { return nil }
+            var top = 0
+            while fits(size(card, step: top + 1)) { top += 1 }
+            return top
+        }
+
+        /// How a search for the smallest fitting size ended.
+        enum Search<Plate> {
+            /// The smallest step whose plate fits, and the plate that drew it.
+            case found(step: Int, plate: Plate)
+            /// No step fits, so the card is drawn at its minimum with its notice.
+            case none
+            /// A probe was refused or failed, so nothing more is asked.
+            case failed
+        }
+
+        /// The smallest step in `0...top` whose plate fits, found by a binary search, which takes fit to
+        /// hold at every larger size. `probe` draws the card at a step; `fits` reads its plate.
+        static func smallestFitting<Plate>(
+            top: Int, probe: (Int) async -> Plate?, fits: (Plate) -> Bool
+        ) async -> Search<Plate> {
+            guard let topPlate = await probe(top) else { return .failed }
+            guard fits(topPlate) else { return .none }
+            var (low, high, best) = (0, top, topPlate)
+            while low < high {
+                let middle = (low + high) / 2
+                guard let plate = await probe(middle) else { return .failed }
+                if fits(plate) {
+                    (high, best) = (middle, plate)
+                } else {
+                    low = middle + 1
+                }
+            }
+            return .found(step: high, plate: best)
+        }
     }
 
     /// When a set's tiles are wanted: at once for the scene shown, in the library's lane, or
@@ -139,17 +191,18 @@ public final class LibraryTiles {
         let key = Key(laidOut, content)
         touch(key)
         var set = sets[key] ?? TileSet()
-        let requests = set.claim(source, pace).compactMap { card in
-            Self.request(
-                for: laidOut, as: content, card: card.name, minimum: card.minimum,
-                context: source.context
-            ).map { TileRequest(card: card.name, request: $0) }
-        }
+        let cards = set.claim(source, pace)
         // The canvas gives a shown scene's backdrop, unless it holds no card to draw.
         let wantsBackdrop =
             set.backdrop == nil && !set.askedBackdrop
             && (pace == .ahead || content.layout.cards.isEmpty)
-        let around = wantsBackdrop ? requests.first?.request ?? Self.any(draft, from: source) : nil
+        let around =
+            wantsBackdrop
+            ? cards.lazy.compactMap({ card in
+                Self.request(
+                    for: laidOut, as: content, card: card.name, minimum: card.minimum,
+                    context: source.context)
+            }).first ?? Self.any(draft, from: source) : nil
         if around != nil { set.askedBackdrop = true }
         sets[key] = set
         let backdrop = around.map {
@@ -157,28 +210,27 @@ public final class LibraryTiles {
                 doc: $0.doc, builtIn: $0.builtIn, context: source.context, plates: [],
                 backdrop: true)
         }
-        await send(requests, backdrop: backdrop, for: key, pace, through: source.queue)
+        await send(cards, backdrop: backdrop, draft, pace, source)
     }
 
-    /// Sends each tile's request and the backdrop's, where there is one, at `pace`, and keeps
-    /// what they draw for `key`'s settings. A request made ahead is named for its settings, so
-    /// no other scene's replaces it.
+    /// Draws each card's tile and the backdrop's, where there is one, at `pace`, and keeps what
+    /// they draw for the draft's settings. A request made ahead is named for its settings, so no
+    /// other scene's replaces it.
     private func send(
-        _ requests: [TileRequest], backdrop: RenderRequest?, for key: Key, _ pace: Pace,
-        through queue: RenderQueue
+        _ cards: [SchemaFacts.Card], backdrop: RenderRequest?, _ draft: Draft, _ pace: Pace,
+        _ source: Source
     ) async {
+        let key = Key(draft.laidOut, draft.content)
         let tag = pace == .shown ? "" : "ahead:\(key.hashValue):"
         await withTaskGroup(of: Void.self) { group in
-            for tile in requests {
+            for card in cards {
                 group.addTask {
-                    let result = await queue.submit(
-                        tile.request.message, lane: pace.lane, key: "\(tag)tile:\(tile.card)")
-                    await self.take(result, for: tile.card, drawnIn: key)
+                    await self.drawTile(card, draft, pace, source)
                 }
             }
             if let backdrop {
                 group.addTask {
-                    let result = await queue.submit(
+                    let result = await source.queue.submit(
                         backdrop.message, lane: pace.lane, key: "\(tag)tile-backdrop")
                     await self.takeBackdrop(result, drawnIn: key)
                 }
@@ -229,7 +281,7 @@ public final class LibraryTiles {
     private func stack(_ key: Key, over backdrop: RenderedLayer) {
         guard var set = sets[key] else { return }
         set.backdrop = backdrop
-        set.tiles = set.tiles.mapValues { Tile(layer: $0.layer, over: backdrop) }
+        set.tiles = set.tiles.mapValues { Tile(layer: $0.layer, size: $0.size, over: backdrop) }
         sets[key] = set
     }
 
@@ -260,29 +312,61 @@ public final class LibraryTiles {
             context: context, plates: [0], backdrop: false)
     }
 
-    /// Keeps a drawn plate as `card`'s tile in `key`'s settings, while they are held and the card
-    /// is still asked for. A request replaced in the queue may be asked again; a refused or
-    /// failed one leaves the card a box.
-    private func take(
-        _ result: Result<HelperAnswer, RenderFailure>?, for card: String, drawnIn key: Key
-    ) {
+    /// Draws `card`'s tile in the draft's settings: at the size found for them, or where none is
+    /// found yet, at the smallest size on the ladder whose plate shows the reading, found once and
+    /// kept. Where no size fits, the tile is drawn at the card's declared minimum, with its notice.
+    private func drawTile(
+        _ card: SchemaFacts.Card, _ draft: Draft, _ pace: Pace, _ source: Source
+    ) async {
+        let key = Key(draft.laidOut, draft.content)
+        let tag = pace == .shown ? "" : "ahead:\(key.hashValue):"
+        let plate: (CellSize) async -> RenderedLayer? = { size in
+            guard
+                let request = Self.request(
+                    for: draft.laidOut, as: draft.content, card: card.name, minimum: size,
+                    context: source.context)
+            else { return nil }
+            let result = await source.queue.submit(
+                request.message, lane: pace.lane, key: "\(tag)tile:\(card.name)")
+            return Self.plate(of: result)
+        }
+        guard let top = Ladder.top(card, grid: draft.laidOut.panel) else { return }
+        let search = await Ladder.smallestFitting(
+            top: top, probe: { step in await plate(Ladder.size(card, step: step)) },
+            fits: { $0.unfit.isEmpty })
+        switch search {
+        case .found(let step, let found):
+            settle(found, size: Ladder.size(card, step: step), card: card.name, drawnIn: key)
+        case .none:
+            settle(await plate(card.minimum), size: card.minimum, card: card.name, drawnIn: key)
+        case .failed:
+            settle(nil, size: card.minimum, card: card.name, drawnIn: key)
+        }
+    }
+
+    /// Keeps `plate` as `card`'s tile at `size` in `key`'s settings, while they are held and the
+    /// card is still asked for. Without a plate the card is no longer asked for, so it may be asked again.
+    private func settle(_ plate: RenderedLayer?, size: CellSize, card: String, drawnIn key: Key) {
         guard var set = sets[key] else { return }
         defer { sets[key] = set }
-        guard let result else {
+        guard let plate else {
             set.asked.remove(card)
+            set.ahead.remove(card)
             return
         }
-        guard set.asked.contains(card) || set.ahead.contains(card),
-            case .success(let answer) = result
-        else { return }
-        let layers: [RenderedLayer]
+        guard set.asked.contains(card) || set.ahead.contains(card) else { return }
+        set.tiles[card] = Tile(layer: plate, size: size, over: set.backdrop)
+    }
+
+    /// The plate a tile's request drew, or nil where the answer refused or failed, or holds none.
+    private static func plate(of result: Result<HelperAnswer, RenderFailure>?) -> RenderedLayer? {
+        guard case .success(let answer)? = result else { return nil }
         do throws(RenderFailure) {
             // The one placement's id is never read: a tile is known by its card's name.
-            layers = try RenderedLayer.layers(of: answer, cardIDs: [UUID()])
+            let layers = try RenderedLayer.layers(of: answer, cardIDs: [UUID()])
+            return layers.first(where: { $0.kind == .plate })
         } catch {
-            return
+            return nil
         }
-        guard let plate = layers.first(where: { $0.kind == .plate }) else { return }
-        set.tiles[card] = Tile(layer: plate, over: set.backdrop)
     }
 }

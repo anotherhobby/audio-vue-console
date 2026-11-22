@@ -89,8 +89,8 @@ struct CardTile: View {
             HStack {
                 Text(Self.title(card.name))
                 Spacer()
-                if let size {
-                    Text(verbatim: "\(size.cols) × \(size.rows)").foregroundStyle(.secondary)
+                if let drawn = tile?.size {
+                    Text(verbatim: "\(drawn.cols) × \(drawn.rows)").foregroundStyle(.secondary)
                 }
             }
             .font(.callout)
@@ -193,7 +193,11 @@ private enum LibraryPreview {
     let tiles = [
         "waveform": PreviewLayer.solid(.plate, glass, size: plate),
         "rta_bars": PreviewLayer.solid(.plate, glass, size: plate, unfit: ["rta_bars"]),
-    ].compactMapValues { layer in layer.map { LibraryTiles.Tile(layer: $0, over: backdrop) } }
+    ].compactMapValues { layer in
+        layer.map {
+            LibraryTiles.Tile(layer: $0, size: CellSize(cols: 12, rows: 7), over: backdrop)
+        }
+    }
     let shelf = SchemaFacts.Shelf(
         category: SchemaFacts.Category(
             id: "spectrum", label: "Spectrum", cards: cards.map(\.name)),

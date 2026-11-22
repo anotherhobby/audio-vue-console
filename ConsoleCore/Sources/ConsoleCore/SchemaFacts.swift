@@ -9,13 +9,17 @@ public struct SchemaFacts: Sendable, Equatable {
         /// Its minimum in cells, the same span on every scene (audio-vue `card-layout`).
         public let minimum: CellSize
         public let placeable: Bool
+        /// The width over height a card keeps when its sizing is aspect-locked (`x-sizing` "aspect",
+        /// with `x-aspect`), else nil: such a card is fitted and centred in whatever it is given.
+        public let aspect: Double?
 
         public var id: String { name }
 
-        public init(name: String, minimum: CellSize, placeable: Bool) {
+        public init(name: String, minimum: CellSize, placeable: Bool, aspect: Double? = nil) {
             self.name = name
             self.minimum = minimum
             self.placeable = placeable
+            self.aspect = aspect
         }
     }
 
@@ -125,9 +129,11 @@ public struct SchemaFacts: Sendable, Equatable {
             let name = String(key.dropFirst(Self.cardPrefix.count))
             settings[name] = SettingGroup(definition: definition)
             guard let minimum = Self.minimum(definition["x-min-cells"]) else { continue }
+            let locked = definition["x-sizing"]?.stringValue == "aspect"
             cards[name] = Card(
                 name: name, minimum: minimum,
-                placeable: definition["x-placeable"]?.boolValue ?? false)
+                placeable: definition["x-placeable"]?.boolValue ?? false,
+                aspect: locked ? definition["x-aspect"]?.numberValue : nil)
         }
         self.init(
             cards: cards, categories: Self.categories(schema["x-categories"]),

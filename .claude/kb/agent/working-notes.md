@@ -235,3 +235,13 @@ Its handoff, `../audio-vue/mac-output-handoff.md`, was answered 2026-11-09 by
 `mac-output-reply-handoff.md` at this repo's root (delete once read): `cal-play` 0.2.0 sets the
 deepest integer format and settles on either change, and `settings-schema` states that choices
 export as an `enum`.
+
+## Card minimums and the readout's picker (archived 2026-11-21)
+
+- The console reads card minimums (`x-min-cells`), sizing and aspect (`x-sizing`, `x-aspect`) and picker
+  labels (`x-choice-labels`) from the schema; no minimum is a literal in production code.
+- Not yet verified: the readout and meter at 8 × 4 under default type show TOO SMALL on the canvas. Tiles
+  now draw at the size that fits the scene's fonts, so the library no longer shows the notice.
+- The spec examples (`scene-layout`, `scene-canvas`) still use 17 and 17 × 10 as illustrations. Raised
+  with the maintainer; left unchanged.
+- The archived change is `openspec/changes/archive/2026-11-21-tile-fitting-size`.
