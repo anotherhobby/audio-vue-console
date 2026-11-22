@@ -62,6 +62,34 @@ struct SettingGroupTests {
         )
         #expect(
             SettingGroup.unusedReason(of: "bar_tip_color", across: tick, declaredBy: groups) == nil)
+        let segmentTick = [Self.meter(["style": .string("segment-tick")])]
+        #expect(
+            SettingGroup.unusedReason(
+                of: "bar_body_color", across: segmentTick, declaredBy: groups) != nil)
+    }
+
+    @Test func onlyTheSegmentedStylesUseTheSegmentCount() throws {
+        let groups = try Self.groups()
+        for style in ["fill", "tick"] {
+            let card = [Self.meter(["style": .string(style)])]
+            #expect(
+                SettingGroup.unusedReason(of: "segments", across: card, declaredBy: groups) != nil)
+        }
+        for style in ["segment-fill", "segment-tick"] {
+            let card = [Self.meter(["style": .string(style)])]
+            #expect(
+                SettingGroup.unusedReason(of: "segments", across: card, declaredBy: groups) == nil)
+        }
+    }
+
+    @Test func theTickColourIsUnusedUntilMarksAreDrawn() throws {
+        let groups = try Self.groups()
+        let unset = [Self.meter([:])]
+        #expect(
+            SettingGroup.unusedReason(of: "tick_color", across: unset, declaredBy: groups) != nil)
+        let marked = [Self.meter(["ticks": .string("5")])]
+        #expect(
+            SettingGroup.unusedReason(of: "tick_color", across: marked, declaredBy: groups) == nil)
     }
 
     @Test func theRTAsMajorLinesNeedBothSettingsOff() throws {

@@ -87,6 +87,7 @@ Format:
   filled: `hello` 0.44 s / 0.20 s, whole scene 9.7 s / 2.3 s, one plate 0.03 s / 0.03 s. Skipped
   without the variable.
 
-- 2026-11-21: `cd ConsoleCore && xcrun swift test --disable-xctest` - 750 tests in 100 suites passed after the
-  `meter-scales-editor` change (the count above is from before it). `xcodebuild -project AudioVueConsole.xcodeproj
+- 2026-11-22: `cd ConsoleCore && xcrun swift test --disable-xctest` - 756 tests in 100 suites passed after
+  `schema-trimmed.json` was refreshed from audio-vue's `json_schema()` (whole, keeping the tests'
+  `x-categories`; `ensure_ascii` left on, as the file was written). `xcodebuild -project AudioVueConsole.xcodeproj
   -scheme AudioVueConsole -configuration Debug build` - succeeded, with no `-derivedDataPath`.
