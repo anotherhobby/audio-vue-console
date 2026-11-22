@@ -62,11 +62,13 @@ no swap.
 
 ### Requirement: A move keeps to the grid and refuses taken cells
 
-Moving cards SHALL shift them together by whole cells, keeping their sizes. A move past the grid's
-edge SHALL stop at the edge. A move that lands any moved card on a card not being moved SHALL be
-refused, leaving every card where it was.
+Moving cards SHALL shift them together by whole cells, keeping their sizes. A nudge past the grid's
+edge SHALL stop at the edge, and a drag past it SHALL park the cards instead (`card-parking`). A
+move that lands any moved card on a card not being moved SHALL be refused, leaving every card where
+it was.
 
-Source: Decision (maintainer, 2026-11-02): cards never overlap, and no push and no swap.
+Source: Decision (maintainer, 2026-11-02): cards never overlap, and no push and no swap. Decision
+(maintainer, 2026-11-22): a card dragged off the panel is parked.
 
 #### Scenario: A move into free cells
 
@@ -75,8 +77,13 @@ Source: Decision (maintainer, 2026-11-02): cards never overlap, and no push and 
 
 #### Scenario: A move past the edge
 
-- **WHEN** a card 2 columns from the grid's right edge is moved 5 columns right
+- **WHEN** a card 2 columns from the grid's right edge is nudged 4 columns right with shift held
 - **THEN** it ends at the right edge, 2 columns right
+
+#### Scenario: A drag past the edge
+
+- **WHEN** a card 2 columns from the grid's right edge is dragged 5 columns right
+- **THEN** it is parked off the grid (`card-parking`), and no longer in the layout
 
 #### Scenario: A move onto another card
 

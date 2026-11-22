@@ -162,3 +162,30 @@ Decision (maintainer, 2026-11-07): a copy stays in the app until its first Save.
 
 - **WHEN** the user duplicates a scene too wide for the panel
 - **THEN** the copy is made, as wide, and opened for editing
+
+### Requirement: Duplicate waits while a card is parked
+
+Duplicate SHALL be disabled in the editor's toolbar and the gallery for a scene with a parked card
+(`card-parking`), saying the cards off the panel must be moved onto it.
+
+Source: Decision (maintainer, 2026-11-22): save, apply and duplicate are blocked while a card is
+off the panel.
+
+#### Scenario: A parked card
+
+- **WHEN** "Studio" has a parked card
+- **THEN** Duplicate is disabled for "Studio" in the editor and the gallery, saying the cards off
+  the panel must be moved onto it
+
+### Requirement: A scene with parked cards says so
+
+The gallery SHALL list a scene that has parked cards like any other, with a note saying how many of
+its cards are off the panel.
+
+Source: Decision (maintainer, 2026-11-22): parked cards block saving, so the gallery shows where
+they are left.
+
+#### Scenario: Back in the gallery
+
+- **WHEN** the user parks two cards in "Studio" and goes back to the gallery
+- **THEN** "Studio" is marked unsaved and notes that two cards are off the panel

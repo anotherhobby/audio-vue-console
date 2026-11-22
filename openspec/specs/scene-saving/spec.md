@@ -65,6 +65,24 @@ wide the scene is.
 - **WHEN** the user edits a stored scene too wide for the panel
 - **THEN** Save is enabled
 
+### Requirement: Save waits while a card is parked
+
+Save SHALL be disabled while any card of the scene is parked (`card-parking`), saying the cards
+off the panel must be moved onto it.
+
+Source: Decision (maintainer, 2026-11-22): save, apply and duplicate are blocked while a card is
+off the panel.
+
+#### Scenario: A parked card
+
+- **WHEN** the user parks a card of a stored scene
+- **THEN** Save and File ▸ Save are disabled, saying the cards off the panel must be moved onto it
+
+#### Scenario: The card returned
+
+- **WHEN** the user then moves the parked card back onto the grid
+- **THEN** Save is enabled
+
 ### Requirement: Saving leaves the screen as it is
 
 Saving, renaming, deleting, reverting or loading a version of a scene SHALL NOT switch or reload
@@ -314,6 +332,20 @@ Save / Discard, listing them.
 
 - **WHEN** "Studio" is unsaved and the app connects to the same panel again
 - **THEN** nothing is asked, and "Studio" is still shown with its edits, marked unsaved
+
+### Requirement: Save All saves nothing while a card is parked
+
+Where any unsaved scene has a parked card (`card-parking`), Save All SHALL save nothing, SHALL
+name each such scene, and SHALL NOT go on.
+
+Source: Decision (maintainer, 2026-11-22): save, apply and duplicate are blocked while a card is
+off the panel.
+
+#### Scenario: Quitting with a parked card
+
+- **WHEN** "Studio" and "Wide" are unsaved, "Wide" has a parked card, and the user quits and
+  chooses Save All
+- **THEN** nothing is written, the app does not quit, and it says "Wide" has cards off the panel
 
 ### Requirement: A saved scene declares no grid size
 
