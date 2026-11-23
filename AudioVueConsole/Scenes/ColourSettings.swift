@@ -39,9 +39,8 @@ struct ColourCell: View {
             HStack(spacing: 2) {
                 Text(declaration.label).font(.caption2).lineLimit(1)
                     .foregroundStyle(value.isSet ? .primary : .secondary)
-                if value.isSet, let edit {
-                    UseDefaultButton(action: edit.useDefault).controlSize(.mini)
-                }
+                UseDefaultButton(action: value.isSet ? edit?.useDefault : nil)
+                    .controlSize(.mini)
             }
         }
         .help("\(declaration.label): \(declaration.help)")

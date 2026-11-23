@@ -169,7 +169,7 @@ struct SettingRow: View {
                     SettingControl(
                         declaration: declaration, value: value,
                         edit: unused == nil ? edit : nil, fromScene: fromScene)
-                    if value.isSet, let edit { UseDefaultButton(action: edit.useDefault) }
+                    UseDefaultButton(action: value.isSet ? edit?.useDefault : nil)
                 }
             }
             .foregroundStyle(unused == nil ? .primary : .secondary)
@@ -196,15 +196,19 @@ struct SettingRow: View {
 }
 
 /// Use Default, as a small button beside a setting the scene sets: it removes the setting, so the
-/// default applies. Never called Reset, the panel's measurement reset.
+/// default applies. Never called Reset, the panel's measurement reset. With no action it is hidden
+/// but keeps its space, so the control beside it never moves when it appears under the pointer.
 struct UseDefaultButton: View {
-    let action: () -> Void
+    let action: (() -> Void)?
 
     var body: some View {
-        Button("Use Default", systemImage: "arrow.uturn.backward", action: action)
+        Button("Use Default", systemImage: "arrow.uturn.backward") { action?() }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
             .help("Use Default")
+            .opacity(action == nil ? 0 : 1)
+            .disabled(action == nil)
+            .accessibilityHidden(action == nil)
     }
 }
 
