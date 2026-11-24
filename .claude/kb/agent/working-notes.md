@@ -245,3 +245,19 @@ export as an `enum`.
 - The spec examples (`scene-layout`, `scene-canvas`) still use 17 and 17 × 10 as illustrations. Raised
   with the maintainer; left unchanged.
 - The archived change is `openspec/changes/archive/2026-11-21-tile-fitting-size`.
+
+## Track render (planned 2026-11-23)
+
+`openspec/changes/track-render`: built 2026-11-23, tasks 1.1 to 6.2. Task 6.3, the maintainer's run on
+the proving panel, is next, then verify and archive. Alignment Q1 to Q3 were answered as recommended,
+and `../audio-vue/console-track-render-handoff.md` carries Q3 to audio-vue. Ruled (maintainer,
+2026-11-23):
+- It replaces a screenshot of the live panel.
+- Render with Track… sits in the scene editor and opens a sheet.
+- Clips are 10-bit HEVC MP4 at 30 or 60 fps (30 by default), with the track's audio; H.264 was
+  ruled first and replaced the same day for banding (`pitfalls.md`).
+- A YouTube export (4K, faint grain) is a possible later change, not planned.
+- Stills and clips draw at the connected panel's display size and viewing.
+
+The handoffs `track-render-handoff.md` and `rta-fine-bands-handoff.md` are read. The second needed
+only the fixture, test and KB refresh (2026-11-23). Remind the maintainer to delete both.

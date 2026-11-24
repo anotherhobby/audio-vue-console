@@ -43,4 +43,8 @@ enum SceneMetrics {
     static let imagePickerHeight: CGFloat = 420
     /// A thumbnail's box while its image is fetched.
     static let placeholderOpacity: Double = 0.15
+    /// The Render with Track sheet, its picture at the panel's aspect within it.
+    static let trackSheetWidth: CGFloat = 720
+    static let trackPictureMinHeight: CGFloat = 200
+    static let secondsFieldWidth: CGFloat = 72
 }

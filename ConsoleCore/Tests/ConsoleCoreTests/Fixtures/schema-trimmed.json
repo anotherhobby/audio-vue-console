@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "x-schema-version": 25,
+  "x-schema-version": 26,
   "x-categories": [
     {
       "cards": [
@@ -9232,10 +9232,12 @@
         "bands": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 3,
+          "maximum": 12,
           "enum": [
             1,
-            3
+            3,
+            6,
+            12
           ],
           "default": 3,
           "x-class": "measurement",
@@ -9243,10 +9245,12 @@
             "document": "IEC 61260-1",
             "values": [
               1,
-              3
+              3,
+              6,
+              12
             ]
           },
-          "x-help": "The band set: octave or one-third-octave bands.",
+          "x-help": "The band set: 1/1, 1/3, 1/6 or 1/12 octave bands.",
           "x-label": "Bands",
           "x-unit": "",
           "x-live": true,
@@ -9254,14 +9258,17 @@
           "x-inherits": null,
           "x-choice-labels": [
             "1/1 octave",
-            "1/3 octave"
+            "1/3 octave",
+            "1/6 octave",
+            "1/12 octave"
           ]
         },
-        "weighting": {
+        "reading": {
           "enum": [
             "F",
             "S",
-            "I"
+            "I",
+            "Leq"
           ],
           "default": "F",
           "x-class": "measurement",
@@ -9270,11 +9277,12 @@
             "values": [
               "F",
               "S",
-              "I"
+              "I",
+              "Leq"
             ]
           },
-          "x-help": "The bars' time weighting: Fast, Slow or Impulse.",
-          "x-label": "Time weighting",
+          "x-help": "What the bars show: a time-weighted level, or Leq, the average since reset.",
+          "x-label": "Reading",
           "x-unit": "",
           "x-live": true,
           "x-step": null,
@@ -9282,7 +9290,8 @@
           "x-choice-labels": [
             "Fast",
             "Slow",
-            "Impulse"
+            "Impulse",
+            "Leq"
           ]
         },
         "peak_hold": {
@@ -9290,7 +9299,7 @@
           "default": true,
           "x-class": "appearance",
           "x-standard": null,
-          "x-help": "Show each band's held peak.",
+          "x-help": "Mark each band's held peak, or at Leq its LFmax since the reset.",
           "x-label": "Peak hold",
           "x-unit": "",
           "x-live": true,
@@ -9321,6 +9330,14 @@
                 ]
               },
               "reason": "Peak hold is off."
+            },
+            {
+              "when": {
+                "reading": [
+                  "Leq"
+                ]
+              },
+              "reason": "At Leq the marks are LFmax since the reset."
             }
           ]
         },
@@ -9353,6 +9370,14 @@
                 ]
               },
               "reason": "Peak hold is off."
+            },
+            {
+              "when": {
+                "reading": [
+                  "Leq"
+                ]
+              },
+              "reason": "At Leq the marks are LFmax since the reset."
             }
           ]
         },
@@ -9388,6 +9413,14 @@
                 ]
               },
               "reason": "Used only when the hold release is Fall."
+            },
+            {
+              "when": {
+                "reading": [
+                  "Leq"
+                ]
+              },
+              "reason": "At Leq the marks are LFmax since the reset."
             }
           ]
         },
@@ -9790,7 +9823,7 @@
         "minor_weight_px",
         "show_labels",
         "bands",
-        "weighting",
+        "reading",
         "peak_hold",
         "hold_s",
         "release",
@@ -9821,10 +9854,12 @@
         "bands": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 3,
+          "maximum": 12,
           "enum": [
             1,
-            3
+            3,
+            6,
+            12
           ],
           "default": 3,
           "x-class": "measurement",
@@ -9832,10 +9867,12 @@
             "document": "IEC 61260-1",
             "values": [
               1,
-              3
+              3,
+              6,
+              12
             ]
           },
-          "x-help": "The band set: octave or one-third-octave bands.",
+          "x-help": "The band set: 1/1, 1/3, 1/6 or 1/12 octave bands.",
           "x-label": "Bands",
           "x-unit": "",
           "x-live": true,
@@ -9843,7 +9880,9 @@
           "x-inherits": null,
           "x-choice-labels": [
             "1/1 octave",
-            "1/3 octave"
+            "1/3 octave",
+            "1/6 octave",
+            "1/12 octave"
           ]
         },
         "quantity": {

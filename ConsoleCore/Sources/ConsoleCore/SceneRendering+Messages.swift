@@ -52,12 +52,19 @@ extension SceneRendering {
     }
 
     private var noticeMessage: String? {
+        notice.map(HelperNotice.text)
+    }
+}
+
+/// The helper's notice naming a backdrop image it could not draw, in the words the canvas and the
+/// track render show it in.
+enum HelperNotice {
+    static func text(_ notice: String) -> String {
         switch notice {
-        case "BACKDROP IMAGE MISSING"?: "The backdrop image is missing, so the default is shown."
-        case "BACKDROP IMAGE UNREADABLE"?:
+        case "BACKDROP IMAGE MISSING": "The backdrop image is missing, so the default is shown."
+        case "BACKDROP IMAGE UNREADABLE":
             "The backdrop image can't be read, so the default is shown."
-        case let other?: other
-        case nil: nil
+        default: notice
         }
     }
 }

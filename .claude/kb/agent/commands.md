@@ -115,3 +115,14 @@ Format:
     `-c release`. Held per scene by `SceneDrafts`, the pass took about 2 µs.
   - On 2026-11-23 the built-ins passed, and Analytical, Primary and Tangarine Meters each needed
     `rta_hold_s`, `rta_peak_fall_db_s` and `rta_weighting` removed from `analysis`.
+
+- 2026-11-23: after audio-vue's `rta-fine-bands`, the schema fixture refresh above (no `rta-scene.json`
+  change; `scenes/rta.yaml` sets no RTA setting), then `xcrun swift test --disable-xctest`: 816 tests in
+  105 suites passed. `RENDER_HELPER_LIVE=1 ... --filter LiveHelperTests` passed on the refreshed bundle.
+
+- 2026-11-23: `RENDER_HELPER_LIVE=1 xcrun swift test --disable-xctest --filter LiveTrackRenderTests` in
+  `ConsoleCore/` - the real helper from `local/` draws `Fixtures/rta-scene.json` at 1920 x 720 from a
+  generated 10 s 48 kHz stereo sine (`track`, pictures at 1 s and 5 s), then writes a 2 s clip at 30 fps
+  from 3 s through `ClipWriter`. Measured on an M4 Pro (2026-11-23): `track` 0.85 s, each picture about
+  0.2 s, the 60-frame clip 2.2 s (going back from 5 s to 3 s restarts the analysis). Skipped without
+  the variable.

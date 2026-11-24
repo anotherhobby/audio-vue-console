@@ -82,6 +82,9 @@ public struct SchemaFacts: Sendable, Equatable {
     public let installSettings: [String: SettingGroup]
     /// The shape a scene must have to pass the host's validation, for its repair (`scene-repair`).
     public let shape: SceneShape
+    /// The rates the panel runs at, `install.input.rate`'s, lowest first, or nil where the schema
+    /// declares none.
+    public let rates: [Int]?
 
     /// The blocks the app shows first, in this order.
     public static let blockOrder = [
@@ -111,10 +114,12 @@ public struct SchemaFacts: Sendable, Equatable {
 
     public init(
         cards: [String: Card], categories: [Category],
-        settings: [String: SettingGroup] = [:], scene: Scene = .none, shape: SceneShape = .none
+        settings: [String: SettingGroup] = [:], scene: Scene = .none, shape: SceneShape = .none,
+        rates: [Int]? = nil
     ) {
         self.cards = cards
         self.shape = shape
+        self.rates = rates
         self.categories = categories
         self.settings = settings
         blocks = scene.blocks
@@ -145,7 +150,7 @@ public struct SchemaFacts: Sendable, Equatable {
                 blocks: Self.blocks(definitions), colours: SceneColours(schema: schema),
                 settings: Self.sceneSettings(definitions["scene"] ?? .null),
                 installed: Self.installSettings(definitions)),
-            shape: SceneShape(schema: schema))
+            shape: SceneShape(schema: schema), rates: Self.inputRates(schema))
     }
 
     /// What `declaration` takes while it is unset, where it declares the block its value comes

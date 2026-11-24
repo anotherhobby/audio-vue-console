@@ -186,11 +186,16 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
 - **A card's measurement choices are its own** (Ruled, maintainer 2026-11-22 and 2026-11-23; audio-vue
   `rta-card-settings`, `rta-band-sets`, `rta-spectrogram`): a display choice must not restart a
   measurement, and a band set, a held peak or a history is a request a card makes. `rta_bars` holds
-  `bands`, `weighting`, `hold_s`, `release` and `fall_db_s`; `spectrogram` (Spectrum, after
+  `bands`, `reading`, `hold_s`, `release` and `fall_db_s`; `spectrogram` (Spectrum, after
   `rta_bars`) holds `bands`, `quantity` and `span_s`. Cards on one scene may differ. The scene's
   `analysis:` block holds no RTA setting, so never group these under the scene. A scene write that
   changes only a card's settings answers `analysis_changed: false` and keeps capture. `bands` and
   `span_s` are integer choices with `x-choice-labels`, drawn as labelled pickers.
+- **`reading` is Fast, Slow, Impulse or Leq, labelled Reading, never Time weighting** (audio-vue
+  `rta-fine-bands`, 2026-11-23): Leq is an average, where IEC 61672-1 gives time weighting no part.
+  It builds from the operator's `reset` and survives the silence auto-reset. At Leq the marks are
+  LFmax and the hold settings are unused by `x-unused-when`. `bands` on both cards is 1, 3, 6 or 12;
+  at 1/12 an `rta_bars` card can be too small at its minimum under larger than default type.
 - **The spectrogram's `palette` is a card setting, not a colour** (Ruled, maintainer 2026-11-23): an
   ordinary choice of named colour maps whose tables the host holds. The export carries only the names.
   It is no role, no `<role>_color`, no scene colour, and no style or scene look sets it. Keep it out of
@@ -292,6 +297,16 @@ more requests serves a scene asking fewer. `prepare` warms only a default RTA ca
 other band set, hold or spectrogram history costs one run of about a second the first time a scene
 asking for it renders, and is kept from then on (audio-vue `scene-render`, read 2026-11-23).
 Asks travel as handoff files in audio-vue's root (`working-notes.md`).
+
+Since audio-vue's `track-render` (2026-11-23, not yet archived; the app's Render with Track uses it) the
+helper also takes `track` and `picture`. `track` opens one track for one scene: a headerless
+little-endian float32 interleaved file the console decodes, at the track's own rate (one of the
+panel's five, never resampled), 1 or 2 channels, plus `render`'s scene fields; it answers `length`
+in samples. `picture` takes `moment` in samples and answers `width`, `height`, `drawn`, then opaque
+RGB bytes, top row first. One open track per helper; a later moment continues the analysis, an
+earlier one restarts from the first sample. Measured on an M4 Pro: 36 to 45 ms a picture at
+1920 x 720, 2.4 s to reach 60 s in at 48 kHz. The `hello` answer carries a protocol number the app
+does not check. `src/render_service.py`'s docstring is the authority.
 
 ## Calibration (Built, audio-vue `calibration-from-the-app`, 2026-11-08)
 

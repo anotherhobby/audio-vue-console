@@ -114,9 +114,9 @@ struct SettingGroupTests {
     // MARK: Measurement choices a card makes for itself
 
     @Test(arguments: [
-        ("rta_bars", "weighting", ["Fast", "Slow", "Impulse"]),
-        ("rta_bars", "bands", ["1/1 octave", "1/3 octave"]),
-        ("spectrogram", "bands", ["1/1 octave", "1/3 octave"]),
+        ("rta_bars", "reading", ["Fast", "Slow", "Impulse", "Leq"]),
+        ("rta_bars", "bands", ["1/1 octave", "1/3 octave", "1/6 octave", "1/12 octave"]),
+        ("spectrogram", "bands", ["1/1 octave", "1/3 octave", "1/6 octave", "1/12 octave"]),
         ("spectrogram", "quantity", ["Average", "Fast maximum"]),
     ])
     func aStandardChoiceIsLabelledAndNeverOffItsStandard(

@@ -24,6 +24,26 @@ struct RendererTests {
         #expect(launcher.requests.last?["analysis"] == .object([:]))
     }
 
+    /// `render-helper`, "A track render has a helper of its own".
+    @Test func aTrackHelperIsASecondHelperOfItsOwn() async throws {
+        let launcher = ScriptedLauncher { FakeRender.reply(to: $0) }
+        let renderer = Renderer(launcher: launcher)
+        await renderer.start()
+        let track = try #require(renderer.trackHelper())
+        #expect(try await track.hello() == "d1")
+        #expect(launcher.launches == 2)
+        await track.stop()
+        let queue = try #require(renderer.queue)
+        let answer = await queue.submit(
+            .object(["op": .string("hello")]), lane: .canvas, key: "after")
+        #expect(try answer?.get().header["cards"] == .string("d1"))
+        #expect(launcher.launches == 2)
+    }
+
+    @Test func noTrackHelperWithoutARenderer() {
+        #expect(Renderer(launcher: nil).trackHelper() == nil)
+    }
+
     @Test func thePhasesWhileStarting() async throws {
         let launcher = ScriptedLauncher { request in
             request["op"] == .string("prepare")

@@ -12,10 +12,10 @@ struct LiveHelperTests {
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .deletingLastPathComponent()
     private static let local = root.appending(path: "local")
-    private static let fixture = URL(filePath: #filePath).deletingLastPathComponent()
+    static let fixture = URL(filePath: #filePath).deletingLastPathComponent()
         .appending(path: "Fixtures/rta-scene.json")
 
-    private static func helper() -> RenderHelper {
+    static func helper() -> RenderHelper {
         RenderHelper(
             launcher: FoundationHelperLauncher(
                 executable: local.appending(path: "python-runtime/bin/python3"),
@@ -37,7 +37,7 @@ struct LiveHelperTests {
         return .object(fields)
     }
 
-    private static func timed<Value>(_ label: String, _ work: () async throws -> Value)
+    static func timed<Value>(_ label: String, _ work: () async throws -> Value)
         async rethrows -> Value
     {
         let clock = ContinuousClock()

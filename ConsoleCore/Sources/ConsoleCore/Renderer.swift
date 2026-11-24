@@ -27,6 +27,7 @@ public final class Renderer {
     /// (`card-code`), or nil before then.
     public private(set) var verdict: CardCodeVerdict?
 
+    private let launcher: (any HelperLauncher)?
     private let helper: RenderHelper?
     private let missing: String?
 
@@ -35,6 +36,7 @@ public final class Renderer {
         launcher: (any HelperLauncher)?, missing: String? = nil,
         bundledManifest: CardManifest? = nil
     ) {
+        self.launcher = launcher
         helper = launcher.map { RenderHelper(launcher: $0) }
         self.missing = missing
         self.bundledManifest = bundledManifest
@@ -100,6 +102,16 @@ public final class Renderer {
     public var stimulus: (any StimulusSource)? {
         helper.map { HelperStimulus(helper: $0) }
     }
+
+    /// A helper of its own for rendering from a track, started by the same launcher so it carries
+    /// the same code, or nil where the app carries no renderer (`render-helper`, "A track render
+    /// has a helper of its own"). Its caller greets it, and stops it when done.
+    public func trackHelper() -> RenderHelper? {
+        launcher.map { RenderHelper(launcher: $0) }
+    }
+
+    /// Whether this build carries a helper to start.
+    public var carriesHelper: Bool { launcher != nil }
 
     /// Forgets the comparison, as when the app is no longer paired with that panel.
     public func forgetCode() {

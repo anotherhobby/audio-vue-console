@@ -52,6 +52,36 @@ struct HelperFrameTests {
         #expect(try reader.next()?.payload == payload)
     }
 
+    /// A picture's answer gives its pixels' length at the top of its header (audio-vue
+    /// `render_service.py`, `picture`).
+    @Test func aPictureSplitAcrossThreeChunks() throws {
+        let payload = Data((0..<12).map(UInt8.init))
+        let whole =
+            Self.framed(#"{"ok": true, "width": 2, "height": 2, "bytes": 12}"#, payload: payload)
+            + Self.framed(#"{"n": 2}"#)
+        var reader = HelperAnswerReader()
+        reader.append(whole.prefix(10))
+        #expect(try reader.next() == nil)
+        let pictureEnd = whole.count - Self.framed(#"{"n": 2}"#).count
+        reader.append(whole.dropFirst(10).prefix(pictureEnd - 14))
+        #expect(try reader.next() == nil)
+        reader.append(whole.dropFirst(pictureEnd - 4))
+        #expect(try reader.next()?.payload == payload)
+        #expect(try reader.next()?.header["n"] == .integer(2))
+    }
+
+    @Test func aNegativeByteCountIsMalformed() {
+        var reader = HelperAnswerReader()
+        reader.append(Self.framed(#"{"ok": true, "bytes": -1}"#))
+        #expect(throws: HelperFrameError.malformed) { try reader.next() }
+    }
+
+    @Test func aByteCountThatIsNotANumberIsMalformed() {
+        var reader = HelperAnswerReader()
+        reader.append(Self.framed(#"{"ok": true, "bytes": "12"}"#))
+        #expect(throws: HelperFrameError.malformed) { try reader.next() }
+    }
+
     @Test func twoAnswersInOneChunk() throws {
         var reader = HelperAnswerReader()
         reader.append(Self.framed(#"{"n": 1}"#) + Self.framed(#"{"n": 2}"#))

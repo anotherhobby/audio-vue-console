@@ -1,5 +1,6 @@
 import ConsoleCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// One scene open for editing: the card library on the left, the canvas inside the panel's outline
 /// drawn by the helper, and the inspector on the right (`scene-canvas`, `scene-rendering`). Edits
@@ -28,6 +29,10 @@ struct SceneEditorView: View {
     @State private var session: SceneSession?
     /// Counts the renderings made, so the drawing follows a new one.
     @State private var made = 0
+    /// The Render with Track sheet's state while it is open.
+    @State private var trackRender: TrackRender?
+    /// Why the last Export Image failed, for its alert.
+    @State private var imageFailure: String?
 
     var body: some View {
         panes
@@ -36,6 +41,10 @@ struct SceneEditorView: View {
             .toolbar(removing: .title)
             .focusedSceneValue(\.sceneFile, fileActions)
             .writeFailureAlert(failure, saveOver: { save(overRev: $0) }, discardMine: discardMine)
+            .failureAlert("The Image Couldn't Be Saved", reason: $imageFailure)
+            .sheet(item: $trackRender) { render in
+                TrackRenderSheet(sceneName: document.name ?? document.id, render: render)
+            }
             .onAppear(perform: make)
             .onChange(of: session?.parses) { drawNewParse() }
             .onChange(of: editor?.content) { session?.note = nil }
@@ -194,6 +203,12 @@ struct SceneEditorView: View {
             Button("Duplicate", systemImage: "plus.square.on.square") { duplicate() }
                 .disabled(session?.canDuplicate == false)
                 .help(session?.hasParked == true ? ParkingText.held : "Duplicate")
+            Button("Render with Track…", systemImage: "film") { renderWithTrack() }
+                .disabled(trackReason != nil)
+                .help(trackReason ?? "Render with Track…")
+            Button("Export Image…", systemImage: "photo") { exportImage() }
+                .disabled(rendering?.pictureUnavailable != nil)
+                .help(rendering?.pictureUnavailable ?? "Export Image…")
         }
         ToolbarItem(placement: .principal) {
             Color.clear.frame(width: SceneMetrics.toolbarGap)
@@ -206,6 +221,43 @@ struct SceneEditorView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { showsInspector.toggle() }
+        }
+    }
+
+    /// Why Render with Track… is disabled, or nil where it can open (`track-render`, design D8).
+    /// The schema is read only once paired, so its facts stand for the pairing.
+    private var trackReason: String? {
+        TrackRenderAvailability.reason(
+            .init(
+                isPaired: scenes.facts != nil, carriesRenderer: renderer.carriesHelper,
+                rates: scenes.facts?.rates, isTooWide: session?.isTooWide ?? false,
+                cards: session?.draft?.content.layout.cards.map(\.kind) ?? [], verdict: verdict),
+            title: SceneSettingsTab.title(ofCard:))
+    }
+
+    /// Opens the sheet on the scene as edited, parked cards left out (design D8), with a helper of
+    /// its own.
+    private func renderWithTrack() {
+        guard trackReason == nil, let draft = session?.draft, let rates = scenes.facts?.rates,
+            let helper = renderer.trackHelper()
+        else { return }
+        trackRender = TrackRender(
+            helper: helper, scene: draft.laidOut.doc(for: draft.content),
+            builtIn: document.builtIn, context: scenes.context, rates: rates)
+    }
+
+    /// Saves the scene as the canvas draws it, at the panel's display size, as a PNG (`track-render`,
+    /// "Export Image saves the scene as the canvas draws it").
+    private func exportImage() {
+        guard let image = rendering?.picture else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = "\(document.name ?? document.id).png"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try StillWriter.write(image, to: url)
+        } catch {
+            imageFailure = error.description
         }
     }
 
@@ -241,7 +293,8 @@ struct SceneEditorView: View {
     private var fileActions: SceneFileActions {
         SceneFileActions(
             save: session?.canSave == true ? { save() } : nil,
-            revert: session?.canRevert == true ? { session?.revert() } : nil)
+            revert: session?.canRevert == true ? { session?.revert() } : nil,
+            renderWithTrack: trackReason == nil ? { renderWithTrack() } : nil)
     }
 
     /// The name's rename, nil for a built-in, which is never renamed.

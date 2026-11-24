@@ -345,3 +345,26 @@ The meter's `scales` export puts each field's settings under `properties[<field>
 checks an override's anchor against the one it draws with, so a blank anchor takes the product's and
 the span must still hold it (`card.py`, `checked_scales`). The export's `x-rules` says "where set".
 Measured in the console's `KeyedBlock.edit`: `correlation` at 0.2 to 1 with no anchor is refused.
+
+## 8-bit H.264 bands a dark gradient backdrop (2026-11-23)
+
+A clip of a scene with a dark gradient backdrop showed tinted, blocky bands that the panel and a PNG
+still do not show. Bit rate does not fix it: the cause is the 8-bit 4:2:0 Y'CbCr conversion itself,
+and the encoder discards any dither. Clips are 10-bit HEVC (Main10, quality 0.8, tagged sRGB) for
+this; the measurements are in `openspec/changes/track-render/design.md` D7 (archived with the
+change). A frame grabbed from a video carries the `kCGColorSpaceCoreMedia709` profile in its PNG,
+which tells it apart from an app still (`sRGB` chunk).
+
+## An 8-bit PNG of a scene can band where the canvas does not (2026-11-23)
+
+The canvas, drawn by Core Animation, showed a dark glass card over the backdrop smooth. The same
+layers flattened to an 8-bit PNG showed stair-stepped bands in Preview, though a screenshot of each
+measured the same. Two causes stack:
+- audio-vue's `blur()` (`src/glass.py`) rounds its reduced copy to 8 bits before scaling it back up,
+  so the backdrop's one-level steps sit on 8-pixel block edges.
+- Glass blended over it at 8 bits rounds the blend again.
+
+Export Image therefore blends at 16 bits a component and saves a 16-bit PNG, which the maintainer
+judged fixed. Rounding once, after a float scale-up and with dither, in `blur()` would remove the
+stairs at the source, for clips and the panel too: asked in
+`../audio-vue/console-blur-handoff.md` (2026-11-23), awaiting audio-vue.

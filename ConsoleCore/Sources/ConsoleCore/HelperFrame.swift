@@ -26,16 +26,23 @@ enum HelperFrame {
         return withUnsafeBytes(of: length) { Data($0) } + body
     }
 
-    /// The bytes a header says follow it: the sum of its layers' `bytes`.
+    /// The bytes a header says follow it: its own `bytes`, as a picture's answer gives them, and the
+    /// sum of its layers' `bytes`.
     static func payloadLength(of header: JSONValue) throws(HelperFrameError) -> Int {
-        guard let layers = header["layers"] else { return 0 }
+        var total = try header["bytes"].map(count) ?? 0
+        guard let layers = header["layers"] else { return total }
         guard let list = layers.arrayValue else { throw .malformed }
-        var total = 0
         for layer in list {
-            guard let bytes = layer["bytes"]?.intValue, bytes >= 0 else { throw .malformed }
-            total += bytes
+            guard let bytes = layer["bytes"] else { throw .malformed }
+            total += try count(bytes)
         }
         return total
+    }
+
+    /// A `bytes` field's count, which must be a whole number, not negative.
+    private static func count(_ bytes: JSONValue) throws(HelperFrameError) -> Int {
+        guard let count = bytes.intValue, count >= 0 else { throw .malformed }
+        return count
     }
 }
 

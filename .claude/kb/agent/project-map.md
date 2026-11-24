@@ -200,6 +200,28 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `CardDrift`, `CardCodeCheck`. Tests
   script the helper with `ScriptedLauncher`/`ScriptedHelper` and `FakeRender`; `LiveHelperTests`
   runs the real one when asked.
+- Track render (`track-render`, 2026-11-23): stills and clips of a scene reading a track the user
+  picks, through a second helper, `Renderer.trackHelper()`, started with the sheet and ended with it.
+  - In ConsoleCore:
+    - `TrackSource` checks a file against the schema's rates (`SchemaFacts.rates`) and channels, then
+      decodes it to float32 in `tmp/Tracks/`, as `DecodedTrack`;
+    - `TrackSession` (actor) sends `track` and `picture`, reopening after the helper ends;
+    - `TrackPicture` is RGB, with `.image`;
+    - `ClipPlan` gives the frames' moments;
+    - `StillWriter` writes a PNG;
+    - `ClipWriter` writes a 10-bit HEVC MP4 (tagged sRGB) with AAC through the macOS 27 async writer receivers and
+      reader providers (the older calls are deprecated, and warnings are errors);
+    - `TrackRenderAvailability` gives why Render with Track is disabled;
+    - `TrackRender` is the sheet's state.
+    `HelperFrame.payloadLength` counts a top-level `bytes` too, and `RenderContext.fields(for:builtIn:)`
+    is shared by `render` and `track`.
+  - Export Image… (beside it) saves `SceneRendering.picture`, the canvas's layers flattened at the
+    display's size, through `StillWriter`.
+  - In the app: `TrackRenderSheet`, the editor's Render with Track… button, and the File menu's
+    command through `SceneFileActions.renderWithTrack`.
+  - Tests: `TrackSourceTests`, `TrackSessionTests`, `ClipPlanTests`, `StillWriterTests`,
+    `ClipWriterTests`, `TrackRenderAvailabilityTests` and `TrackRenderTests`, on WAVs made by
+    `TestTracks`. `LiveTrackRenderTests` runs the real helper when asked.
 - `tools/`: `refresh-contract.sh` and `optional_nullables.py`, which writes the contract's nullable
   fields as optional for the generator (`commands.md`); `refresh-render-bundle.sh`, which mirrors
   audio-vue's render bundle and builds the Python runtime into `local/`, and `embed-render-runtime.sh`,

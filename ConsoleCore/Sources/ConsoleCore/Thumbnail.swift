@@ -5,15 +5,17 @@ import CoreGraphics
 /// width asked for. At the display's own width it is the stacked scene itself.
 public enum Thumbnail {
     /// `layers`, in stacking order, placed on a `display` and drawn `width` pixels wide, or nil
-    /// where no image can be made.
-    public static func flatten(layers: [RenderedLayer], display: PixelSize, width: Int) -> CGImage?
-    {
+    /// where no image can be made. `bits` is each component's depth: 8, or 16 to keep the
+    /// fractions their blending makes, as Export Image does (`track-render`).
+    public static func flatten(
+        layers: [RenderedLayer], display: PixelSize, width: Int, bits: Int = bitsPerComponent
+    ) -> CGImage? {
         guard display.width > 0, display.height > 0, width > 0 else { return nil }
         let scale = Double(width) / Double(display.width)
         let height = Int((Double(display.height) * scale).rounded())
         guard height > 0, let space = CGColorSpace(name: CGColorSpace.sRGB),
             let context = CGContext(
-                data: nil, width: width, height: height, bitsPerComponent: bitsPerComponent,
+                data: nil, width: width, height: height, bitsPerComponent: bits,
                 bytesPerRow: 0, space: space,
                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
         else { return nil }
@@ -51,5 +53,8 @@ public enum Thumbnail {
         return context.makeImage()
     }
 
-    private static let bitsPerComponent = 8
+    /// The depth of a thumbnail's and a tile's components.
+    public static let bitsPerComponent = 8
+    /// The depth Export Image saves at.
+    public static let deepBitsPerComponent = 16
 }

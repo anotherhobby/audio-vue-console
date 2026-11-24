@@ -34,6 +34,19 @@ public struct RenderContext: Sendable, Equatable {
         self.images = images
         self.styles = styles
     }
+
+    /// What a request to draw `doc` carries from this context, as `render` and `track` both take
+    /// it: the scene, whether it is built in, the display, the viewing, the images directory and the
+    /// stored styles the scene names (the helper carries the built-in ones itself).
+    public func fields(for doc: JSONValue, builtIn: Bool) -> [String: JSONValue] {
+        let named = (doc["styles"]?.arrayValue ?? []).compactMap(\.stringValue)
+        return [
+            "scene": doc, "built_in": .bool(builtIn),
+            "display": .array([.integer(display.width), .integer(display.height)]),
+            "viewing": viewing, "images": .string(images.path),
+            "styles": .object(styles.filter { named.contains($0.key) }),
+        ]
+    }
 }
 
 /// One `render` request: a scene's document as the store holds it, whether it is built in, the
@@ -61,22 +74,12 @@ public struct RenderRequest: Sendable, Equatable {
         self.backdrop = backdrop
     }
 
-    /// The stored styles `doc` names, as the context holds them; the helper carries the built-in
-    /// ones itself.
-    private var namedStyles: [String: JSONValue] {
-        let named = (doc["styles"]?.arrayValue ?? []).compactMap(\.stringValue)
-        return context.styles.filter { named.contains($0.key) }
-    }
-
     /// The request as the helper reads it.
     public var message: JSONValue {
-        var fields: [String: JSONValue] = [
-            "op": .string("render"), "scene": doc, "built_in": .bool(builtIn),
-            "display": .array([.integer(context.display.width), .integer(context.display.height)]),
-            "viewing": context.viewing, "rate": .integer(Self.previewRate),
-            "images": .string(context.images.path), "styles": .object(namedStyles),
-            "backdrop": .bool(backdrop),
-        ]
+        var fields = context.fields(for: doc, builtIn: builtIn)
+        fields["op"] = .string("render")
+        fields["rate"] = .integer(Self.previewRate)
+        fields["backdrop"] = .bool(backdrop)
         if let plates { fields["plates"] = .array(plates.map(JSONValue.integer)) }
         return .object(fields)
     }

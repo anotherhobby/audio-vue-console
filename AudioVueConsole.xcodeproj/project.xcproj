@@ -79,7 +79,7 @@
         "ENABLE_OUTGOING_NETWORK_CONNECTIONS": "YES",
         "ENABLE_PREVIEWS": "YES",
         "ENABLE_USER_SCRIPT_SANDBOXING": "NO",
-        "ENABLE_USER_SELECTED_FILES": "readonly",
+        "ENABLE_USER_SELECTED_FILES": "readwrite",
         "GENERATE_INFOPLIST_FILE": "YES",
         "INFOPLIST_FILE": "AudioVueConsole-Info.plist",
         "INFOPLIST_KEY_NSLocalNetworkUsageDescription": "AudioVueConsole finds and connects to the audio-vue panels on your local network.",
