@@ -13,6 +13,9 @@ public struct Draft: Sendable, Equatable {
     public internal(set) var rev: Int?
     /// The revision the parse was read from: `rev`, or an earlier one loaded from Versions.
     public internal(set) var source: Int?
+    /// Whether the parse is a repair of the scene as read (`scene-repair`), which the host does
+    /// not hold until it is saved.
+    public internal(set) var repaired = false
 
     /// The scene as read, with no edit.
     public init(_ laidOut: LaidOutScene) {
@@ -43,12 +46,11 @@ public struct Draft: Sendable, Equatable {
     public var hasParked: Bool { parkedCount > 0 }
 
     /// Whether the host does not hold what the draft shows: a copy never saved, an earlier version
-    /// loaded, content that differs from the one read, or a stored grid size, which a save
-    /// removes. Both layouts carry the parse's card ids, so undoing back to the content read
-    /// clears it, a block changed and changed back included.
+    /// loaded, a repair, or content that differs from the one read. Both layouts carry the
+    /// parse's card ids, so undoing back to the content read clears it, a block changed and
+    /// changed back included.
     public var isUnsaved: Bool {
-        SceneDrafts.isCopy(id) || source != rev || content != laidOut.content
-            || laidOut.declaresGridSize
+        SceneDrafts.isCopy(id) || source != rev || repaired || content != laidOut.content
     }
 
     /// The document a save writes: the parse's document with the blocks and cards as `content`

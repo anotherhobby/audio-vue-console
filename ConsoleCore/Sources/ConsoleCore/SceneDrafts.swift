@@ -9,6 +9,15 @@ public final class SceneDrafts {
     /// The copies made in the app, newest last.
     public private(set) var copies: [SceneDocument] = []
     private var drafts: [String: Draft] = [:]
+    /// Each scene's last repair, for the document and the shape it was found for: a walk takes
+    /// about a millisecond for a gallery, which draws each row many times (design D4).
+    @ObservationIgnored private var repairs: [String: HeldRepair] = [:]
+
+    private struct HeldRepair {
+        let shape: UUID
+        let doc: JSONValue
+        let repair: SceneRepair?
+    }
 
     public init() {}
 
@@ -126,6 +135,37 @@ public final class SceneDrafts {
         drafts[id] = draft
     }
 
+    /// The repair `document` needs to pass `shape` (`scene-repair`, design D4): of its draft as a
+    /// save would write it where it has one, else as the host holds it, and none for a built-in,
+    /// which the host ships valid.
+    public func repair(of document: SceneDocument, shape: SceneShape) -> SceneRepair? {
+        guard !document.builtIn else { return nil }
+        let doc = drafts[document.id]?.doc ?? document.doc
+        if let held = repairs[document.id], held.shape == shape.identity, held.doc == doc {
+            return held.repair
+        }
+        let repair = shape.repair(of: doc)
+        repairs[document.id] = HeldRepair(shape: shape.identity, doc: doc, repair: repair)
+        return repair
+    }
+
+    /// Repairs the scene `id` as `repair` says (`scene-repair`, design D5): its repaired document
+    /// laid out afresh on the draft's panel as an unsaved edit on the same revision, each card
+    /// the repair keeps holding its id. The parse changes, so the editor shows the draft afresh.
+    public func repair(_ id: String, with repair: SceneRepair) throws(LayoutRefusal) {
+        guard let old = drafts[id], let doc = repair.doc else { return }
+        let ids = old.laidOut.layout.cards.map(\.id).enumerated()
+            .filter { !repair.removedCards.contains($0.offset) }.map(\.element)
+        let document = SceneDocument(
+            id: id, name: old.laidOut.document.name, builtIn: false, fixed: false, doc: doc,
+            rev: old.laidOut.document.rev)
+        var draft = Draft(try LaidOutScene(document, panel: old.laidOut.panel, ids: ids))
+        draft.name = old.name
+        draft.rev = old.rev
+        draft.repaired = true
+        drafts[id] = draft
+    }
+
     /// Reverts the scene `id` to `base`, the host's current document: the content to show, and
     /// whether it is of a new parse, as after a version was loaded, when the editor's undo cannot
     /// reach it. Of the same parse, the draft is left for the editor's undoable Revert to keep.
@@ -133,7 +173,7 @@ public final class SceneDrafts {
         -> (content: SceneContent, newParse: Bool)?
     {
         guard let old = drafts[id] else { return nil }
-        guard old.source != old.rev else { return (old.laidOut.content, false) }
+        guard old.source != old.rev || old.repaired else { return (old.laidOut.content, false) }
         let draft = Draft(try LaidOutScene(base, panel: old.laidOut.panel))
         drafts[id] = draft
         return (draft.content, true)
@@ -187,6 +227,7 @@ public final class SceneDrafts {
                 base, content: SceneContent(layout: layout, blocks: old.content.blocks),
                 name: old.name, rev: old.rev)
             draft.source = old.source
+            draft.repaired = old.repaired
             return draft
         } catch {
             return nil

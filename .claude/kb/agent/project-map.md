@@ -177,7 +177,18 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `.invalid`, `.conflict`), the revisions read in `HostClient+Scenes`, `HostClient+Commands` (switch
   and reset as `CommandOutcome`, a done switch's `SwitchResult`), `SceneWrites` (each write's outcome
   to the drafts and thumbnails, Save All, Apply) and `SceneSession` (one open scene's Save, Rename,
-  Discard Mine, Revert, Versions, Apply and Reset, and its `EditorNote`). The helper: `HelperLocation`,
+  Discard Mine, Revert, Versions, Apply and Reset, and its `EditorNote`). Scene repair
+  (`scene-repair`, 2026-11-23):
+  - `SceneShape`, held as `SchemaFacts.shape`, walks a document against the export's JSON Schema
+    alone. It never reads a failure message, and its keyword rules are in design D2.
+  - It yields a `SceneRepair`: the repaired doc, `RepairChange`s and their `lines`.
+  - `SceneDrafts.repair(of:shape:)` holds each scene's last repair by document and shape.
+  - `SceneDrafts.repair(_:with:)` applies it as a new parse with `Draft.repaired` set, and
+    `SceneSession.repair()` drives it.
+  - In the app: `RepairBanner`, and the gallery's note.
+  - Block and card names for any wording come from `SceneSettingsTab.title(ofBlock:)` and
+    `title(ofCard:)`.
+  - A stored grid size is no longer dropped as it is read: it is one more undeclared key. The helper: `HelperLocation`,
   `HelperProcess` (`FoundationHelperLauncher`, `ChunkChannel`, `LineSplitter`), `HelperFrame`,
   `RenderHelper` (the actor), `RenderQueue` (three lanes: canvas, library, thumbnails, in that
   order; 2026-11-07, `library-render`), `Renderer` (phases). Drawing:

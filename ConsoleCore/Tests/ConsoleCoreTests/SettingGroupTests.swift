@@ -111,18 +111,42 @@ struct SettingGroupTests {
         )
     }
 
-    // MARK: Scene blocks (`scene-settings`, task 2.4)
+    // MARK: Measurement choices a card makes for itself
 
-    @Test func theRTAWeightingIsNeverOffItsStandard() throws {
-        let weighting = try #require(try Self.facts().block("analysis")?.settings["rta_weighting"])
-        guard case .choice(let choices) = weighting.shape else {
-            Issue.record("rta_weighting is not a choice")
+    @Test(arguments: [
+        ("rta_bars", "weighting", ["Fast", "Slow", "Impulse"]),
+        ("rta_bars", "bands", ["1/1 octave", "1/3 octave"]),
+        ("spectrogram", "bands", ["1/1 octave", "1/3 octave"]),
+        ("spectrogram", "quantity", ["Average", "Fast maximum"]),
+    ])
+    func aStandardChoiceIsLabelledAndNeverOffItsStandard(
+        card: String, key: String, labels: [String]
+    ) throws {
+        let setting = try Self.declaration(card, key)
+        guard case .choice(let choices) = setting.shape else {
+            Issue.record("\(card).\(key) is not a choice")
             return
         }
-        #expect(choices == [.string("F"), .string("S"), .string("I")])
-        #expect(choices.allSatisfy { weighting.note(for: $0) == nil })
-        #expect(weighting.note(for: weighting.defaultValue) == nil)
+        #expect(choices.map(setting.label(of:)) == labels)
+        #expect(choices.allSatisfy { setting.note(for: $0) == nil })
     }
+
+    @Test func theSpectrogramsSpanIsAWholeNumberChosenByItsLabel() throws {
+        let span = try Self.declaration("spectrogram", "span_s")
+        guard case .choice(let choices) = span.shape else {
+            Issue.record("span_s is not a choice")
+            return
+        }
+        #expect(choices.map(span.label(of:)) == ["10 s", "30 s", "1 min", "5 min", "10 min"])
+        #expect(span.label(of: .integer(60)) == "1 min")
+    }
+
+    @Test func theAnalysisBlockHoldsNoRTASetting() throws {
+        let analysis = try #require(try Self.facts().block("analysis"))
+        #expect(!analysis.settings.settings.contains { $0.key.hasPrefix("rta_") })
+    }
+
+    // MARK: Scene blocks (`scene-settings`, task 2.4)
 
     @Test func theCaptureRateHasNoNoteOfItsOwn() throws {
         let rate = try #require(try Self.facts().block("analysis")?.settings["capture_rate"])

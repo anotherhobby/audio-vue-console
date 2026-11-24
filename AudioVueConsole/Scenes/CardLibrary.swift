@@ -129,7 +129,7 @@ struct CardTile: View {
     }
 
     static func title(_ name: String) -> String {
-        name.replacingOccurrences(of: "_", with: " ")
+        SceneSettingsTab.title(ofCard: name)
     }
 }
 

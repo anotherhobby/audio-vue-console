@@ -13,6 +13,8 @@ struct SceneGallery: View {
     let aspect: Double
     /// Why no card is drawn, where the card code says so.
     var notice: String?
+    /// The shape the panel's schema asks a scene for, so a scene needing a repair is marked.
+    var shape = SceneShape.none
     let open: (String) -> Void
     var rename: (String, String) async throws(HostFailure) -> Void = { _, _ in }
     var delete: (String) async throws(HostFailure) -> Void = { _ in }
@@ -117,7 +119,7 @@ struct SceneGallery: View {
             }
             LazyVGrid(columns: columns, alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 ForEach(items) { item in
-                    SceneRow(item: item, aspect: aspect)
+                    SceneRow(item: item, aspect: aspect, shape: shape)
                         .contentShape(Rectangle())
                         .onTapGesture { open(item.id) }
                         .contextMenu { menu(item) }
@@ -153,6 +155,7 @@ struct SceneRow: View {
     let item: SceneGallery.Item
     /// The display's width over its height.
     let aspect: Double
+    let shape: SceneShape
     @Environment(SceneStore.self) private var store
 
     /// The scene as edited where it has a draft, else as read.
@@ -162,6 +165,10 @@ struct SceneRow: View {
     }
 
     private var isTooWide: Bool { shown.map { $0.scene.isTooWide($0.content) } ?? false }
+
+    /// Whether the panel would refuse the scene for holding what its schema does not take
+    /// (`scene-gallery`, "A scene that needs a repair is marked in the gallery").
+    private var needsRepair: Bool { store.drafts.repair(of: item.document, shape: shape) != nil }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -186,6 +193,9 @@ struct SceneRow: View {
             }
             if isTooWide {
                 Text("Too wide for this panel").font(.callout).foregroundStyle(.secondary)
+            }
+            if needsRepair {
+                Text(RepairText.note).font(.callout).foregroundStyle(.secondary)
             }
             if let parked = store.drafts.draft(item.id)?.parkedCount, parked > 0 {
                 Text(ParkingText.note(parked)).font(.callout).foregroundStyle(.secondary)
@@ -255,15 +265,47 @@ struct SceneRow: View {
     }
 }
 
-/// Two built-in scenes and two stored ones on a 16:9 panel, read as the host gives scene
-/// documents; "My RTA" reaches past the panel's last column.
+#Preview("Gallery, a scene that needs a repair") {
+    if let preview = GalleryPreview.scenes {
+        SceneGallery(
+            scenes: preview, grid: CellSize(cols: 64, rows: 36), aspect: 16.0 / 9.0,
+            shape: GalleryPreview.shape
+        ) { _ in }
+        .environment(SceneStore())
+        .frame(width: PanelMetrics.windowDefaultWidth, height: PanelMetrics.windowDefaultHeight)
+    }
+}
+
+/// Two built-in scenes and three stored ones on a 16:9 panel, read as the host gives scene
+/// documents; "My RTA" reaches past the panel's last column, and "Primary" holds an analysis
+/// setting `shape` does not declare.
 private enum GalleryPreview {
     static let docs = [
         ("rta", "RTA", true, #"{"cards": [{"card": "rta_bars", "colspan": 48}]}"#),
         ("default", "Default", true, #"{"cards": [{"card": "rta_bars"}]}"#),
         ("s1", "My RTA", false, #"{"cards": [{"card": "rta_bars", "colspan": 96}]}"#),
         ("s2", "Wide", false, #"{"cards": [{"card": "waveform", "colspan": 32}]}"#),
+        (
+            "s3", "Primary", false,
+            #"{"analysis": {"rta_weighting": "F"}, "cards": [{"card": "rta_bars"}]}"#
+        ),
     ]
+
+    /// A scene's shape that takes its cards and an empty analysis block.
+    static let shape = SceneShape(
+        schema: .object([
+            "$defs": .object([
+                "scene": .object([
+                    "additionalProperties": .bool(false),
+                    "properties": .object([
+                        "cards": .object([:]),
+                        "analysis": .object([
+                            "additionalProperties": .bool(false), "properties": .object([:]),
+                        ]),
+                    ]),
+                ])
+            ])
+        ]))
 
     /// A store holding "Wide" with its card parked below the panel (`card-parking`).
     @MainActor static func storeWithParked(in scenes: [SceneDocument], on grid: CellSize)

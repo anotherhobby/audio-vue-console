@@ -15,7 +15,7 @@ extension SceneRendering {
                     + "\(context.display.width) by \(context.display.height).")
         }
         if !unfit.isEmpty {
-            let names = unfit.map { $0.replacingOccurrences(of: "_", with: " ") }
+            let names = unfit.map(SceneSettingsTab.title(ofCard:))
             lines.append("Too small to show its reading: \(names.joined(separator: ", ")).")
         }
         return lines

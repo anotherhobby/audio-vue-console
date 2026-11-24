@@ -246,8 +246,6 @@ public final class PanelScenes {
         guard let rev = document.rev else { throw .unexpectedAnswer }
         var doc = document.doc.objectValue ?? [:]
         doc["name"] = .string(name)
-        // A scene the app writes carries no grid size, so a stored one that holds it is written without (`scene-saving`).
-        LaidOutScene.dropGridSize(from: &doc)
         _ = try await client.writeScene(
             document.id, doc: .object(doc), baseRev: rev, at: address, token: pairing.token)
     }

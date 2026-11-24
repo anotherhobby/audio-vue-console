@@ -117,7 +117,8 @@ struct LaidOutSceneTests {
     @Test func aCardReadsItsParamsAsSettings() throws {
         let card = try #require(Self.rta().layout.cards.first)
         #expect(card.kind == "rta_bars")
-        #expect(card.settings.count == 7)
+        #expect(card.settings.count == 9)
+        #expect(card.settings["release"] == .string("fall"))
         #expect(card.settings["floor_db"] == .integer(-80))
         #expect(card.settings["grid_major_color"] == .string("#2a3550"))
     }
@@ -145,21 +146,15 @@ struct LaidOutSceneTests {
         #expect(doc["cards"] == laid.document.doc["cards"])
     }
 
-    /// `scene-saving`, "A saved scene declares no grid size": a scene stored with one is unsaved
-    /// as opened, and is written without it, its gap kept.
-    @Test func aStoredGridSizeIsDroppedAndTheSceneIsUnsaved() throws {
+    /// `scene-saving`, "A saved scene declares no grid size": a scene stored with one opens as
+    /// stored, not unsaved, and keeps it until it is repaired (`scene-repair`).
+    @Test func aStoredGridSizeIsKeptUntilTheSceneIsRepaired() throws {
         let doc =
             #"{"name": "S", "grid": {"cols": 96, "rows": 36, "gap": 8}, "cards": ["#
             + #"{"card": "meter", "colspan": 8}]}"#
         let laid = try LaidOutScene(Self.scene(doc), panel: Self.defaults)
-        #expect(laid.declaresGridSize && Draft(laid).isUnsaved)
-        #expect(laid.doc(for: laid.content)["grid"] == .object(["gap": .integer(8)]))
-        let sized = try LaidOutScene(
-            Self.scene(#"{"grid": {"cols": 96, "rows": 36}, "cards": []}"#), panel: Self.defaults)
-        #expect(sized.doc(for: sized.content)["grid"] == nil)
-        let clean = try LaidOutScene(
-            Self.scene(#"{"grid": {"gap": 8}, "cards": []}"#), panel: Self.defaults)
-        #expect(!clean.declaresGridSize && !Draft(clean).isUnsaved)
+        #expect(!Draft(laid).isUnsaved)
+        #expect(laid.doc(for: laid.content)["grid"] == laid.document.doc["grid"])
     }
 
     /// `scene-saving`, "A saved scene declares no grid size".

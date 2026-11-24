@@ -141,6 +141,22 @@ public final class SceneSession {
         newParse()
     }
 
+    /// The repair the scene needs before the host takes it, or nil where it needs none.
+    public var neededRepair: SceneRepair? { writes.repair(of: id) }
+
+    /// Repair (`scene-repair`): the scene as its repair leaves it, an unsaved edit on a new
+    /// parse, so the undo history starts afresh and Revert to Saved is the way back (design D5).
+    public func repair() {
+        guard isEditable, let repair = neededRepair, repair.canRepair else { return }
+        do throws(LayoutRefusal) {
+            try writes.drafts.repair(id, with: repair)
+        } catch {
+            failure = .invalid([DocumentFailure(place: "", message: error.description)])
+            return
+        }
+        newParse()
+    }
+
     /// Puts the scene back as the host holds it: an undoable Revert on the same parse, or the
     /// host's document read afresh after a version was loaded.
     public func revert() {

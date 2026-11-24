@@ -29,6 +29,22 @@ public enum SceneSettingsTab: String, Sendable, CaseIterable, Identifiable {
     /// The block each of the scene's own settings the app knows is listed with, by key: the
     /// typeface heads the text sizes. Any other is on Other, by its name.
     static let settingBlocks = ["typeface": "type"]
+
+    /// A block's section title, since a block declares no label: its name, but for the blocks
+    /// whose names do not read as one: `glass` is the plates under the cards, `case` the letter
+    /// case of the text.
+    public static func title(ofBlock name: String) -> String {
+        blockTitles[name] ?? name.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    /// A card's name as the canvas labels it.
+    public static func title(ofCard kind: String) -> String {
+        kind.replacingOccurrences(of: "_", with: " ")
+    }
+
+    private static let blockTitles = [
+        "colors": "Colours", "type": "Text", "case": "Text Case", "glass": "Cards",
+    ]
 }
 
 extension SchemaFacts {

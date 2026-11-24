@@ -15,6 +15,14 @@ public struct SceneWrites {
         self.thumbnails = thumbnails
     }
 
+    /// The repair the scene `id` needs, by the host's schema, or nil where it needs none.
+    public func repair(of id: String) -> SceneRepair? {
+        guard let shape = scenes.facts?.shape,
+            let document = drafts.listing(scenes.scenes).first(where: { $0.id == id })
+        else { return nil }
+        return drafts.repair(of: document, shape: shape)
+    }
+
     /// Saves the scene `id`'s draft, on `overRev` where given, and answers the scene as stored,
     /// whose id is the host's for a copy's first save.
     public func save(_ id: String, overRev: Int? = nil) async throws(HostFailure) -> SceneDocument {

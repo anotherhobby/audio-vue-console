@@ -66,7 +66,14 @@ struct SceneEditorView: View {
         // moved the inspector's safe area each time it came and went, which left the settings
         // scrolled part-way under the top with no way back (maintainer, 2026-11-20).
         .safeAreaInset(edge: .top, spacing: 0) {
-            if let banner { EditorBanner(text: banner) }
+            VStack(spacing: 0) {
+                if let repair = session?.neededRepair {
+                    RepairBanner(repair: repair, editable: editor?.readOnly == nil) {
+                        session?.repair()
+                    }
+                }
+                if let banner { EditorBanner(text: banner) }
+            }
         }
         .inspector(isPresented: $showsInspector) {
             SceneInspector(editor: editor, document: document, scenes: scenes, input: input)

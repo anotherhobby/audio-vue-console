@@ -183,6 +183,18 @@ a ruling with no change yet). As of 2026-11-02; settings as of 2026-11-04, pairi
   create, write on `base_rev`, revert, delete); a listing entry names its `categories` and the
   `scenes` naming it; a style a stored scene names is not deleted; a write never changes the
   screen. Read the routes from the saved contract.
+- **A card's measurement choices are its own** (Ruled, maintainer 2026-11-22 and 2026-11-23; audio-vue
+  `rta-card-settings`, `rta-band-sets`, `rta-spectrogram`): a display choice must not restart a
+  measurement, and a band set, a held peak or a history is a request a card makes. `rta_bars` holds
+  `bands`, `weighting`, `hold_s`, `release` and `fall_db_s`; `spectrogram` (Spectrum, after
+  `rta_bars`) holds `bands`, `quantity` and `span_s`. Cards on one scene may differ. The scene's
+  `analysis:` block holds no RTA setting, so never group these under the scene. A scene write that
+  changes only a card's settings answers `analysis_changed: false` and keeps capture. `bands` and
+  `span_s` are integer choices with `x-choice-labels`, drawn as labelled pickers.
+- **The spectrogram's `palette` is a card setting, not a colour** (Ruled, maintainer 2026-11-23): an
+  ordinary choice of named colour maps whose tables the host holds. The export carries only the names.
+  It is no role, no `<role>_color`, no scene colour, and no style or scene look sets it. Keep it out of
+  the look and out of colour wells. A swatch per map would need swatch data, which is a request to audio-vue.
 - **Card categories** (Built, `card-categories`, archived 2026-11-08): the schema's root
   `x-categories` lists `{id, label, cards}` in display order, each `cards` in the panel's order and
   naming every card, placeable or not; each `card.<name>` also carries `x-category`. The app reads
@@ -274,7 +286,11 @@ The render helper's protocol is audio-vue's (`src/render_service.py`, its docstr
 `prepare`, `render` and `stimulus`, each a 4-byte big-endian length and JSON, layers' bytes after a
 render's answer. Since `scene-styles` a `render` takes `viewing` and `styles` (`{id: document}`,
 the stored styles the scene names; the bundle carries the built-in ones) and no `fonts` or
-`fallback`, and its answer adds `style_notice`, naming a style it was not given.
+`fallback`, and its answer adds `style_notice`, naming a style it was not given. A frame carries
+the band sets, held peaks and band-level histories its scene's cards ask for, and a run made under
+more requests serves a scene asking fewer. `prepare` warms only a default RTA card's requests. Any
+other band set, hold or spectrogram history costs one run of about a second the first time a scene
+asking for it renders, and is kept from then on (audio-vue `scene-render`, read 2026-11-23).
 Asks travel as handoff files in audio-vue's root (`working-notes.md`).
 
 ## Calibration (Built, audio-vue `calibration-from-the-app`, 2026-11-08)

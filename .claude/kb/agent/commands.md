@@ -98,3 +98,20 @@ Format:
   Edit and Write tools, so run this on any Swift file changed by a script or `sed`.
   `cd ConsoleCore && xcrun swift test --disable-xctest` - 796 tests in 102 suites after
   `park-cards`.
+
+- 2026-11-23: refreshing the schema fixture. From `../audio-vue`, `uv run python` with `src` on
+  `sys.path`: `json_schema()` from `schema.export`, its `x-categories` replaced by the fixture's
+  own, written with `json.dumps(indent=2)` plus a newline over
+  `ConsoleCore/Tests/ConsoleCoreTests/Fixtures/schema-trimmed.json`. `Fixtures/rta-scene.json` is
+  audio-vue's `scenes/rta.yaml` as `json.dumps(indent=1, sort_keys=True)` with no final newline.
+  After both: 799 tests passed, and `RENDER_HELPER_LIVE=1 ... --filter LiveHelperTests` passed.
+  `xcodebuild` failed with "database is locked" while Xcode had the project open. The Xcode MCP
+  `BuildProject` on the open workspace built it.
+
+- 2026-11-23: `--filter LiveRepairTests`, with the same two variables as `LiveHostTests`, in
+  `ConsoleCore/` (read only):
+  - It checks every scene on the host against its schema and prints what each needs.
+  - It times the gallery's pass. A full walk over 5 scenes took 5 ms in debug and 2 ms with
+    `-c release`. Held per scene by `SceneDrafts`, the pass took about 2 µs.
+  - On 2026-11-23 the built-ins passed, and Analytical, Primary and Tangarine Meters each needed
+    `rta_hold_s`, `rta_peak_fall_db_s` and `rta_weighting` removed from `analysis`.

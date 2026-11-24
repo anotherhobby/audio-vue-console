@@ -47,6 +47,7 @@ struct ScenesPage: View {
             SceneGallery(
                 scenes: store.drafts.listing(scenes.scenes), grid: grid,
                 aspect: Self.aspect(of: scenes), notice: renderer.verdict?.noCardsReason,
+                shape: scenes.facts?.shape ?? .none,
                 open: { path.append($0) },
                 rename: { id, name throws(HostFailure) in
                     try await store.writes(to: scenes).rename(id, to: name)

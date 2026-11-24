@@ -229,9 +229,9 @@ struct PanelScenesTests {
         #expect(body["base_rev"] == .integer(3))
     }
 
-    /// `scene-saving`, "A saved scene declares no grid size": a stored scene that holds `cols` and
-    /// `rows` is renamed without them, since the host refuses a scene that sets either.
-    @Test func aRenameDropsAStoredGridSize() async throws {
+    /// `scene-repair` (design D7): a rename writes the stored document as the host holds it,
+    /// changing nothing but its name, so a grid size it holds goes only by a repair.
+    @Test func aRenameWritesTheStoredDocumentAsHeld() async throws {
         var answers = Self.answers()
         answers[.scenes] = Self.listingWithMine
         let sized = FakeTransport.Answer.status(
@@ -246,7 +246,9 @@ struct PanelScenesTests {
         await transport.answer(.scene("u1"), with: Self.mine(rev: 4, name: "Studio"))
         _ = try await scenes.rename("u1", to: "Studio")
         let body = try Self.sent(await transport.requests(to: .writeScene("u1")).first)
-        #expect(body["doc"]?["grid"] == .object(["gap": .integer(2)]))
+        #expect(
+            body["doc"]?["grid"]
+                == .object(["gap": .integer(2), "cols": .integer(96), "rows": .integer(36)]))
     }
 
     @Test func aStaleRenameIsReadAgainAndWrittenOnce() async throws {

@@ -77,7 +77,7 @@ struct BlockSection: View {
             content
         } header: {
             VStack(alignment: .leading, spacing: SceneMetrics.settingSpacing) {
-                Text(Self.titles[block.name] ?? Self.title(block.name))
+                Text(SceneSettingsTab.title(ofBlock: block.name))
                 if let description = Self.descriptions[block.name] {
                     Text(description).font(.caption).foregroundStyle(.secondary)
                 }
@@ -120,17 +120,6 @@ struct BlockSection: View {
         "type": "The typeface, and the size of each kind of text.",
         "case": "How each kind of text is written. Units, numbers and symbols keep their case.",
     ]
-
-    /// The titles of the blocks whose names do not read as one: `glass` is the plates under the
-    /// cards, `case` the letter case of the text.
-    private static let titles = [
-        "colors": "Colours", "type": "Text", "case": "Text Case", "glass": "Cards",
-    ]
-
-    /// A block's section title from its name, since a block declares no label.
-    static func title(_ name: String) -> String {
-        name.replacingOccurrences(of: "_", with: " ").capitalized
-    }
 }
 
 /// One setting of a scene block, read from the scene as edited and changed as one step of the

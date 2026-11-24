@@ -101,6 +101,42 @@ struct LiveGalleryTests {
     }
 }
 
+/// `scene-repair` against the real host, read but never written: every scene checked against its
+/// schema, what each needs printed for a reader, and the time the gallery's pass over them all
+/// takes once each is held (design D4).
+@MainActor
+@Suite(.enabled(if: LiveHost.isAsked))
+struct LiveRepairTests {
+    @Test func everySceneIsCheckedAndTheBuiltInsPass() async throws {
+        let host = try #require(LiveHost.host)
+        let folder = try #require(LiveHost.pairings)
+        let address = try #require(HostAddress(parsing: host))
+        let tokens = FileTokenStore(directory: URL(filePath: folder))
+        let token = try #require(tokens.pairing(at: address), "No pairing for the host").token
+        let client = HostClient()
+        let shape = SceneShape(schema: try await client.schema(at: address, token: token))
+        var scenes: [SceneDocument] = []
+        for summary in try await client.scenes(at: address, token: token) where !summary.fixed {
+            scenes.append(try await client.scene(summary.id, at: address, token: token))
+        }
+        let drafts = SceneDrafts()
+        let clock = ContinuousClock()
+        let walk = clock.measure { _ = scenes.map { shape.repair(of: $0.doc) } }
+        _ = scenes.map { drafts.repair(of: $0, shape: shape) }
+        let start = clock.now
+        let repairs = scenes.map { drafts.repair(of: $0, shape: shape) }
+        let pass = clock.now - start
+        print("One walk over every scene: \(walk)")
+        for (scene, repair) in zip(scenes, repairs) {
+            let needs = repair.map { $0.canRepair ? $0.lines : ["cannot be repaired"] } ?? []
+            print("\(scene.name ?? scene.id)\(scene.builtIn ? " (built in)" : ""): \(needs)")
+        }
+        print("One pass over \(scenes.count) scenes: \(pass)")
+        #expect(scenes.filter(\.builtIn).allSatisfy { shape.repair(of: $0.doc) == nil })
+        #expect(pass < .milliseconds(1))
+    }
+}
+
 /// The host the run asked for, by the environment.
 private enum LiveHost {
     static let host = ProcessInfo.processInfo.environment["AUDIO_VUE_LIVE_HOST"]

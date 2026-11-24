@@ -89,6 +89,6 @@ struct SceneInspector: View {
     }
 
     private static func title(_ card: LayoutCard) -> String {
-        card.kind.replacingOccurrences(of: "_", with: " ")
+        SceneSettingsTab.title(ofCard: card.kind)
     }
 }

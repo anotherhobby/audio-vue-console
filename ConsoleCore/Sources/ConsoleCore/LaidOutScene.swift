@@ -57,37 +57,17 @@ public struct LaidOutScene: Sendable, Equatable {
             entries: Dictionary(uniqueKeysWithValues: layout.cards.map { ($0.id, entry(for: $0)) }))
     }
 
-    /// The scene as read: its layout and its blocks, the grid block without a size, which the
-    /// host no longer takes (`scene-saving`, "A saved scene declares no grid size").
+    /// The scene as read: its layout and its blocks, each as the document holds it. A key the
+    /// host no longer takes, such as a grid size, stays until the scene is repaired
+    /// (`scene-repair`).
     public var content: SceneContent {
-        var blocks = SceneContent.blocks(of: document.doc)
-        Self.dropGridSize(from: &blocks)
-        return SceneContent(layout: layout, blocks: blocks)
-    }
-
-    /// Whether the document as stored sets a grid size, so the host refuses it until it is saved
-    /// again without one.
-    public var declaresGridSize: Bool {
-        Self.gridSize.contains { document.doc[Self.gridBlock]?[$0] != nil }
-    }
-
-    private static let gridBlock = "grid"
-    private static let gridSize = ["cols", "rows"]
-
-    /// Removes the grid's `cols` and `rows` from a scene's blocks, the grid block dropped when nothing
-    /// else is left in it: the host refuses a scene that sets either (`scene-saving`, "A saved scene
-    /// declares no grid size").
-    static func dropGridSize(from fields: inout [String: JSONValue]) {
-        guard var grid = fields[gridBlock]?.objectValue else { return }
-        for key in gridSize { grid[key] = nil }
-        fields[gridBlock] = grid.isEmpty ? nil : .object(grid)
+        SceneContent(layout: layout, blocks: SceneContent.blocks(of: document.doc))
     }
 
     /// The document's `doc` with its blocks as `content` holds them and its cards as its layout
     /// places them, in its order: each card's original entry with its cells, group and `params`
     /// replaced, and a new card's entry those alone. A card with no settings is written with no
-    /// `params`. No grid size is written: the grid is the panel's (`scene-saving`, "A saved scene
-    /// declares no grid size").
+    /// `params`.
     public func doc(for content: SceneContent) -> JSONValue {
         var fields = content.blocks
         fields["name"] = document.doc["name"]
