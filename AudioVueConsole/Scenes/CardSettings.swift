@@ -1,9 +1,16 @@
 import ConsoleCore
 import SwiftUI
 
+/// What a settings list changes: the scene's cards, or the setup of a library card, by name
+/// (`library-setup`, design D6).
+enum CardSettingsTarget: Equatable {
+    case cards
+    case library(String)
+}
+
 /// The settings `declared` for `cards`, one row each in declared order, the colours together
 /// under Colours, closed until opened: each row reads every card and a change sets it on them all
-/// (`card-settings`).
+/// (`card-settings`), or on the library card's setup the list is for.
 struct CardSettingsList: View {
     let declared: SettingGroup
     let cards: [LayoutCard]
@@ -12,6 +19,7 @@ struct CardSettingsList: View {
     /// The scene's colours and the settings its colours block declares.
     let scene: SceneLook
     let editor: SceneEditor
+    var target = CardSettingsTarget.cards
 
     var body: some View {
         ForEach(declared.settings.filter { !Self.isColour($0) }) { rowView($0) }
@@ -78,14 +86,35 @@ struct CardSettingsList: View {
             })
     }
 
-    /// The row's changes as editor steps on these cards, or nil where the scene is read-only.
+    /// The row's changes, or nil where the scene is read-only and the list is for its cards.
     private func edit(_ declaration: SettingDeclaration) -> SettingEdit? {
-        guard editor.readOnly == nil else { return nil }
-        let (ids, key, label) = (Set(cards.map(\.id)), declaration.key, declaration.label)
-        return SettingEdit(
-            set: { [editor] in editor.set(key, to: $0, label: label, on: ids) },
-            useDefault: { [editor] in editor.useDefault(key, label: label, on: ids) })
+        writes(declaration).map { SettingEdit(set: $0.set, useDefault: $0.useDefault) }
     }
+
+    /// One setting's writes on the list's target: editor steps on these cards, or changes to the
+    /// library card's setup, which a read-only scene's library takes too.
+    private func writes(_ declaration: SettingDeclaration) -> SettingWrites? {
+        let (key, label) = (declaration.key, declaration.label)
+        if case .library(let name) = target {
+            return SettingWrites(
+                set: { [editor] in editor.setSetup(key, to: $0, on: name) },
+                useDefault: { [editor] in editor.unsetSetup(key, on: name) },
+                change: { [editor] in editor.editSetup(key, on: name, $0) })
+        }
+        guard editor.readOnly == nil else { return nil }
+        let ids = Set(cards.map(\.id))
+        return SettingWrites(
+            set: { [editor] in editor.set(key, to: $0, label: label, on: ids) },
+            useDefault: { [editor] in editor.useDefault(key, label: label, on: ids) },
+            change: { [editor] in editor.editSetting(key, label: label, on: ids, $0) })
+    }
+}
+
+/// One setting's writes: set a value, use the default, or change each holder's own value.
+private struct SettingWrites {
+    let set: (JSONValue) -> Void
+    let useDefault: () -> Void
+    let change: ((JSONValue?) -> JSONValue?) -> Void
 }
 
 /// Writes one key's span of a keyed block on the cards, each card's own block taking the span
@@ -94,10 +123,9 @@ extension CardSettingsList {
     fileprivate func blockEdit(
         _ declaration: SettingDeclaration, _ block: KeyedBlock
     ) -> ((String, KeyedBlock.Span) -> Void)? {
-        guard editor.readOnly == nil else { return nil }
-        let (ids, key, label) = (Set(cards.map(\.id)), declaration.key, declaration.label)
-        return { [editor] name, span in
-            editor.editSetting(key, label: label, on: ids) { current in
+        guard let writes = writes(declaration) else { return nil }
+        return { name, span in
+            writes.change { current in
                 switch block.edit(
                     current, key: name, lo: span.lo, hi: span.hi, anchor: span.anchor)
                 {

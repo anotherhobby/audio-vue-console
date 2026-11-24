@@ -55,7 +55,9 @@ struct ScenesPage: View {
                 delete: { id throws(HostFailure) in
                     path.removeAll { $0 == id }
                     try await store.writes(to: scenes).delete(id)
-                })
+                },
+                session: { SceneSession(id: $0, writes: store.writes(to: scenes)) },
+                onScreen: live?.state?.sceneSpec)
         } else if case .failed(let failure)? = scenes?.state {
             ContentUnavailableView(
                 "Can't Read the Panel's Scenes", systemImage: "exclamationmark.triangle",

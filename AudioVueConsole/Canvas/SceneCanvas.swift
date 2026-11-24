@@ -28,6 +28,10 @@ struct SceneCanvas: View {
     var rendering: SceneRendering?
     /// The scene's name above the panel, as the grid's size is below it.
     var title: SceneNameTitle?
+    /// The scene as read, which writes the cards Copy and Cut take (`card-clipboard`).
+    var laidOut: LaidOutScene?
+    /// The cards the panel's schema marks placeable, by name, which Paste keeps to.
+    var placeable: Set<String> = []
 
     @Environment(SceneStore.self) private var store
     @State private var gesture: CanvasGesture?
@@ -54,6 +58,11 @@ struct SceneCanvas: View {
             .onDeleteCommand { editor.deleteSelection() }
             .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { nudge($0) }
             .focusedSceneValue(\.sceneEditor, editor)
+            .modifier(
+                CanvasClipboard(
+                    editor: editor, laidOut: laidOut, reach: reach, panelCols: panelCols,
+                    placeable: placeable)
+            )
             // A resize draws its plate again at each cell step; everything else once it is committed,
             // and a refused gesture's plate as it was (`scene-rendering`).
             .onChange(of: drawnContent) { _, content in
@@ -68,6 +77,7 @@ struct SceneCanvas: View {
         ZStack {
             // Behind the column: a drag across the open pane draws a marquee there too.
             Color.clear.contentShape(Rectangle()).gesture(marquee(regionGeometry))
+            PaneGrid(geometry: pane.geometry(grid))
             CanvasStack(scale: scale) {
                 if let title { title.zIndex(1) }
                 display.layoutValue(key: CanvasStack.Display.self, value: true)
@@ -77,6 +87,14 @@ struct SceneCanvas: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .coordinateSpace(.named(Self.paneSpace))
+        // The whole pane takes library drops: on the panel they land on it, off it they park
+        // (`card-parking`, design D10).
+        .onDrop(
+            of: [.plainText],
+            delegate: CanvasDropDelegate(
+                editor: editor, geometry: pane.geometry(grid), reach: reach, store: store,
+                sizeOf: sizeOf, gesture: $gesture)
+        )
         .onGeometryChange(for: CGSize.self) {
             $0.size
         } action: {
@@ -158,14 +176,9 @@ struct SceneCanvas: View {
             if let card = editor.resizableCard {
                 CanvasHandles(
                     card: card, rect: geometry.rect(of: shownCells(of: card)),
-                    geometry: geometry, editor: editor, gesture: $gesture)
+                    geometry: geometry, reach: reach, editor: editor, gesture: $gesture)
             }
         }
-        .onDrop(
-            of: [.plainText],
-            delegate: CanvasDropDelegate(
-                editor: editor, geometry: geometry, store: store, sizeOf: sizeOf,
-                gesture: $gesture))
     }
 
     /// The cells past the panel's last column.
@@ -300,13 +313,12 @@ struct SceneCanvas: View {
     // MARK: What a gesture shows
 
     private var preview: Result<SceneContent, LayoutRefusal>? {
-        let content = editor.content
-        return switch gesture {
+        switch gesture {
         case .moving(let offset): editor.previewDrag(by: offset, within: reach)
         case .resizing(let id, let edges, let offset):
-            editor.previewResize(id, edges: edges, by: offset).map(content.with(layout:))
+            editor.previewResize(id, edges: edges, by: offset, within: reach)
         case .dropping(let kind, let size, let cell):
-            editor.previewDrop(kind: kind, size: size, at: cell).map(content.with(layout:))
+            editor.previewDrop(kind: kind, size: size, at: cell, within: reach)
         case .marquee, nil: nil
         }
     }
@@ -337,8 +349,8 @@ struct SceneCanvas: View {
     private func outlineRects(_ geometry: GridGeometry) -> [CGRect] {
         let cells: [CellRect] =
             switch (gesture, preview) {
-            case (.dropping(_, let size, let cell), _):
-                [editor.layout.placement(of: size, centredOn: cell)].compactMap(\.self)
+            case (.dropping(_, let size, let cell), let shown):
+                [CanvasDropDelegate.outline(of: size, at: cell, in: editor, shown: shown)]
             case (.moving(let offset), .failure):
                 editor.selectedCards.map { $0.cells.offset(by: offset) }
             default:

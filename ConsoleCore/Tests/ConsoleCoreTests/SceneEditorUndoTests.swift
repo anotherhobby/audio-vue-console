@@ -30,15 +30,17 @@ import Testing
 
     @Test func eachEditIsNamed() throws {
         editor.select(left.id)
-        editor.resize(left.id, edges: .bottom, by: CellOffset(cols: 0, rows: 2))
+        editor.resize(left.id, edges: .bottom, by: CellOffset(cols: 0, rows: 2), within: testPane)
         #expect(manager.undoActionName == "Resize")
-        editor.resize(left.id, edges: .bottom, by: CellOffset(cols: 0, rows: -2))
+        editor.resize(left.id, edges: .bottom, by: CellOffset(cols: 0, rows: -2), within: testPane)
         editor.toggle(right.id)
         editor.group()
         #expect(manager.undoActionName == "Group")
         editor.ungroup()
         #expect(manager.undoActionName == "Ungroup")
-        editor.drop(kind: "meter", size: CellSize(cols: 2, rows: 2), at: Cell(col: 30, row: 20))
+        editor.drop(
+            kind: "meter", size: CellSize(cols: 2, rows: 2), at: Cell(col: 30, row: 20),
+            within: testPane)
         #expect(manager.undoActionName == "Add Card")
         editor.deleteSelection()
         #expect(manager.undoActionName == "Delete")

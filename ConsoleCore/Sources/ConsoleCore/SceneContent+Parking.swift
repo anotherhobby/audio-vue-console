@@ -39,6 +39,106 @@ extension SceneContent {
         return nudged
     }
 
+    /// `card`, new, dropped from the library centred on `cell`: added on the grid, kept within
+    /// it, where `cell` is on the grid, and parked where it is off (`card-parking`, "A library card
+    /// dropped off the panel is parked"). `card`'s cells give only its size.
+    public func dropping(_ card: LayoutCard, at cell: Cell, within reach: CellRect)
+        throws(LayoutRefusal) -> SceneContent
+    {
+        guard layout.bounds.contains(CellRect(col: cell.col, row: cell.row, cols: 1, rows: 1))
+        else { return try droppingOff(card, centredOn: cell, within: reach) }
+        return with(layout: try layout.adding(card, centredOn: cell))
+    }
+
+    /// `card` parked centred on `cell`, kept to `reach`, and pushed wholly off the grid across the
+    /// edge it crosses by the least that clears it, as a dragged block is. Refused on a parked card,
+    /// or where the pane has no room beyond the edge.
+    private func droppingOff(_ card: LayoutCard, centredOn cell: Cell, within reach: CellRect)
+        throws(LayoutRefusal) -> SceneContent
+    {
+        let size = card.cells
+        let centred = CellRect(
+            col: cell.col - size.cols / 2, row: cell.row - size.rows / 2, cols: size.cols,
+            rows: size.rows)
+        let kept = centred.kept(within: reach)
+        if layout.bounds.contains(kept) { throw .noRoomOffPanel }
+        let cells = kept.intersects(layout.bounds) ? try pushedOff(kept, within: reach) : kept
+        if parked.contains(where: { $0.cells.intersects(cells) }) { throw .spaceTaken }
+        var dropped = self
+        var placed = card
+        placed.cells = cells
+        dropped.parked.append(placed)
+        return dropped
+    }
+
+    /// The card `id` with `edges` dragged by `offset`, stopping at `minimum`: on the grid as
+    /// `SceneLayout.resizing` resizes it, parked within `reach`, the pane in cells (`card-parking`,
+    /// design D11).
+    public func resizing(
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize,
+        within reach: CellRect
+    ) throws(LayoutRefusal) -> SceneContent {
+        guard layout.card(id) == nil else {
+            return with(
+                layout: try layout.resizing(id, edges: edges, by: offset, minimum: minimum))
+        }
+        return try resizingParked(id, edges: edges, by: offset, minimum: minimum, within: reach)
+    }
+
+    /// The cards `ids` reach made one new group, on the grid as `SceneLayout.grouping` groups
+    /// them, or parked by the same rules. Refused for cards on both sides of the panel's edge,
+    /// since a group is wholly on the panel or wholly off it (`card-parking`, design D11).
+    public func grouping(_ ids: Set<UUID>) throws(LayoutRefusal) -> SceneContent {
+        let chosen = widened(ids)
+        let onGrid = layout.cards.contains { chosen.contains($0.id) }
+        let off = parked.contains { chosen.contains($0.id) }
+        if onGrid && off { throw .acrossPanelEdge }
+        return off ? try groupingParked(chosen) : with(layout: try layout.grouping(chosen))
+    }
+
+    /// The parked cards `chosen` made one new group: refused unless they are two or more, not
+    /// already one group, and tile a rectangle with no other parked card inside it.
+    private func groupingParked(_ chosen: Set<UUID>) throws(LayoutRefusal) -> SceneContent {
+        let members = parked.filter { chosen.contains($0.id) }
+        guard members.count > 1 else { throw .tooFewCards }
+        let replaced = Set(members.compactMap(\.group))
+        if replaced.count == 1, members.allSatisfy({ $0.group != nil }) { throw .alreadyAGroup }
+        if let refusal = SceneLayout.tilingRefusal(members, among: parked) { throw refusal }
+        let name = Self.groupName(notIn: Set(cards.compactMap(\.group)).subtracting(replaced))
+        var grouped = self
+        for index in grouped.parked.indices where chosen.contains(grouped.parked[index].id) {
+            grouped.parked[index].group = name
+        }
+        return grouped
+    }
+
+    /// The parked card `id` with `edges` dragged by `offset`, as `SceneLayout.resizing` resizes a
+    /// card on the grid: the horizontal edge first, then the vertical, each stopping at `reach`, the
+    /// pane in cells, at any other parked card in its path, at the grid, so a resize never takes
+    /// it onto the panel, and at `minimum` (`card-parking`, "A parked card resizes within the
+    /// pane").
+    private func resizingParked(
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize,
+        within reach: CellRect
+    ) throws(LayoutRefusal) -> SceneContent {
+        guard let index = parked.firstIndex(where: { $0.id == id }) else { return self }
+        guard parked[index].group == nil else { throw .cardIsGrouped }
+        let cells = parked[index].cells
+        let others = parked.filter { $0.id != id }.map(\.cells) + [layout.bounds]
+        // The pane widened to the card, so a pane that shrank past it never empties a range.
+        let across = cells.resizedAcross(
+            edges: edges, by: offset.cols,
+            within: min(reach.col, cells.col)...max(reach.maxCol, cells.maxCol),
+            avoiding: others, atLeast: minimum.cols)
+        let down = across.transposed.resizedAcross(
+            edges: edges.transposed, by: offset.rows,
+            within: min(reach.row, cells.row)...max(reach.maxRow, cells.maxRow),
+            avoiding: others.map(\.transposed), atLeast: minimum.rows)
+        var resized = self
+        resized.parked[index].cells = down.transposed
+        return resized
+    }
+
     // MARK: Edits to every card
 
     /// The cards `ids`, and no others of their groups, setting `key` to `value`.
@@ -72,6 +172,7 @@ extension SceneContent {
         let chosen = widened(ids)
         var removed = with(layout: layout.removing(chosen))
         removed.parked = parked.filter { !chosen.contains($0.id) }
+        removed.entries = entries.filter { !chosen.contains($0.key) }
         return removed
     }
 

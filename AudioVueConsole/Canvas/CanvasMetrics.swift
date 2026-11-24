@@ -22,6 +22,9 @@ enum CanvasMetrics {
     nonisolated static let stackSpacing: CGFloat = 8
     /// The least change of the panel's scale worth laying the canvas out again for.
     static let fitTolerance: CGFloat = 0.001
+    /// The pane's grid around the panel: thin lines kept light whatever colour is chosen.
+    static let paneGridLineWidth: CGFloat = 1
+    static let paneGridOpacity: Double = 0.25
     static let bezelWidth: CGFloat = 10
     static let bezelCornerRadius: CGFloat = 14
     static let selectionLineWidth: CGFloat = 2

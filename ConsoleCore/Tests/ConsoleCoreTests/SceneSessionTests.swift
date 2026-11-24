@@ -74,7 +74,7 @@ struct SceneSessionTests {
         let last = try #require(
             editor.layout.cards.max { $0.cells.maxCol < $1.cells.maxCol })
         editor.select(last.id)
-        editor.resize(last.id, edges: .right, by: CellOffset(cols: -1, rows: 0))
+        editor.resize(last.id, edges: .right, by: CellOffset(cols: -1, rows: 0), within: testPane)
         #expect(!session.isTooWide && session.canApply && session.canSave)
     }
 
@@ -150,6 +150,25 @@ struct SceneSessionTests {
         #expect(await opened.session.apply() == "u1")
         let result = SwitchResult(capture: .rebuilt, why: "deeper history", recorded: false)
         #expect(opened.session.note == EditorNote(kind: .apply, result: .success(.done(result))))
+    }
+
+    /// `scene-apply`, "The gallery's Apply is the editor's": a session the gallery makes has no
+    /// editor, yet saves an unsaved draft and then switches.
+    @Test func aSessionWithNoEditorSavesThenApplies() async throws {
+        let (scenes, transport) = try await PanelScenesTests.loadedWithMine()
+        let writes = SceneWrites(
+            scenes: scenes, drafts: SceneDrafts(), thumbnails: SceneThumbnails())
+        _ = try PanelScenesTests.movedDraft("u1", in: scenes, drafts: writes.drafts)
+        let session = SceneSession(id: "u1", writes: writes)
+        #expect(session.isUnsaved && session.canApply && !session.canSave)
+        await transport.answer(.writeScene("u1"), with: .status(200, PanelScenesTests.written))
+        await transport.answer(.scene("u1"), with: PanelScenesTests.mine(rev: 4, col: 10))
+        await transport.answer(.switchScene, with: .status(200, #"{"status": "done"}"#))
+        #expect(await session.apply() == "u1")
+        #expect(await transport.requests(to: .writeScene("u1")).count == 1)
+        #expect(await transport.requests(to: .switchScene).count == 1)
+        #expect(!session.isUnsaved)
+        #expect(session.note == EditorNote(kind: .apply, result: .success(.done(nil))))
     }
 
     @Test func aResetsOutcomeIsNoted() async throws {

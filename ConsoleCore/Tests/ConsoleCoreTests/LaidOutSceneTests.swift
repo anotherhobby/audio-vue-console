@@ -196,9 +196,62 @@ struct LaidOutSceneTests {
         let laid = try Self.rta()
         let document = SceneDocument(
             id: "copy", name: "Copy", builtIn: false, fixed: false, doc: laid.document.doc)
-        let copied = laid.copy(laid.layout, as: document)
+        let copied = laid.copy(laid.content, as: document)
         #expect(copied.layout.cards.first?.settings == laid.layout.cards.first?.settings)
         #expect(copied.doc(for: copied.layout)["cards"] == laid.document.doc["cards"])
+    }
+
+    /// An empty scene, and its content holding one pasted card with an entry from another scene.
+    private struct Pasted {
+        let laid: LaidOutScene
+        let content: SceneContent
+        let id: UUID
+    }
+
+    private static func pasted() throws -> Pasted {
+        let laid = try LaidOutScene(Self.scene(#"{"cards": []}"#), panel: Self.defaults)
+        let card = LayoutCard(
+            kind: "meter", cells: CellRect(col: 2, row: 3, cols: 8, rows: 6),
+            settings: ["floor_db": .integer(-60)])
+        let entry: JSONValue = .object([
+            "card": .string("meter"), "col": .integer(40), "row": .integer(20),
+            "plate": .string("#123456"), "params": .object(["floor_db": .integer(-60)]),
+        ])
+        let layout = try SceneLayout(grid: laid.layout.grid, cards: [card])
+        let content = SceneContent(layout: layout, entries: [card.id: entry])
+        return Pasted(laid: laid, content: content, id: card.id)
+    }
+
+    /// `card-clipboard` design D2: a pasted card is written with its source entry's fields and
+    /// its own cells.
+    @Test func aPastedCardKeepsItsEntryFields() throws {
+        let pasted = try Self.pasted()
+        let entry = try #require(pasted.laid.doc(for: pasted.content)["cards"]?.arrayValue?.first)
+        #expect(entry["plate"] == .string("#123456"))
+        #expect(entry["col"] == .integer(2) && entry["row"] == .integer(3))
+        #expect(entry["params"]?["floor_db"] == .integer(-60))
+    }
+
+    @Test func aPastedCardKeepsItsEntryWhenMoved() throws {
+        let pasted = try Self.pasted()
+        let moved = pasted.content.with(
+            layout: try pasted.content.layout.moving([pasted.id], by: CellOffset(cols: 5, rows: 0)))
+        let entry = try #require(pasted.laid.doc(for: moved)["cards"]?.arrayValue?.first)
+        #expect(entry["plate"] == .string("#123456") && entry["col"] == .integer(7))
+    }
+
+    @Test func aCopyKeepsAPastedCardsEntry() throws {
+        let pasted = try Self.pasted()
+        let document = SceneDocument(
+            id: "copy", name: "Copy", builtIn: false, fixed: false, doc: pasted.laid.document.doc)
+        let copied = pasted.laid.copy(pasted.content, as: document)
+        let entry = try #require(copied.doc(for: copied.layout)["cards"]?.arrayValue?.first)
+        #expect(entry["plate"] == .string("#123456"))
+    }
+
+    @Test func aRemovedPastedCardDropsItsEntry() throws {
+        let pasted = try Self.pasted()
+        #expect(pasted.content.removing([pasted.id]).entries.isEmpty)
     }
 
     @Test func paramsThatAreNotAnObject() throws {

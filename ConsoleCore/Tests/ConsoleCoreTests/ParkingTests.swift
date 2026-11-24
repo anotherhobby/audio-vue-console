@@ -51,8 +51,8 @@ struct ParkingTests {
             LayoutRefusal.dragToCross.description
                 == "Drag a card to move it onto or off the panel.")
         #expect(
-            LayoutRefusal.parkedCannotGroup.description
-                == "Move these cards onto the panel to group them.")
+            LayoutRefusal.acrossPanelEdge.description
+                == "A group is wholly on the panel or wholly off it.")
     }
 
     // MARK: Parking

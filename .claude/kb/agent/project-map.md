@@ -128,6 +128,10 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   2026-11-22) are drawn and handled in the region's own cells off its grid, since nothing clips
   the region; `CanvasStack` (with `PaneFrame`) stacks title, panel and footer and shrinks the panel
   to keep parked cards in view; `CanvasOutlines.swift` holds the outlines and `ParkedBoxes`.
+  `CanvasClipboard` is the canvas's Copy, Cut and Paste, and `PaneGrid` the light grid across the
+  pane with its Grid-button colour, `@AppStorage` `paneGridColour` (`editor-conveniences`, 2026-11-24).
+  `CanvasDropDelegate` sits on the whole pane, not the region: a library drop over the panel lands on
+  it, one off it parks (`SceneContent.dropping`).
 - `ConsoleCore/`: the local Swift package holding the app's logic (`Sources/ConsoleCore`) and its
   Swift Testing suite (`Tests/ConsoleCoreTests`). Tools 6.2, Swift 6 mode, macOS 27.2, warnings as
   errors. It must not import SwiftUI or AppKit.
@@ -139,6 +143,8 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   Since `park-cards` (2026-11-22) it also holds `parked`, cards set aside off the grid, never
   written or drawn as the scene; `SceneContent+Parking` holds the drag, nudge and every-card edits,
   `ParkedPlates` their layers for `SceneRendering`, and `ParkingText` the wording;
+  `CardClipboard` (`CopiedCards`) is what Copy puts on the pasteboard, `SceneContent+Pasting` where a
+  paste lands, and `SceneEditor+Clipboard` the Cut and Paste steps (`editor-conveniences`);
   `BackdropSource`, `SceneColours` (roles, scales, the colour lookup) and
   `CalibrationCoverage` are its pure parts, and `HostClient+Images` lists and uploads images.
   Its host side (`panel-client`, 2026-11-05): the `HostAPI` target holds `openapi.json`, the host

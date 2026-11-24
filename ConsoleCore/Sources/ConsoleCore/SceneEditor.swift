@@ -76,17 +76,23 @@ public final class SceneEditor {
         content.cards.filter { selection.contains($0.id) }
     }
 
-    /// The selected card when it alone is selected, lies on the grid, belongs to no group and the
-    /// scene can be edited: the one card that shows resize handles.
+    /// The selected card when it alone is selected, on the grid or parked, belongs to no group and
+    /// the scene can be edited: the one card that shows resize handles.
     public var resizableCard: LayoutCard? {
         guard readOnly == nil, selection.count == 1, let card = selectedCards.first,
-            card.group == nil, layout.card(card.id) != nil
+            card.group == nil
         else { return nil }
         return card
     }
 
     /// Whether any card is parked off the panel (`card-parking`).
     public var hasParked: Bool { !content.parked.isEmpty }
+
+    /// The library card selected in place of the canvas's selection, by name (`library-setup`).
+    public internal(set) var libraryCard: String?
+    /// Each library card's setup by name: the settings a card dropped from the library takes. Not
+    /// part of the scene, so outside undo, and gone with the editor (`library-setup`, design D5).
+    public internal(set) var setups: [String: [String: JSONValue]] = [:]
 
     // MARK: Previews, which commit nothing
 
@@ -100,30 +106,33 @@ public final class SceneEditor {
         }
     }
 
-    public func previewResize(_ id: UUID, edges: CardEdges, by offset: CellOffset)
-        -> Result<SceneLayout, LayoutRefusal>
-    {
+    /// The scene as resizing the card `id` would leave it, a parked one kept to `reach`, the pane
+    /// in cells.
+    public func previewResize(
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, within reach: CellRect
+    ) -> Result<SceneContent, LayoutRefusal> {
         preview { () throws(LayoutRefusal) in
-            try layout.resizing(id, edges: edges, by: offset, minimum: minimum(of: id))
+            try content.resizing(
+                id, edges: edges, by: offset, minimum: minimum(of: id), within: reach)
         }
     }
 
-    public func previewDrop(kind: String, size: CellSize, at cell: Cell)
-        -> Result<SceneLayout, LayoutRefusal>
+    /// The scene as dropping a library card of `kind` and `size` centred on `cell` would leave it:
+    /// on the grid where `cell` is on it, parked within `reach`, the pane in cells, where it is off
+    /// (`card-parking`, design D10).
+    public func previewDrop(kind: String, size: CellSize, at cell: Cell, within reach: CellRect)
+        -> Result<SceneContent, LayoutRefusal>
     {
         preview { () throws(LayoutRefusal) in
-            try layout.adding(kind: kind, size: size, centredOn: cell)
+            try content.dropping(dropped(kind, size), at: cell, within: reach)
         }
     }
 
     /// Why the selection cannot be grouped, or nil when it can.
     public var groupRefusal: LayoutRefusal? {
         if let readOnly { return .readOnly(readOnly) }
-        if content.parked.contains(where: { selection.contains($0.id) }) {
-            return .parkedCannotGroup
-        }
         do {
-            _ = try layout.grouping(selection)
+            _ = try content.grouping(selection)
             return nil
         } catch {
             return error
@@ -152,28 +161,41 @@ public final class SceneEditor {
         }
     }
 
-    public func resize(_ id: UUID, edges: CardEdges, by offset: CellOffset) {
-        commit("Resize") { () throws(LayoutRefusal) in
-            try layout.resizing(id, edges: edges, by: offset, minimum: minimum(of: id))
+    /// The card `id` resized, on the grid or parked within `reach`, as one step named Resize.
+    public func resize(
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, within reach: CellRect
+    ) {
+        commitContent("Resize") { () throws(LayoutRefusal) in
+            try content.resizing(
+                id, edges: edges, by: offset, minimum: minimum(of: id), within: reach)
         }
     }
 
-    /// The minimum of the card `id`, by its kind.
+    /// The minimum of the card `id`, on the grid or parked, by its kind.
     private func minimum(of id: UUID) -> CellSize {
-        layout.card(id).flatMap { minimums[$0.kind] } ?? .oneCell
+        content.card(id).flatMap { minimums[$0.kind] } ?? .oneCell
     }
 
-    /// A card of `kind` added centred on `cell`, and selected.
-    public func drop(kind: String, size: CellSize, at cell: Cell) {
-        let before = layout
-        commit("Add Card") { () throws(LayoutRefusal) in
-            try layout.adding(kind: kind, size: size, centredOn: cell)
+    /// A card of `kind` added centred on `cell`, on the grid or parked within `reach` as
+    /// `previewDrop` shows, with its library setup as it stands, and selected (`library-setup`,
+    /// "A dropped card takes its library setup").
+    public func drop(kind: String, size: CellSize, at cell: Cell, within reach: CellRect) {
+        let card = dropped(kind, size)
+        commitContent("Add Card", selecting: [card.id]) { () throws(LayoutRefusal) in
+            try content.dropping(card, at: cell, within: reach)
         }
-        if layout != before, let added = layout.cards.last { selection = [added.id] }
     }
 
+    /// A new card of `kind` at `size`, with its library setup: what a drop adds.
+    private func dropped(_ kind: String, _ size: CellSize) -> LayoutCard {
+        LayoutCard(
+            kind: kind, cells: CellRect(col: 0, row: 0, cols: size.cols, rows: size.rows),
+            settings: setups[kind] ?? [:])
+    }
+
+    /// The selection made one group, on the grid or parked (`card-parking`, design D11).
     public func group() {
-        commit("Group") { () throws(LayoutRefusal) in try layout.grouping(selection) }
+        commitContent("Group") { () throws(LayoutRefusal) in try content.grouping(selection) }
     }
 
     public func ungroup() {
@@ -258,60 +280,6 @@ public final class SceneEditor {
 
     private static let backdrop = "backdrop"
 
-    /// Sets the scene block `block`'s setting `key`, declared as `label`, to `value`
-    /// (`scene-settings`, design D2).
-    public func setBlock(_ block: String, _ key: String, to value: JSONValue, label: String) {
-        var fields = content.blocks[block]?.objectValue ?? [:]
-        fields[key] = value
-        replace(block: block, with: fields, label: label)
-    }
-
-    /// Leaves the scene block `block`'s setting `key`, declared as `label`, unset, so the scene
-    /// takes its default. A block left with no settings is removed.
-    public func useDefault(block: String, key: String, label: String) {
-        var fields = content.blocks[block]?.objectValue ?? [:]
-        fields[key] = nil
-        commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
-            blocks(content, with: block, as: fields)
-        }
-    }
-
-    /// Sets the scene's own setting `key`, one outside any block such as its typeface, declared
-    /// as `label`, to `value`.
-    public func setScene(_ key: String, to value: JSONValue, label: String) {
-        commitContent("Change \(label)") { () throws(LayoutRefusal) in
-            var edited = content
-            edited.blocks[key] = value
-            return edited
-        }
-    }
-
-    /// Leaves the scene's own setting `key`, declared as `label`, unset.
-    public func useDefault(scene key: String, label: String) {
-        commitContent("Use Default for \(label)") { () throws(LayoutRefusal) in
-            var edited = content
-            edited.blocks[key] = nil
-            return edited
-        }
-    }
-
-    /// Replaces the whole scene block `block` with `fields`, as one step named for `label`, as a
-    /// backdrop's change of source is (design D3). Empty `fields` remove the block.
-    public func replace(block: String, with fields: [String: JSONValue], label: String) {
-        commitContent("Change \(label)") { () throws(LayoutRefusal) in
-            blocks(content, with: block, as: fields)
-        }
-    }
-
-    /// `content` with the block `block` holding `fields`, or without it where they are empty.
-    private func blocks(_ content: SceneContent, with block: String, as fields: [String: JSONValue])
-        -> SceneContent
-    {
-        var edited = content
-        edited.blocks[block] = fields.isEmpty ? nil : .object(fields)
-        return edited
-    }
-
     /// Puts the scene back at `content`, as the host holds it, as one undoable step named Revert
     /// (`scene-saving`, "Revert discards unsaved edits"). `content` is of this editor's parse.
     public func revert(to content: SceneContent) {
@@ -334,8 +302,10 @@ public final class SceneEditor {
 
     // MARK: Committing and undo
 
+    /// Selects `ids`, which leaves no library card selected.
     private func setSelection(_ ids: Set<UUID>) {
         selection = ids
+        libraryCard = nil
         refusal = nil
     }
 
@@ -350,14 +320,13 @@ public final class SceneEditor {
         }
     }
 
-    /// Applies `edit`, a layout edit, as one undoable step named `name` that keeps the blocks.
-    private func commit(_ name: String, _ edit: () throws(LayoutRefusal) -> SceneLayout) {
-        commitContent(name) { () throws(LayoutRefusal) in content.with(layout: try edit()) }
-    }
-
     /// Applies `edit` as one undoable step named `name`, or records its refusal. An edit that
-    /// changes nothing adds no step.
-    private func commitContent(_ name: String, _ edit: () throws(LayoutRefusal) -> SceneContent) {
+    /// changes nothing adds no step. A made edit selects `selecting`, else what is left of the
+    /// selection.
+    func commitContent(
+        _ name: String, selecting: Set<UUID>? = nil,
+        _ edit: () throws(LayoutRefusal) -> SceneContent
+    ) {
         switch preview(edit) {
         case .failure(let error):
             refusal = error
@@ -366,7 +335,7 @@ public final class SceneEditor {
         case .success(let next):
             registerUndo(name)
             let kept = Set(next.cards.map(\.id))
-            show(next, selection: selection.intersection(kept))
+            show(next, selection: selecting ?? selection.intersection(kept))
         }
     }
 
@@ -386,6 +355,7 @@ public final class SceneEditor {
     private func show(_ content: SceneContent, selection: Set<UUID>) {
         self.content = content
         self.selection = selection
+        if !selection.isEmpty { libraryCard = nil }
         refusal = nil
         onCommit(content)
     }

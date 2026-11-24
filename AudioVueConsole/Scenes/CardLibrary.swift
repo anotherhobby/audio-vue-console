@@ -13,15 +13,19 @@ struct CardLibrary: View {
     let backdrop: CGImage?
     /// A card's size on this scene's grid, by name.
     let sizeOf: (String) -> CellSize?
+    /// The library card selected, and selecting one by name (`library-setup`).
+    var selection = LibrarySelection()
     @State private var search: String
 
     init(
         shelves: [SchemaFacts.Shelf], tiles: [String: LibraryTiles.Tile],
-        backdrop: CGImage? = nil, search: String = "", sizeOf: @escaping (String) -> CellSize?
+        backdrop: CGImage? = nil, search: String = "", selection: LibrarySelection = .init(),
+        sizeOf: @escaping (String) -> CellSize?
     ) {
         self.shelves = shelves
         self.tiles = tiles
         self.backdrop = backdrop
+        self.selection = selection
         self.sizeOf = sizeOf
         _search = State(initialValue: search)
     }
@@ -32,10 +36,10 @@ struct CardLibrary: View {
                 ForEach(shown) { shelf in
                     Section {
                         // Each tile carries its own id; a card is on one shelf, so ids stay unique.
-                        ForEach(shelf.cards) {
+                        ForEach(shelf.cards) { card in
                             CardTile(
-                                card: $0, size: sizeOf($0.name), tile: tiles[$0.name],
-                                backdrop: backdrop)
+                                card: card, size: sizeOf(card.name), tile: tiles[card.name],
+                                backdrop: backdrop, selection: selection)
                         }
                     } header: {
                         VStack(alignment: .leading, spacing: SceneMetrics.stripSpacing) {
@@ -69,13 +73,22 @@ struct CardLibrary: View {
     }
 }
 
-/// One card in the library: its plate as the helper drew it, or a box at its minimum's shape.
+/// Which library card is selected, which are set up, and how one is chosen (`library-setup`).
+struct LibrarySelection {
+    var selected: String?
+    var setUp: Set<String> = []
+    var choose: (String) -> Void = { _ in }
+}
+
+/// One card in the library: its plate as the helper drew it, or a box at its minimum's shape. A
+/// click selects it, and a drag adds it to the canvas.
 struct CardTile: View {
     let card: SchemaFacts.Card
     let size: CellSize?
     let tile: LibraryTiles.Tile?
     /// The scene's backdrop, or nil until the helper has drawn it.
     var backdrop: CGImage?
+    var selection = LibrarySelection()
     @Environment(SceneStore.self) private var store
 
     var body: some View {
@@ -86,19 +99,16 @@ struct CardTile: View {
                 .frame(height: SceneMetrics.cardPreviewHeight)
                 .background { SceneBackdrop(image: backdrop) }
                 .clipShape(RoundedRectangle(cornerRadius: SceneMetrics.tileCornerRadius))
-            HStack {
-                Text(Self.title(card.name))
-                Spacer()
-                if let drawn = tile?.size {
-                    Text(verbatim: "\(drawn.cols) × \(drawn.rows)").foregroundStyle(.secondary)
+                .overlay {
+                    if selection.selected == card.name {
+                        RoundedRectangle(cornerRadius: SceneMetrics.tileCornerRadius)
+                            .strokeBorder(.tint, lineWidth: CanvasMetrics.selectionLineWidth)
+                    }
                 }
-            }
-            .font(.callout)
-            if tile?.unfit.isEmpty == false {
-                Text("Too small to show its reading").font(.callout).foregroundStyle(.secondary)
-            }
+            caption
         }
         .contentShape(Rectangle())
+        .onTapGesture { selection.choose(card.name) }
         // The canvas previews the card's size while it hovers, before the drop delivers the text.
         .onDrag {
             store.draggedKind = card.name
@@ -106,6 +116,27 @@ struct CardTile: View {
         }
         // A fresh tile after each drop on the canvas, so a refused drop leaves no drag behind.
         .id("\(card.name) \(store.drops)")
+    }
+
+    /// The card's name, marked where it is set up, the size it is drawn at, and where its reading
+    /// does not fit.
+    @ViewBuilder private var caption: some View {
+        HStack {
+            Text(Self.title(card.name))
+            if selection.setUp.contains(card.name) {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundStyle(.secondary)
+                    .help("Set up for the cards dropped from the library")
+            }
+            Spacer()
+            if let drawn = tile?.size {
+                Text(verbatim: "\(drawn.cols) × \(drawn.rows)").foregroundStyle(.secondary)
+            }
+        }
+        .font(.callout)
+        if tile?.unfit.isEmpty == false {
+            Text("Too small to show its reading").font(.callout).foregroundStyle(.secondary)
+        }
     }
 
     @ViewBuilder private var preview: some View {

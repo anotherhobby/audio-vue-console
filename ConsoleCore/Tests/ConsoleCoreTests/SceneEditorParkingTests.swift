@@ -34,17 +34,19 @@ import Testing
         #expect(editor.selection == Set(pair.map(\.id) + [loose.id]))
     }
 
-    @Test func aParkedCardShowsNoHandles() {
+    /// `card-parking`, "Resize handles on a parked card".
+    @Test func aLoneParkedCardShowsHandles() {
         editor.select(loose.id)
-        #expect(editor.resizableCard == nil)
+        #expect(editor.resizableCard?.id == loose.id)
         editor.select(onGrid.id)
         #expect(editor.resizableCard?.id == onGrid.id)
     }
 
-    @Test func groupingWithAParkedCardIsRefused() {
+    /// `card-parking`, "Grouping with a parked card".
+    @Test func groupingAcrossThePanelsEdgeIsRefused() {
         editor.select(onGrid.id)
         editor.toggle(loose.id)
-        #expect(editor.groupRefusal == .parkedCannotGroup)
+        #expect(editor.groupRefusal == .acrossPanelEdge)
     }
 
     @Test func aParkedCardsSettingIsKeptOnReturn() {

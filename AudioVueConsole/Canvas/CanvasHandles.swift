@@ -9,6 +9,8 @@ struct CanvasHandles: View {
     /// Where the card is drawn, following a resize under way.
     let rect: CGRect
     let geometry: GridGeometry
+    /// Where a parked card may grow: the pane in cells (`card-parking`).
+    let reach: CellRect
     let editor: SceneEditor
     @Binding var gesture: CanvasGesture?
 
@@ -44,7 +46,7 @@ struct CanvasHandles: View {
                     }
                     .onEnded { value in
                         let offset = geometry.offset(for: value.translation)
-                        editor.resize(card.id, edges: edges, by: offset)
+                        editor.resize(card.id, edges: edges, by: offset, within: reach)
                         gesture = nil
                     })
     }

@@ -62,6 +62,18 @@ enum EditorBannerText {
     }
 }
 
+/// Why Apply is disabled, one wording for the editor's toolbar and the gallery (`scene-apply`,
+/// "Apply works on any scene that fits the panel").
+enum ApplyHelp {
+    /// The reason Apply cannot run, or nil where it can.
+    static func reason(hasParked: Bool, isTooWide: Bool, hasCards: Bool) -> String? {
+        if hasParked { return ParkingText.held }
+        if isTooWide { return "This scene is too wide for this panel" }
+        if !hasCards { return "Add a card to apply this scene" }
+        return nil
+    }
+}
+
 /// One line under the editor's toolbar.
 struct EditorBanner: View {
     let text: String

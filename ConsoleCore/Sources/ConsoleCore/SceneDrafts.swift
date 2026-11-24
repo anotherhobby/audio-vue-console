@@ -92,7 +92,8 @@ public final class SceneDrafts {
             doc: .object(doc))
         copies.append(copy)
         drafts[copy.id] = Draft(
-            draft.laidOut.copy(draft.layout, as: copy), content: draft.content, name: name, rev: nil
+            draft.laidOut.copy(draft.content, as: copy), content: draft.content, name: name,
+            rev: nil
         )
         return copy
     }
@@ -224,7 +225,9 @@ public final class SceneDrafts {
             let layout = try SceneLayout(
                 grid: CellSize(cols: max(panel.cols, reach), rows: panel.rows), cards: cards)
             var draft = Draft(
-                base, content: SceneContent(layout: layout, blocks: old.content.blocks),
+                base,
+                content: SceneContent(
+                    layout: layout, blocks: old.content.blocks, entries: old.content.entries),
                 name: old.name, rev: old.rev)
             draft.source = old.source
             draft.repaired = old.repaired

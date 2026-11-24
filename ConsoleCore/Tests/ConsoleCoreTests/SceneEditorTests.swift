@@ -72,7 +72,9 @@ import Testing
 
     @Test func aDroppedCardIsSelected() throws {
         let editor = SceneEditor(layout: try layout([]))
-        editor.drop(kind: "meter", size: CellSize(cols: 4, rows: 4), at: Cell(col: 10, row: 10))
+        editor.drop(
+            kind: "meter", size: CellSize(cols: 4, rows: 4), at: Cell(col: 10, row: 10),
+            within: testPane)
         let added = try #require(editor.layout.cards.last)
         #expect(editor.selection == [added.id])
     }
@@ -102,8 +104,10 @@ import Testing
         #expect(editor.selection == [loose.id])
         #expect(editor.resizableCard == nil)
         editor.drag(by: CellOffset(cols: 1, rows: 0), within: testPane)
-        editor.resize(loose.id, edges: .right, by: CellOffset(cols: 1, rows: 0))
-        editor.drop(kind: "meter", size: CellSize(cols: 2, rows: 2), at: Cell(col: 40, row: 20))
+        editor.resize(loose.id, edges: .right, by: CellOffset(cols: 1, rows: 0), within: testPane)
+        editor.drop(
+            kind: "meter", size: CellSize(cols: 2, rows: 2), at: Cell(col: 40, row: 20),
+            within: testPane)
         editor.deleteSelection()
         editor.select(pair[0].id)
         editor.ungroup()

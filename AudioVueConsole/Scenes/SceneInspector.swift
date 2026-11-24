@@ -16,7 +16,9 @@ struct SceneInspector: View {
 
     var body: some View {
         let cards = editor?.selectedCards ?? []
-        if let editor, let card = cards.first, cards.count == 1 {
+        if let editor, let name = editor.libraryCard {
+            library(name, editor)
+        } else if let editor, let card = cards.first, cards.count == 1 {
             single(card, editor)
         } else if let editor, !cards.isEmpty {
             several(cards, editor)
@@ -76,6 +78,39 @@ struct SceneInspector: View {
                 Text(refusal.description).font(.callout).foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// The library card `name`'s settings, changing its setup: what the cards dropped from the
+    /// library take while this scene is open (`library-setup`, design D6).
+    private func library(_ name: String, _ editor: SceneEditor) -> some View {
+        let setup = editor.setups[name]
+        let card = LayoutCard(
+            kind: name,
+            cells: CellRect(
+                col: 0, row: 0, cols: editor.minimums[name]?.cols ?? 1,
+                rows: editor.minimums[name]?.rows ?? 1),
+            settings: setup ?? [:])
+        return Form {
+            Section(SceneSettingsTab.title(ofCard: name)) {
+                Text(
+                    "These settings apply to the cards dropped from the library while this scene is open."
+                )
+                .font(.callout).foregroundStyle(.secondary)
+                Button("Use Defaults") { editor.clearSetup(name) }
+                    .disabled(setup == nil)
+            }
+            Section("Settings") {
+                if let declared = settings[name], !declared.settings.isEmpty {
+                    CardSettingsList(
+                        declared: declared, cards: [card], groups: settings, scene: look,
+                        editor: editor, target: .library(name))
+                } else {
+                    Text("This card has no settings.").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .id(name)
     }
 
     /// Every setting `card` declares, changing that card alone.

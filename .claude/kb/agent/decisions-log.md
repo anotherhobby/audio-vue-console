@@ -85,3 +85,24 @@ Format:
   tiles when the verdict lets no card be drawn (`SceneEditorView.drawTiles`). The plan only drew on a
   verdict change, which left a drawn tile up after its card's code came to differ, against the spec's
   "a plain box". The gallery's thumbnails still do not react to a verdict change.
+- 2026-11-24: Copied cards travel on the system pasteboard as their scene's entries, under the private
+  type `com.hobbysprawl.AudioVueConsole.cards` declared in `AudioVueConsole-Info.plist`
+  (`editor-conveniences` D1). Entries carry fields the layout does not model (`plate`), which
+  `SceneContent.entries` keeps for pasted cards until saved. The canvas handles Copy and Cut with
+  `.onCommand` on `copy:`/`cut:`, writing `NSPasteboard` itself, not `.onCopyCommand`/`.onCutCommand`,
+  which write whatever they return, so a refused Cut could clear what was copied before.
+- 2026-11-24: A library card's setup lives on `SceneEditor` (`libraryCard`, `setups`;
+  `SceneEditor+Library.swift`), outside undo and `onCommit`, so it lasts exactly as long as the
+  scene's editor and never marks the scene unsaved (`editor-conveniences` D5). `CardSettingsList`
+  writes to a `CardSettingsTarget` (the scene's cards, or a library card's setup); a set-up tile is
+  drawn by `LibraryTiles+Setup` and the editor's `EditorTiles`, kept only while its settings are
+  still the ones wanted, so a late answer never brings back a cleared setup. Revised the same day
+  (maintainer): a set-up tile runs the plain tiles' ladder with its setup, and a set-up card drops at
+  that size. The ladder sees only `unfit`, so detail a card sheds silently (the meter's ticks) is not
+  sized for until audio-vue reports shed steps (`editor-conveniences/handoff-shed-detail.md`).
+- 2026-11-24: A parked card is as editable as one on the panel (maintainer; `editor-conveniences`
+  D11). `SceneContent.resizing` and `grouping` route to the layout or the parked rules by where the
+  cards are; a parked resize runs `CellRect.resizedAcross` (bounds now a range of cells) within the
+  pane with the grid as an obstacle, so it never reaches onto the panel; parked cards alone can be
+  grouped, and a group across the panel's edge is refused (`.acrossPanelEdge`, which replaced
+  `.parkedCannotGroup`). `ParkedPlates` redraws a parked plate whose size changed.

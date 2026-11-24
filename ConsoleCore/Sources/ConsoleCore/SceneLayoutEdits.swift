@@ -26,14 +26,24 @@ public struct CardEdges: OptionSet, Sendable, Hashable {
 
 /// The edits a layout takes, each returning a new layout or refusing (`scene-layout`).
 extension SceneLayout {
-    /// A card of `kind` and `size` added centred on `cell`, kept on the grid. The new card is
-    /// last in `cards`.
-    public func adding(kind: String, size: CellSize, centredOn cell: Cell) throws(LayoutRefusal)
-        -> SceneLayout
-    {
+    /// A card of `kind` and `size`, holding `settings`, added centred on `cell`, kept on the
+    /// grid. The new card is last in `cards`.
+    public func adding(
+        kind: String, size: CellSize, centredOn cell: Cell, settings: [String: JSONValue] = [:]
+    ) throws(LayoutRefusal) -> SceneLayout {
+        let cells = CellRect(col: 0, row: 0, cols: size.cols, rows: size.rows)
+        return try adding(LayoutCard(kind: kind, cells: cells, settings: settings), centredOn: cell)
+    }
+
+    /// `card`, new, centred on `cell` at the size its cells give, kept on the grid, keeping its id
+    /// and settings.
+    func adding(_ card: LayoutCard, centredOn cell: Cell) throws(LayoutRefusal) -> SceneLayout {
+        let size = CellSize(cols: card.cells.cols, rows: card.cells.rows)
         guard let cells = placement(of: size, centredOn: cell) else { throw .largerThanGrid }
         guard !cards.contains(where: { $0.cells.intersects(cells) }) else { throw .spaceTaken }
-        return SceneLayout(checked: grid, cards: cards + [LayoutCard(kind: kind, cells: cells)])
+        var placed = card
+        placed.cells = cells
+        return SceneLayout(checked: grid, cards: cards + [placed])
     }
 
     /// The cards `ids` reach, whole groups included, shifted together by `offset`, which stops
@@ -84,11 +94,11 @@ extension SceneLayout {
         guard cards[index].group == nil else { throw .cardIsGrouped }
         let others = cards.filter { $0.id != id }.map(\.cells)
         let across = cards[index].cells.resizedAcross(
-            edges: edges, by: offset.cols, within: grid.cols, avoiding: others,
+            edges: edges, by: offset.cols, within: 0...grid.cols, avoiding: others,
             atLeast: minimum.cols)
         // The vertical edge is the horizontal one with rows and columns swapped.
         let down = across.transposed.resizedAcross(
-            edges: edges.transposed, by: offset.rows, within: grid.rows,
+            edges: edges.transposed, by: offset.rows, within: 0...grid.rows,
             avoiding: others.map(\.transposed), atLeast: minimum.rows)
         var resized = cards
         resized[index].cells = down.transposed
@@ -177,21 +187,22 @@ extension CellRect {
     }
 
     /// The block with its left or right edge, as `edges` says, moved by `delta` columns, stopping
-    /// at the grid's `width`, at any of `others` on its rows, and at `minimum` columns, or at its
-    /// own width where that is less, so a block never grows narrower than it is by being resized.
+    /// at the columns `bounds` holds, at any of `others` on its rows, and at `minimum` columns, or
+    /// at its own width where that is less, so a block never grows narrower than it is by being
+    /// resized.
     func resizedAcross(
-        edges: CardEdges, by delta: Int, within width: Int, avoiding others: [CellRect],
-        atLeast minimum: Int
+        edges: CardEdges, by delta: Int, within bounds: ClosedRange<Int>,
+        avoiding others: [CellRect], atLeast minimum: Int
     ) -> CellRect {
         var cells = self
         let narrowest = Swift.max(1, Swift.min(minimum, cols))
         let inPath = others.filter { $0.sharesRows(with: self) }
         if edges.contains(.right) {
-            let wall = inPath.filter { $0.col >= maxCol }.map(\.col).min() ?? width
+            let wall = inPath.filter { $0.col >= maxCol }.map(\.col).min() ?? bounds.upperBound
             cells.cols = (maxCol + delta).clamped(to: (col + narrowest)...wall) - col
         }
         if edges.contains(.left) {
-            let wall = inPath.filter { $0.maxCol <= col }.map(\.maxCol).max() ?? 0
+            let wall = inPath.filter { $0.maxCol <= col }.map(\.maxCol).max() ?? bounds.lowerBound
             cells.col = (col + delta).clamped(to: wall...(maxCol - narrowest))
             cells.cols = maxCol - cells.col
         }

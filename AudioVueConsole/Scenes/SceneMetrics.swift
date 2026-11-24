@@ -4,6 +4,9 @@ import SwiftUI
 /// own are `CanvasMetrics`, and the window's `PanelMetrics`.
 enum SceneMetrics {
     static let libraryMinWidth: CGFloat = 180
+    /// The Grid button's colour well, fixed so its popover's layout settles in one pass.
+    static let gridWellWidth: CGFloat = 44
+    static let gridWellHeight: CGFloat = 24
     static let libraryIdealWidth: CGFloat = 230
     static let libraryMaxWidth: CGFloat = 320
     static let cardPreviewHeight: CGFloat = 110

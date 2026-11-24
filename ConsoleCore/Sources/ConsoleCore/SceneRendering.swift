@@ -195,9 +195,11 @@ public final class SceneRendering {
         Set(old.keys).union(new.keys).filter { old[$0] != new[$0] }
     }
 
-    /// The names of the cards that cannot show their reading at the size drawn.
+    /// The names of the cards, on the grid or parked, that cannot show their reading at the size
+    /// drawn.
     public var unfit: [String] {
-        plates.values.flatMap(\.layer.unfit).sorted()
+        (plates.values.flatMap(\.layer.unfit) + parked.layers.values.flatMap(\.layer.unfit))
+            .sorted()
     }
 
     /// The plates' layers in the order the helper stacks them: cards in no group in placement

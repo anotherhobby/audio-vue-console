@@ -61,8 +61,12 @@ public final class LibraryTiles {
     }
 
     /// The tiles drawn in one scene's settings.
-    private struct TileSet {
+    struct TileSet {
         var tiles: [String: Tile] = [:]
+        /// Each set-up card's tile, by name (`library-setup`).
+        var setups: [String: SetupTile] = [:]
+        /// The settings each card's set-up tile was last asked for in, by name.
+        var wantedSetups: [String: [String: JSONValue]] = [:]
         var backdrop: RenderedLayer?
         /// The cards asked for while the scene is shown, answered or not.
         var asked: Set<String> = []
@@ -149,7 +153,7 @@ public final class LibraryTiles {
 
     /// When a set's tiles are wanted: at once for the scene shown, in the library's lane, or
     /// ahead of any scene being opened, behind the thumbnails.
-    private enum Pace {
+    enum Pace {
         case shown, ahead
 
         var lane: RenderQueue.Lane { self == .shown ? .library : .thumbnails }
@@ -163,8 +167,8 @@ public final class LibraryTiles {
     /// The shown scene's backdrop layer, which each tile is stacked over.
     public var backdrop: RenderedLayer? { key.flatMap { sets[$0]?.backdrop } }
     /// The settings of the scene shown.
-    private var key: Key?
-    private var sets: [Key: TileSet] = [:]
+    var key: Key?
+    var sets: [Key: TileSet] = [:]
     /// The settings tiles are held for, the least recently drawn first.
     private var recent: [Key] = []
 
@@ -200,8 +204,7 @@ public final class LibraryTiles {
             wantsBackdrop
             ? cards.lazy.compactMap({ card in
                 Self.request(
-                    for: laidOut, as: content, card: card.name, minimum: card.minimum,
-                    context: source.context)
+                    for: draft, card: .tile(card.name, at: card.minimum), context: source.context)
             }).first ?? Self.any(draft, from: source) : nil
         if around != nil { set.askedBackdrop = true }
         sets[key] = set
@@ -242,9 +245,7 @@ public final class LibraryTiles {
     /// request for the backdrop alone is made around: a scene with no cards is refused.
     private static func any(_ draft: Draft, from source: Source) -> RenderRequest? {
         source.cards.lazy.compactMap { card in
-            request(
-                for: draft.laidOut, as: draft.content, card: card.name, minimum: card.minimum,
-                context: source.context)
+            request(for: draft, card: .tile(card.name, at: card.minimum), context: source.context)
         }.first
     }
 
@@ -282,6 +283,7 @@ public final class LibraryTiles {
         guard var set = sets[key] else { return }
         set.backdrop = backdrop
         set.tiles = set.tiles.mapValues { Tile(layer: $0.layer, size: $0.size, over: backdrop) }
+        set.setups = set.setups.mapValues { $0.over(backdrop) }
         sets[key] = set
     }
 
@@ -292,24 +294,21 @@ public final class LibraryTiles {
         key = nil
     }
 
-    /// A tile's request: `content`, an edit of `laidOut`, holding only `card` at `minimum` at the
-    /// grid's top-left corner, naming its one plate and no backdrop, or nil where the card is off
-    /// the grid.
-    static func request(
-        for laidOut: LaidOutScene, as content: SceneContent, card: String, minimum: CellSize,
-        context: RenderContext
-    ) -> RenderRequest? {
-        let cells = CellRect(col: 0, row: 0, cols: minimum.cols, rows: minimum.rows)
+    /// A tile's request: `draft`'s scene as edited, holding only `card`, naming its one plate and
+    /// no backdrop, or nil where the card is off the grid.
+    static func request(for draft: Draft, card: LayoutCard, context: RenderContext)
+        -> RenderRequest?
+    {
+        let laidOut = draft.laidOut
         let layout: SceneLayout
         do throws(LayoutRefusal) {
-            layout = try SceneLayout(
-                grid: laidOut.panel, cards: [LayoutCard(kind: card, cells: cells)])
+            layout = try SceneLayout(grid: laidOut.panel, cards: [card])
         } catch {
             return nil
         }
         return RenderRequest(
-            doc: laidOut.doc(for: content.with(layout: layout)), builtIn: laidOut.document.builtIn,
-            context: context, plates: [0], backdrop: false)
+            doc: laidOut.doc(for: draft.content.with(layout: layout)),
+            builtIn: laidOut.document.builtIn, context: context, plates: [0], backdrop: false)
     }
 
     /// Draws `card`'s tile in the draft's settings: at the size found for them, or where none is
@@ -323,8 +322,7 @@ public final class LibraryTiles {
         let plate: (CellSize) async -> RenderedLayer? = { size in
             guard
                 let request = Self.request(
-                    for: draft.laidOut, as: draft.content, card: card.name, minimum: size,
-                    context: source.context)
+                    for: draft, card: .tile(card.name, at: size), context: source.context)
             else { return nil }
             let result = await source.queue.submit(
                 request.message, lane: pace.lane, key: "\(tag)tile:\(card.name)")
@@ -359,7 +357,7 @@ public final class LibraryTiles {
     }
 
     /// The plate a tile's request drew, or nil where the answer refused or failed, or holds none.
-    private static func plate(of result: Result<HelperAnswer, RenderFailure>?) -> RenderedLayer? {
+    static func plate(of result: Result<HelperAnswer, RenderFailure>?) -> RenderedLayer? {
         guard case .success(let answer)? = result else { return nil }
         do throws(RenderFailure) {
             // The one placement's id is never read: a tile is known by its card's name.
@@ -368,5 +366,17 @@ public final class LibraryTiles {
         } catch {
             return nil
         }
+    }
+}
+
+extension LayoutCard {
+    /// The card `name` at `size` at the grid's top-left corner, holding `settings`: what a library
+    /// tile draws.
+    static func tile(_ name: String, at size: CellSize, settings: [String: JSONValue] = [:])
+        -> LayoutCard
+    {
+        LayoutCard(
+            kind: name, cells: CellRect(col: 0, row: 0, cols: size.cols, rows: size.rows),
+            settings: settings)
     }
 }

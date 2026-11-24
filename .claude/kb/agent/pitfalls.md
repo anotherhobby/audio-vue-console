@@ -368,3 +368,13 @@ Export Image therefore blends at 16 bits a component and saves a 16-bit PNG, whi
 judged fixed. Rounding once, after a float scale-up and with dither, in `blur()` would remove the
 stairs at the source, for clips and the panel too: asked in
 `../audio-vue/console-blur-handoff.md` (2026-11-23), awaiting audio-vue.
+
+## A `Form` in a toolbar popover crashed the app (2026-11-24)
+
+The editor's Grid button opened a `.popover` holding a grouped `Form` with an `NSColorWell`
+(`ColourWell`). Opening it crashed with `NSGenericException`: "The window has been marked as needing
+another Update Constraints in Window pass, but it has already had more Update Constraints in Window
+passes than there are views in the window", on the `_NSPopoverWindow` (Measured in the running app,
+macOS 27.2). A grouped form is a table view, the same family as the `List` crash above. The popover
+became a plain `VStack` with `.fixedSize()` and the well at a fixed frame (`PaneGridPicker`).
+Use stacks, not `Form` or `List`, in popovers here.

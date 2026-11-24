@@ -18,13 +18,27 @@ struct SceneGallery: View {
     let open: (String) -> Void
     var rename: (String, String) async throws(HostFailure) -> Void = { _, _ in }
     var delete: (String) async throws(HostFailure) -> Void = { _ in }
+    /// A session for the scene by id, which a gallery Apply runs in (design D8).
+    var session: (String) -> SceneSession? = { _ in nil }
+    /// The scene the panel shows, by id, which a save made here leaves behind.
+    var onScreen: String?
     @Environment(SceneStore.self) private var store
     @State private var renaming: SceneDocument?
     @State private var deleting: SceneDocument?
     @State private var failure: HostFailure?
+    /// The session of the last Apply made here, for its failed save's alert.
+    @State private var applying: SceneSession?
+    @State private var isApplying = false
+    /// The last Apply's outcome, worded with its scene's name (`scene-gallery`).
+    @State private var applied: String?
 
     var body: some View {
         sections
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if let applied { EditorBanner(text: applied) }
+            }
+            .writeFailureAlert(applyFailure, saveOver: saveOver, discardMine: discardMine)
+            .onDisappear { applied = nil }
             .sheet(item: $renaming) { scene in
                 RenameSceneSheet(current: scene.name ?? scene.id) { name in
                     write { () throws(HostFailure) in try await rename(scene.id, name) }
@@ -119,10 +133,13 @@ struct SceneGallery: View {
             }
             LazyVGrid(columns: columns, alignment: .leading, spacing: SceneMetrics.gallerySpacing) {
                 ForEach(items) { item in
-                    SceneRow(item: item, aspect: aspect, shape: shape)
-                        .contentShape(Rectangle())
-                        .onTapGesture { open(item.id) }
-                        .contextMenu { menu(item) }
+                    SceneRow(
+                        item: item, aspect: aspect, shape: shape,
+                        apply: { apply(item.document) }, isApplying: isApplying
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture { open(item.id) }
+                    .contextMenu { menu(item) }
                 }
             }
         }
@@ -139,6 +156,40 @@ struct SceneGallery: View {
         }
     }
 
+    /// Applies `document` as the editor would, without opening it: saves where unsaved, then
+    /// switches, and says what it did (`scene-apply`, "The gallery's Apply is the editor's").
+    private func apply(_ document: SceneDocument) {
+        guard ScenesPage.draft(document, in: store.drafts, on: grid) != nil,
+            let session = session(document.id)
+        else { return }
+        let name = document.name ?? document.id
+        (applying, isApplying, applied) = (session, true, nil)
+        Task {
+            defer { isApplying = false }
+            guard let id = await session.apply() else { return }
+            if case .success(.done) = session.note?.result { store.applied(id) }
+            applied = session.note.map { "“\(name)”: \(EditorBannerText.text($0))" }
+        }
+    }
+
+    /// The failure of the last Apply's save, for its alert to show and clear.
+    private var applyFailure: Binding<HostFailure?> {
+        Binding(get: { applying?.failure }, set: { applying?.failure = $0 })
+    }
+
+    /// Saves over the host's newer revision, as the editor's Save Over It does: it saves and does
+    /// not switch.
+    private func saveOver(_ rev: Int) {
+        Task {
+            guard let stored = await applying?.save(overRev: rev) else { return }
+            store.saved(stored.id, onScreen: onScreen)
+        }
+    }
+
+    private func discardMine() {
+        Task { await applying?.discardMine() }
+    }
+
     /// Copies `document` as its draft shows it, and opens the copy.
     private func duplicate(_ document: SceneDocument) {
         guard let draft = ScenesPage.draft(document, in: store.drafts, on: grid) else { return }
@@ -147,75 +198,6 @@ struct SceneGallery: View {
 
     private var columns: [GridItem] {
         [GridItem(.adaptive(minimum: SceneMetrics.galleryTileWidth), alignment: .top)]
-    }
-}
-
-/// A scene's thumbnail and name, with a dot for an unsaved scene and a lock for a built-in one.
-struct SceneRow: View {
-    let item: SceneGallery.Item
-    /// The display's width over its height.
-    let aspect: Double
-    let shape: SceneShape
-    @Environment(SceneStore.self) private var store
-
-    /// The scene as edited where it has a draft, else as read.
-    private var shown: (scene: LaidOutScene, content: SceneContent)? {
-        let draft = store.drafts.draft(item.id)
-        return (draft?.laidOut ?? item.laidOut).map { ($0, draft?.content ?? $0.content) }
-    }
-
-    private var isTooWide: Bool { shown.map { $0.scene.isTooWide($0.content) } ?? false }
-
-    /// Whether the panel would refuse the scene for holding what its schema does not take
-    /// (`scene-gallery`, "A scene that needs a repair is marked in the gallery").
-    private var needsRepair: Bool { store.drafts.repair(of: item.document, shape: shape) != nil }
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            thumbnail
-                .aspectRatio(aspect, contentMode: .fit)
-                .background(CanvasMetrics.backdrop)
-                .frame(maxHeight: SceneMetrics.galleryThumbnailHeight, alignment: .leading)
-            HStack {
-                Text(item.document.name ?? item.document.id)
-                if store.drafts.draft(item.id)?.isUnsaved == true {
-                    Circle()
-                        .frame(
-                            width: SceneMetrics.unsavedDotSize, height: SceneMetrics.unsavedDotSize
-                        )
-                        .foregroundStyle(.secondary)
-                        .help("Unsaved")
-                }
-                Spacer()
-                if item.document.builtIn {
-                    Image(systemName: "lock.fill").foregroundStyle(.secondary)
-                }
-            }
-            if isTooWide {
-                Text("Too wide for this panel").font(.callout).foregroundStyle(.secondary)
-            }
-            if needsRepair {
-                Text(RepairText.note).font(.callout).foregroundStyle(.secondary)
-            }
-            if let parked = store.drafts.draft(item.id)?.parkedCount, parked > 0 {
-                Text(ParkingText.note(parked)).font(.callout).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    @ViewBuilder private var thumbnail: some View {
-        if let image = store.thumbnails.images[item.id] {
-            Image(decorative: image, scale: 1).resizable()
-        } else if let shown {
-            // A scene wider than the panel's grid is wider by the same cells.
-            let layout = shown.content.layout
-            LayoutPlates(layout: layout, isThumbnail: true)
-                .aspectRatio(
-                    aspect * Double(layout.grid.cols) / Double(shown.scene.panel.cols),
-                    contentMode: .fit)
-        } else {
-            Color.clear
-        }
     }
 }
 

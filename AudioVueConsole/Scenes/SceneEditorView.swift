@@ -25,6 +25,8 @@ struct SceneEditorView: View {
     @State private var editor: SceneEditor?
     @State private var rendering: SceneRendering?
     @State private var showsInspector = true
+    /// Whether the Grid button's colour popover is open.
+    @State private var showsGridPicker = false
     /// The scene's writes, made with the editor.
     @State private var session: SceneSession?
     /// Counts the renderings made, so the drawing follows a new one.
@@ -51,6 +53,9 @@ struct SceneEditorView: View {
             // Tiles are drawn in the scene's settings as edited, so a block changing draws them
             // again (`scene-settings`, design D6).
             .onChange(of: editor?.content.blocks) { Task { await drawTiles() } }
+            .onChange(of: editor?.setups) { old, new in
+                Task { await tiles.drawChanged(from: old ?? [:], to: new ?? [:]) }
+            }
             .onDisappear { editor?.detach() }
             .task(id: Drawing(phase: renderer.phase, made: made)) { await follow(renderer.phase) }
             .onChange(of: verdict) { _, verdict in
@@ -93,8 +98,12 @@ struct SceneEditorView: View {
 
     private var library: some View {
         CardLibrary(
-            shelves: scenes.facts?.library ?? [], tiles: store.tiles.tiles,
+            shelves: scenes.facts?.library ?? [],
+            tiles: tiles.shown(setUp: setUp),
             backdrop: store.tiles.backdrop?.image,
+            selection: LibrarySelection(
+                selected: editor?.libraryCard, setUp: setUp,
+                choose: { editor?.chooseLibraryCard($0) }),
             sizeOf: { editor?.minimums[$0] }
         )
         .frame(
@@ -106,11 +115,16 @@ struct SceneEditorView: View {
         if let editor {
             SceneCanvas(
                 editor: editor, panelAspect: ScenesPage.aspect(of: scenes), panelCols: panel.cols,
-                sizeOf: { editor.minimums[$0] },
+                sizeOf: {
+                    tiles.dropSize(
+                        of: $0, setUp: editor.setups[$0] != nil, minimum: editor.minimums[$0])
+                },
                 rendering: rendering,
                 title: SceneNameTitle(
                     name: document.name ?? document.id, isUnsaved: session?.isUnsaved == true,
-                    rename: renaming))
+                    rename: renaming),
+                laidOut: session?.draft?.laidOut,
+                placeable: Set(scenes.facts?.placeable.map(\.name) ?? []))
         } else {
             ContentUnavailableView("This Scene Can't Be Read", systemImage: "rectangle.3.group")
         }
@@ -167,22 +181,17 @@ struct SceneEditorView: View {
     /// drawing, where the panel's code lets cards be drawn, as the gallery's thumbnails are
     /// (`library-render` design D4). Where no card can be drawn, the tiles are boxes.
     private func drawTiles() async {
-        guard rendering != nil, let draft = store.drafts.draft(document.id),
-            let queue = renderer.queue, let cards = scenes.facts?.placeable
-        else { return }
-        let drift: CardDrift?
-        switch verdict {
-        case .same?: drift = nil
-        case .differs(let differs)? where !differs.sharesNothing: drift = differs
-        case nil: return
-        default:
-            store.tiles.forget()
-            return
-        }
-        await store.tiles.draw(
-            for: draft,
-            from: LibraryTiles.Source(
-                cards: cards, drift: drift, context: scenes.context, queue: queue))
+        guard rendering != nil else { return }
+        await tiles.draw(setups: editor?.setups ?? [:])
+    }
+
+    /// The library cards with a setup, by name.
+    private var setUp: Set<String> { editor.map { Set($0.setups.keys) } ?? [] }
+
+    /// The library's tiles for this scene, plain and set up.
+    private var tiles: EditorTiles {
+        EditorTiles(
+            store: store, renderer: renderer, scenes: scenes, verdict: verdict, id: document.id)
     }
 
     /// The scene's tools in the middle of the toolbar, Reset set apart after them, as it acts on the
@@ -218,6 +227,11 @@ struct SceneEditorView: View {
             Button("Reset", systemImage: "arrow.counterclockwise") {
                 Task { await session?.reset() }
             }
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Button("Grid", systemImage: "grid") { showsGridPicker.toggle() }
+                .help("Grid colour")
+                .popover(isPresented: $showsGridPicker) { PaneGridPicker() }
         }
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { showsInspector.toggle() }
@@ -277,10 +291,9 @@ struct SceneEditorView: View {
     /// Why Apply is disabled, or what it does (`scene-apply`, "Apply works on any scene that
     /// fits the panel").
     private var applyHelp: String {
-        if session?.hasParked == true { return ParkingText.held }
-        if session?.isTooWide == true { return "This scene is too wide for this panel" }
-        if session?.hasCards == false { return "Add a card to apply this scene" }
-        return "Apply"
+        ApplyHelp.reason(
+            hasParked: session?.hasParked == true, isTooWide: session?.isTooWide == true,
+            hasCards: session?.hasCards != false) ?? "Apply"
     }
 
     /// The banner's line: the last Apply's or Reset's outcome, else the panel-behind note.

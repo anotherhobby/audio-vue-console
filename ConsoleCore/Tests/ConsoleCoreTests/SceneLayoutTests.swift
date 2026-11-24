@@ -215,7 +215,9 @@ struct ResizingTests {
         let waveform = card("waveform", rect(0, 0, 20, 12))
         let editor = SceneEditor(
             layout: try layout([waveform]), minimums: ["waveform": CellSize(cols: 17, rows: 10)])
-        editor.resize(waveform.id, edges: [.right, .bottom], by: CellOffset(cols: -8, rows: -8))
+        editor.resize(
+            waveform.id, edges: [.right, .bottom], by: CellOffset(cols: -8, rows: -8),
+            within: testPane)
         #expect(
             editor.layout.card(waveform.id)?.cells == CellRect(col: 0, row: 0, cols: 17, rows: 10))
     }

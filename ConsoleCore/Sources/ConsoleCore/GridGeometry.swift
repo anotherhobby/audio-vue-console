@@ -27,6 +27,12 @@ public struct GridGeometry: Sendable, Equatable {
             col: min(max(free.col, 0), grid.cols - 1), row: min(max(free.row, 0), grid.rows - 1))
     }
 
+    /// The cell under `point`, on the grid or off it: where a library drop over the pane lands
+    /// (`card-parking`, "A library card dropped off the panel is parked").
+    public func cellOnOrOff(at point: CGPoint) -> Cell {
+        cellReached(by: point)
+    }
+
     /// The region `cells` covers, in points, on the grid or off it.
     public func rect(of cells: CellRect) -> CGRect {
         CGRect(
@@ -71,6 +77,28 @@ public struct GridGeometry: Sendable, Equatable {
         return CellRect(
             col: -cols, row: -rows, cols: cols + grid.cols + max(right, 0),
             rows: rows + grid.rows + max(bottom, 0))
+    }
+
+    /// Where the grid's lines fall across a pane of `paneSize` whose top-left is the zero point: the
+    /// x of each column line and the y of each row line within it, through the grid's corners at its
+    /// cell pitch and continued past them, as the pane's grid around the panel is drawn
+    /// (`scene-canvas`, "The pane around the panel is a grid of the panel's cells").
+    public func lines(in paneSize: CGSize) -> (columns: [CGFloat], rows: [CGFloat]) {
+        guard cellWidth > 0, cellHeight > 0 else { return ([], []) }
+        return (
+            Self.lines(from: origin.x, pitch: cellWidth, within: paneSize.width),
+            Self.lines(from: origin.y, pitch: cellHeight, within: paneSize.height)
+        )
+    }
+
+    /// Every `start + k × pitch`, for whole `k`, from zero to `extent`.
+    private static func lines(from start: CGFloat, pitch: CGFloat, within extent: CGFloat)
+        -> [CGFloat]
+    {
+        let first = Int((-start / pitch).rounded(.up))
+        let last = Int(((extent - start) / pitch).rounded(.down))
+        guard first <= last else { return [] }
+        return (first...last).map { start + CGFloat($0) * pitch }
     }
 
     /// The largest factor this geometry may be scaled by, about the grid's centre, with `block`

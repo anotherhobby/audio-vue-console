@@ -16,5 +16,20 @@
 	<array>
 		<string>_audio-vue._tcp</string>
 	</array>
+	<!-- The private type copied cards travel under on the pasteboard (`card-clipboard`, design D1),
+	     so a paste can find them; nothing outside the app reads it. -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hobbysprawl.AudioVueConsole.cards</string>
+			<key>UTTypeDescription</key>
+			<string>audio-vue Console Cards</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -49,12 +49,17 @@ public struct LaidOutScene: Sendable, Equatable {
         self.entries = entries
     }
 
-    /// `layout` as a scene of its own, read from `document`: what a copy starts from. Each card
-    /// keeps its id and the entry this scene writes for it, so the copy needs no second parse.
-    func copy(_ layout: SceneLayout, as document: SceneDocument) -> LaidOutScene {
-        LaidOutScene(
+    /// `content`'s layout as a scene of its own, read from `document`: what a copy starts from.
+    /// Each card keeps its id and the entry this scene writes for it, a pasted card's included, so
+    /// the copy needs no second parse.
+    func copy(_ content: SceneContent, as document: SceneDocument) -> LaidOutScene {
+        let layout = content.layout
+        return LaidOutScene(
             document: document, layout: layout, panel: panel,
-            entries: Dictionary(uniqueKeysWithValues: layout.cards.map { ($0.id, entry(for: $0)) }))
+            entries: Dictionary(
+                uniqueKeysWithValues: layout.cards.map {
+                    ($0.id, entry(for: $0, added: content.entries))
+                }))
     }
 
     /// The scene as read: its layout and its blocks, each as the document holds it. A key the
@@ -71,7 +76,8 @@ public struct LaidOutScene: Sendable, Equatable {
     public func doc(for content: SceneContent) -> JSONValue {
         var fields = content.blocks
         fields["name"] = document.doc["name"]
-        fields["cards"] = .array(content.layout.cards.map(entry(for:)))
+        fields["cards"] = .array(
+            content.layout.cards.map { entry(for: $0, added: content.entries) })
         return .object(fields)
     }
 
@@ -88,8 +94,17 @@ public struct LaidOutScene: Sendable, Equatable {
         doc(for: content.with(layout: layout))
     }
 
-    private func entry(for card: LayoutCard) -> JSONValue {
-        var fields = entries[card.id]?.objectValue ?? ["card": .string(card.kind)]
+    /// The entry this scene would write for each of `cards`, of `content`, on the grid or parked:
+    /// what Copy takes (`card-clipboard`, design D1).
+    func entries(of cards: [LayoutCard], in content: SceneContent) -> [JSONValue] {
+        cards.map { entry(for: $0, added: content.entries) }
+    }
+
+    /// `card`'s entry: the parse's, else the one it was `added` with, else its kind alone, with its
+    /// cells, group and settings as the layout holds them.
+    private func entry(for card: LayoutCard, added: [UUID: JSONValue] = [:]) -> JSONValue {
+        var fields =
+            (entries[card.id] ?? added[card.id])?.objectValue ?? ["card": .string(card.kind)]
         fields["col"] = .integer(card.cells.col)
         fields["row"] = .integer(card.cells.row)
         // A span the entry leaves unset stays unset while the card still covers the panel's
@@ -106,7 +121,7 @@ public struct LaidOutScene: Sendable, Equatable {
         return .object(fields)
     }
 
-    private static func card(_ entry: JSONValue, on grid: CellSize, id: UUID) throws(LayoutRefusal)
+    static func card(_ entry: JSONValue, on grid: CellSize, id: UUID) throws(LayoutRefusal)
         -> LayoutCard
     {
         guard let kind = entry["card"]?.stringValue else { throw .unreadableCard }

@@ -11,18 +11,24 @@ public struct SceneContent: Sendable, Hashable {
     /// off the layout's grid, none overlapping, and a group wholly here or wholly on the grid.
     /// They are never written, drawn as the scene, or counted as its reach.
     public internal(set) var parked: [LayoutCard]
+    /// The whole entries of cards added in the editor by a paste, by id: what each brings from the
+    /// scene it was copied from, which this scene's parse holds none of (`card-clipboard`, design D2).
+    public internal(set) var entries: [UUID: JSONValue]
 
     public init(
-        layout: SceneLayout, blocks: [String: JSONValue] = [:], parked: [LayoutCard] = []
+        layout: SceneLayout, blocks: [String: JSONValue] = [:], parked: [LayoutCard] = [],
+        entries: [UUID: JSONValue] = [:]
     ) {
         self.layout = layout
         self.blocks = blocks
         self.parked = parked
+        self.entries = entries
     }
 
-    /// This content with its cards placed as `layout` places them, the parked cards kept.
+    /// This content with its cards placed as `layout` places them, the parked cards and added
+    /// cards' entries kept.
     public func with(layout: SceneLayout) -> SceneContent {
-        SceneContent(layout: layout, blocks: blocks, parked: parked)
+        SceneContent(layout: layout, blocks: blocks, parked: parked, entries: entries)
     }
 
     /// Every card of the scene: the layout's, then the parked ones.
@@ -40,6 +46,13 @@ public struct SceneContent: Sendable, Hashable {
             ids.contains(card.id) || card.group.map(reached.contains) == true
         }
         return Set(widened.map(\.id))
+    }
+
+    /// The lowest `group-N` not among `taken`: a new group's name.
+    static func groupName(notIn taken: Set<String>) -> String {
+        var number = 1
+        while taken.contains("group-\(number)") { number += 1 }
+        return "group-\(number)"
     }
 
     /// The blocks of the scene document `doc`: its keys but `cards` and `name`.

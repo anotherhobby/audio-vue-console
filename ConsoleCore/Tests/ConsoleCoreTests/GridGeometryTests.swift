@@ -86,4 +86,24 @@ struct GridGeometryTests {
         #expect(abs(scale - 200.0 / 220.0) < 0.0001)
         #expect(placed.fittingScale(of: block, in: CGSize(width: 1200, height: 500)) > 1)
     }
+
+    /// `scene-canvas`, "The pane around the panel is a grid of the panel's cells": the lines pass
+    /// through the region's corners and repeat at its cell pitch across the whole pane.
+    @Test func thePanesLinesMeetTheGridsCorners() {
+        let region = GridGeometry(
+            grid: CellSize(cols: 96, rows: 36), size: CGSize(width: 960, height: 360),
+            origin: CGPoint(x: 25, y: 15))
+        let (columns, rows) = region.lines(in: CGSize(width: 1000, height: 400))
+        #expect(columns.first == 5 && columns.last == 995 && columns.count == 100)
+        #expect(rows.first == 5 && rows.last == 395 && rows.count == 40)
+        #expect(columns.contains(25) && columns.contains(985))
+        #expect(rows.contains(15) && rows.contains(375))
+        #expect(zip(columns, columns.dropFirst()).allSatisfy { $1 - $0 == 10 })
+    }
+
+    @Test func aGridWithNoSizeHasNoLines() {
+        let (columns, rows) = GridGeometry(grid: CellSize(cols: 96, rows: 36), size: .zero)
+            .lines(in: CGSize(width: 1000, height: 400))
+        #expect(columns.isEmpty && rows.isEmpty)
+    }
 }

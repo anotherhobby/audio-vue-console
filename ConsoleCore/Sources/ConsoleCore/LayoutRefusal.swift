@@ -16,7 +16,12 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
     case noRoomOffPanel
     /// An arrow key that would take a parked card onto the panel or out of the pane.
     case dragToCross
-    case parkedCannotGroup
+    /// A group asked of cards on the panel and cards parked off it.
+    case acrossPanelEdge
+    /// A paste with no room for the copied cards on the panel or off it (`card-clipboard`).
+    case noRoomToPaste
+    /// A paste holding a card, by name, that the panel's schema does not mark placeable.
+    case notPlaceable(String)
     case readOnly(ReadOnlyReason)
 
     public var description: String {
@@ -32,7 +37,9 @@ public enum LayoutRefusal: Error, Sendable, Hashable, CustomStringConvertible {
         case .cardInTheWay: "Another card is in the way."
         case .noRoomOffPanel: "There's no room for that off the panel."
         case .dragToCross: "Drag a card to move it onto or off the panel."
-        case .parkedCannotGroup: "Move these cards onto the panel to group them."
+        case .acrossPanelEdge: "A group is wholly on the panel or wholly off it."
+        case .noRoomToPaste: "There's no room to paste the copied cards."
+        case .notPlaceable(let card): "This panel can't place the copied card “\(card)”."
         case .readOnly(let reason): reason.description
         }
     }

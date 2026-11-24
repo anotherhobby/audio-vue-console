@@ -10,8 +10,8 @@ public struct ParkedPlates: Sendable {
 
     /// Sorts the layers for `content`: a plate whose cards are all parked moves here from
     /// `plates`, one back on the grid moves back there, and one no longer parked goes. Answers
-    /// the parked plates to draw alone: those with no layer or other settings, or every one where
-    /// the scene is `restyled`.
+    /// the parked plates to draw alone: those with no layer, other settings or another size, or
+    /// every one where the scene is `restyled` (`card-parking`, design D11).
     mutating func sort(
         _ content: SceneContent, plates: inout [Set<UUID>: SceneRendering.PlacedLayer],
         restyled: Bool
@@ -27,7 +27,8 @@ public struct ParkedPlates: Sendable {
             layers[members] = nil
         }
         return wanted.filter { members, state in
-            restyled || layers[members]?.settings != state.settings
+            guard !restyled, let held = layers[members] else { return true }
+            return held.settings != state.settings || !held.cells.sameSize(as: state.cells)
         }.map(\.key)
     }
 
@@ -66,5 +67,12 @@ public struct ParkedPlates: Sendable {
     /// form plates as a layout's cards do, though their cells lie off its grid.
     private static func plates(of content: SceneContent) -> [Set<UUID>: PlateState] {
         PlateChanges.drawn(of: SceneLayout(checked: content.layout.grid, cards: content.parked))
+    }
+}
+
+extension CellRect {
+    /// Whether this block has `other`'s columns and rows, wherever each lies.
+    fileprivate func sameSize(as other: CellRect) -> Bool {
+        cols == other.cols && rows == other.rows
     }
 }
