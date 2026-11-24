@@ -10,7 +10,7 @@ key the schema requires, or a key the entry holds depends on.
 
 Source: audio-vue `settings-schema`, "The declarations export as JSON Schema": a document validation
 refuses for its shape fails against the export too. Decision (maintainer, 2026-11-23). audio-vue
-`bar-card-segments` (2026-11-24): a meter scale's ends depend on each other (`dependentRequired`).
+`bar-card-segments` (2026-11-24).
 
 #### Scenario: A key moved off the scene
 

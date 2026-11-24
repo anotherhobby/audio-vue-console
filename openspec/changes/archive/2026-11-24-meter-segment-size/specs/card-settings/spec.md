@@ -6,12 +6,11 @@
 
 A keyed block SHALL show one row for each key a selected card picks by its picking setting
 (`x-keyed-by`), in the block's order, or that setting's default where unset. A key no selected card
-picks SHALL have no row. A field a row leaves blank SHALL show the key's product value as its
-placeholder, where the block's keys give one.
+picks SHALL have no row. A blank field SHALL show the key's product value as its placeholder,
+where the block's keys give one.
 
 Source: audio-vue `settings-schema` (`x-keyed-by`, `x-keys`); maintainer, 2026-11-21. audio-vue
-`bar-card-segments` (`meter-segment-size-handoff.md`, 2026-11-24): each key carries its product
-segment size, and blank ends show the product's range.
+`bar-card-segments` (2026-11-24).
 
 #### Scenario: A scales block
 
@@ -47,16 +46,13 @@ segment size, and blank ends show the product's range.
 
 ### Requirement: A keyed block's span is checked before it is stored
 
-A keyed block's row SHALL be checked against the span rules the schema gives for the block before
-any value is stored: both ends or neither, `hi` above `lo`, the anchor and the segment size, set or
-else the product's, judged against the span, set or else the product's range. A row that fails SHALL
-NOT be stored, SHALL keep the value the card held before, and SHALL say why beside the row in the
-card's words.
+A keyed block's row SHALL be checked against the block's span rules before any value is stored:
+both ends or neither, `hi` above `lo`, and the anchor and segment size, set or else the product's,
+judged on the span, set or else the product's range. A refused row SHALL NOT be stored, SHALL keep
+the card's previous value, and SHALL say why beside the row in the card's words.
 
-Source: audio-vue `meter` scale overrides, checked as the card checks them. Maintainer ruling
-(2026-11-21, alignment F1): match the card. audio-vue `bar-card-segments`, "A segment size may be
-set without a range", "A field's segment size is one of eight" and "A field's segment size divides
-its span" (`meter-segment-size-handoff.md`, 2026-11-24).
+Source: audio-vue `meter` and `bar-card-segments` (2026-11-24); maintainer, 2026-11-21: match the
+card.
 
 #### Scenario: A missing end
 
@@ -121,9 +117,8 @@ Clearing every field of a row SHALL remove that key from the card's block, so th
 product's scale for that field. Clearing only its ends SHALL keep an anchor or segment size the row
 still sets. A block left with no keys SHALL be stored as unset, as if the setting were never set.
 
-Source: Decision (maintainer, 2026-11-21, `meter-segments-handoff.md`): a cleared row removes the
-key; an empty block is stored as unset. audio-vue `bar-card-segments` (2026-11-24): a row may give
-neither end.
+Source: Decision (maintainer, 2026-11-21, `meter-segments-handoff.md`). audio-vue
+`bar-card-segments` (2026-11-24): a row may give neither end.
 
 #### Scenario: Clearing a row
 

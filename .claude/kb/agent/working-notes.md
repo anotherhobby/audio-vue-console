@@ -262,16 +262,10 @@ and `../audio-vue/console-track-render-handoff.md` carries Q3 to audio-vue. Rule
 The handoffs `track-render-handoff.md` and `rta-fine-bands-handoff.md` are read. The second needed
 only the fixture, test and KB refresh (2026-11-23). Remind the maintainer to delete both.
 
-## Meter segment size (built and run 2026-11-24)
+## Meter segment size (archived 2026-11-24)
 
-`openspec/changes/meter-segment-size` follows audio-vue's `bar-card-segments`
-(`meter-segment-size-handoff.md`). Every task is done, and the maintainer's run on the panel passed
-(2026-11-24).
-- Each Scales row has a Segment picker. It is disabled on count fields, and blank fields show the
-  product's values.
-- A row takes both ends or neither, and its check includes the size rules.
-- The repair walk judges `dependentRequired`.
-- Verify and archive are next.
-- Alignment Q1 was answered yes (maintainer, 2026-11-24). `../audio-vue/keyed-block-schema-handoff.md`
-  asks audio-vue's `settings-schema` to state the keyed block's export form.
-- Remind the maintainer to delete `meter-segment-size-handoff.md`.
+Archived as `openspec/changes/archive/2026-11-24-meter-segment-size`, following audio-vue's
+`bar-card-segments`. Its rules are now in `card-settings` and `scene-repair`. The maintainer's run on
+the panel passed, and `meter-segment-size-handoff.md` is deleted.
+- `../audio-vue/keyed-block-schema-handoff.md` asks audio-vue's `settings-schema` to state the
+  keyed table's export form. It is unanswered and blocks nothing.
