@@ -120,6 +120,25 @@ Source: Decision (maintainer, 2026-11-21): a scene too wide is listed and can be
 - **WHEN** every card of a scene ends within the panel's columns
 - **THEN** it carries no note
 
+### Requirement: A scene that needs a repair is marked in the gallery
+
+A scene that needs a repair (`scene-repair`) SHALL be listed like any other, with a note that it
+holds settings the panel no longer takes. A scene that cannot be repaired SHALL carry the same note.
+
+Source: audio-vue `settings-schema`, "The panel loads only what validation passes": the panel refuses
+such a scene too, so every one is shown, not only the scene that is open. Decision (maintainer,
+2026-11-23).
+
+#### Scenario: Primary after the RTA's settings moved
+
+- **WHEN** a stored scene's `analysis:` holds `rta_weighting`
+- **THEN** the gallery lists it under "My Scenes" with the note
+
+#### Scenario: A scene that passes the schema
+
+- **WHEN** a stored scene holds only what the schema declares
+- **THEN** it carries no such note
+
 ### Requirement: A panel with no display offers no scenes to edit
 
 While the panel's state gives no grid, the Scenes page SHALL say the panel has no display to lay
