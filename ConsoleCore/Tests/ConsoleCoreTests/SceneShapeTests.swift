@@ -74,6 +74,20 @@ struct SceneShapeTests {
         #expect(repair.lines == ["spectrum old (card 1) removed"])
     }
 
+    /// A scale's ends depend on each other, so a scale giving one is removed and its neighbours
+    /// kept (`scene-repair`, "A repair removes an entry it cannot make whole").
+    @Test func aScaleWithOneEndIsRemoved() throws {
+        let repair = try Self.repair(
+            #"""
+            {"cards": [{"card": "meter", "params": {"scales": {
+              "program_loudness": {"lo": -50}, "peak_to_loudness": {"lo": 0, "hi": 20}}}}]}
+            """#)
+        #expect(
+            repair.doc?["cards"]?.arrayValue?.first?["params"]?["scales"]
+                == .object(["peak_to_loudness": .object(["lo": .integer(0), "hi": .integer(20)])]))
+        #expect(repair.changes.count == 1)
+    }
+
     @Test func aSceneLeftWithNoCardCannotBeRepaired() throws {
         let repair = try Self.repair(#"{"cards": [{"card": "spectrum_old"}]}"#)
         #expect(!repair.canRepair)
@@ -111,5 +125,7 @@ struct SceneShapeTests {
         }
     }
 
-    private static let valueKeywords: Set<String> = ["default", "enum", "const", "required"]
+    private static let valueKeywords: Set<String> = [
+        "default", "enum", "const", "required", "dependentRequired",
+    ]
 }

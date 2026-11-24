@@ -155,7 +155,7 @@ struct SchemaFactsTests {
         #expect(bars["grid_major_color"]?.role == "grid_major")
         #expect(bars["major_weight_px"]?.shape == .integer(.init(minimum: 1, maximum: 8, step: 1)))
         #expect(bars.settings.first?.key == "floor_db")
-        #expect(bars.settings.count == 24)
+        #expect(bars.settings.count == 26)
     }
 
     // MARK: Scene blocks (`scene-settings`, design D2)

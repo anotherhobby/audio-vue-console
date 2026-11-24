@@ -42,7 +42,8 @@ public struct SceneShape: Sendable, Equatable {
     /// test holds the export to, so a keyword added there is noticed.
     static let keywords: Set<String> = [
         "type", "const", "enum", "pattern", "minLength", "minimum", "maximum", "properties",
-        "additionalProperties", "required", "$ref", "anyOf", "allOf", "if", "then", "items",
+        "additionalProperties", "required", "dependentRequired", "$ref", "anyOf", "allOf", "if",
+        "then", "items",
         "minItems", "maxItems", "uniqueItems", "default", "$schema", "$defs",
     ]
 }
@@ -104,7 +105,9 @@ struct ShapeWalk {
         keywords.contains { schema[$0] != nil }
     }
 
-    private static let objectKeywords = ["properties", "additionalProperties", "required"]
+    private static let objectKeywords = [
+        "properties", "additionalProperties", "required", "dependentRequired",
+    ]
     private static let arrayKeywords = ["items", "minItems", "maxItems", "uniqueItems"]
 
     /// `schema` with each `$ref` it starts with followed, its own keys over the definition's.
@@ -158,7 +161,7 @@ struct ShapeWalk {
     }
 
     /// An object with each declared key fitted, each undeclared key removed where the object is
-    /// closed, and nil where a key it requires is missing.
+    /// closed, and nil where a key it requires, or a key a kept key depends on, is missing.
     private mutating func fitObject(
         _ fields: [String: JSONValue], to schema: JSONValue, at path: [RepairChange.Step]
     ) -> JSONValue? {
@@ -170,8 +173,17 @@ struct ShapeWalk {
             kept[key] = fitField(
                 child, declared: properties[key], closed: closed, at: path + [.key(key)])
         }
+        return Self.isWhole(kept, schema) ? .object(kept) : nil
+    }
+
+    /// Whether `kept` holds every key `schema` requires, and every key a key it holds depends on
+    /// (`dependentRequired`).
+    private static func isWhole(_ kept: [String: JSONValue], _ schema: JSONValue) -> Bool {
         let required = schema["required"]?.arrayValue?.compactMap(\.stringValue) ?? []
-        return required.allSatisfy { kept[$0] != nil } ? .object(kept) : nil
+        let dependents = schema["dependentRequired"]?.objectValue ?? [:]
+        let needed = dependents.filter { kept[$0.key] != nil }.values
+            .flatMap { $0.arrayValue?.compactMap(\.stringValue) ?? [] }
+        return (required + needed).allSatisfy { kept[$0] != nil }
     }
 
     /// One key's value as its object takes it: fitted to its declaration, kept as it is in an

@@ -289,6 +289,14 @@
    "properties": {
     "adc_bits_used": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -322,25 +330,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "balance": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -374,25 +421,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "correlation": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -426,25 +512,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "crest_factor": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -478,25 +603,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "crest_peak": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -530,25 +694,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "crest_rms": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -582,25 +785,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "dynamic_range_bits": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -634,25 +876,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "loudness_range": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -686,25 +967,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "mid_level": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -738,25 +1058,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "momentary_loudness": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -790,25 +1149,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "mono_deviation": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -842,25 +1240,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "peak_to_loudness": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -894,25 +1331,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "ppm_peak": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -946,25 +1422,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "program_loudness": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -998,25 +1513,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "psr": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1050,25 +1604,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "rms_peak": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1102,25 +1695,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "sample_peak": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1154,25 +1786,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "short_term_loudness": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1206,25 +1877,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "short_term_max": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1258,25 +1968,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "short_term_min": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1310,25 +2059,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "side_level": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1362,25 +2150,64 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     },
     "true_peak_max": {
      "additionalProperties": false,
+     "dependentRequired": {
+      "hi": [
+       "lo"
+      ],
+      "lo": [
+       "hi"
+      ]
+     },
      "properties": {
       "anchor": {
        "type": "number",
@@ -1414,27 +2241,58 @@
        "x-standard": null,
        "x-step": null,
        "x-unit": ""
+      },
+      "segment": {
+       "enum": [
+        0.5,
+        1.0,
+        1.25,
+        1.5,
+        2.0,
+        2.5,
+        3.0,
+        5.0
+       ],
+       "type": "number",
+       "x-choice-labels": [
+        "0.5",
+        "1",
+        "1.25",
+        "1.5",
+        "2",
+        "2.5",
+        "3",
+        "5"
+       ],
+       "x-class": "appearance",
+       "x-help": "A segmented style's segment size, in the field's unit. Unset keeps the product's.",
+       "x-inherits": null,
+       "x-label": "Segment",
+       "x-live": false,
+       "x-standard": null,
+       "x-step": null,
+       "x-unit": ""
       }
      },
-     "required": [
-      "lo",
-      "hi"
-     ],
      "type": "object",
      "x-rules": [
+      "lo and hi both or neither; neither keeps the product's range",
       "lo < hi",
-      "anchor, where set, lies between lo and hi"
+      "anchor, where set, lies between lo and hi",
+      "segment, set or else the field's, divides hi - lo",
+      "segment only on a field the product gives a segment size"
      ],
      "x-settings": [
       "lo",
       "hi",
-      "anchor"
+      "anchor",
+      "segment"
      ]
     }
    },
    "type": "object",
    "x-class": "display_range",
-   "x-help": "A field's own scale in place of its default: low, high, optional anchor.",
+   "x-help": "A field's own scale in place of its default: low, high, optional anchor and segment size.",
    "x-inherits": null,
    "x-keyed-by": "field",
    "x-keys": [
@@ -1446,6 +2304,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "LUFS"
     },
     {
@@ -1456,6 +2315,7 @@
       -60.0,
       3.0
      ],
+     "segment": 3.0,
      "unit": "dBTP"
     },
     {
@@ -1466,6 +2326,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "LUFS"
     },
     {
@@ -1476,6 +2337,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "LUFS"
     },
     {
@@ -1486,6 +2348,7 @@
       0.0,
       20.0
      ],
+     "segment": 1.0,
      "unit": "LU"
     },
     {
@@ -1496,6 +2359,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "LUFS"
     },
     {
@@ -1506,6 +2370,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "LUFS"
     },
     {
@@ -1516,6 +2381,7 @@
       0.0,
       20.0
      ],
+     "segment": 1.0,
      "unit": "dB"
     },
     {
@@ -1526,6 +2392,7 @@
       0.0,
       20.0
      ],
+     "segment": 1.0,
      "unit": "dB"
     },
     {
@@ -1536,6 +2403,7 @@
       0.0,
       20.0
      ],
+     "segment": 1.0,
      "unit": "dB"
     },
     {
@@ -1546,6 +2414,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1556,6 +2425,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1566,6 +2436,7 @@
       0.0,
       20.0
      ],
+     "segment": null,
      "unit": "bits"
     },
     {
@@ -1576,6 +2447,7 @@
       0.0,
       24.0
      ],
+     "segment": null,
      "unit": "bits"
     },
     {
@@ -1586,6 +2458,7 @@
       -1.0,
       1.0
      ],
+     "segment": null,
      "unit": ""
     },
     {
@@ -1596,6 +2469,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1606,6 +2480,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1616,6 +2491,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1626,6 +2502,7 @@
       -1.0,
       1.0
      ],
+     "segment": null,
      "unit": ""
     },
     {
@@ -1636,6 +2513,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1646,6 +2524,7 @@
       -60.0,
       0.0
      ],
+     "segment": 2.5,
      "unit": "dBFS"
     },
     {
@@ -1656,6 +2535,7 @@
       -4.0,
       4.0
      ],
+     "segment": null,
      "unit": "LU"
     }
    ],
@@ -1685,6 +2565,30 @@
       "style": [
        "fill",
        "tick"
+      ]
+     }
+    },
+    {
+     "reason": "This field's segments are sized in its unit, in Scales.",
+     "when": {
+      "field": [
+       "program_loudness",
+       "true_peak_max",
+       "short_term_loudness",
+       "momentary_loudness",
+       "loudness_range",
+       "short_term_max",
+       "short_term_min",
+       "peak_to_loudness",
+       "crest_factor",
+       "psr",
+       "crest_peak",
+       "crest_rms",
+       "ppm_peak",
+       "sample_peak",
+       "rms_peak",
+       "mid_level",
+       "side_level"
       ]
      }
     }

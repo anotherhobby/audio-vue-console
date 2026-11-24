@@ -76,10 +76,20 @@ struct SettingGroupTests {
                 SettingGroup.unusedReason(of: "segments", across: card, declaredBy: groups) != nil)
         }
         for style in ["segment-fill", "segment-tick"] {
-            let card = [Self.meter(["style": .string(style)])]
+            let card = [Self.meter(["style": .string(style), "field": .string("correlation")])]
             #expect(
                 SettingGroup.unusedReason(of: "segments", across: card, declaredBy: groups) == nil)
         }
+    }
+
+    /// A field the product gives a segment size is cut by that, so the count does nothing on it
+    /// (audio-vue `bar-card-segments`).
+    @Test func aSizedFieldLeavesTheSegmentCountUnused() throws {
+        let groups = try Self.groups()
+        let card = [Self.meter(["style": .string("segment-fill")])]
+        #expect(
+            SettingGroup.unusedReason(of: "segments", across: card, declaredBy: groups)
+                == "This field's segments are sized in its unit, in Scales.")
     }
 
     @Test func theTickColourIsUnusedUntilMarksAreDrawn() throws {
@@ -188,7 +198,7 @@ struct SettingGroupTests {
     }
 
     @Test func cardsOfOneKindShareEverySetting() throws {
-        #expect(try Self.shared("peak_rms", "peak_rms_vertical").count == 15)
+        #expect(try Self.shared("peak_rms", "peak_rms_vertical").count == 17)
     }
 
     @Test func nothingSelectedSharesNothing() {

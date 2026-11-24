@@ -111,8 +111,9 @@ private struct SettingWrites {
     let change: ((JSONValue?) -> JSONValue?) -> Void
 }
 
-/// Writes one key's span of a keyed block on the cards, each card's own block taking the span
-/// where the span checks; nil where the scene is read-only (`meter-scales-editor`, design D3).
+/// Writes one key's span of a keyed block on the cards, its segment size included, each card's own
+/// block taking the span where the span checks; nil where the scene is read-only
+/// (`meter-scales-editor`, design D3; `meter-segment-size`, design D2).
 extension CardSettingsList {
     fileprivate func blockEdit(
         _ declaration: SettingDeclaration, _ block: KeyedBlock
@@ -120,9 +121,7 @@ extension CardSettingsList {
         guard let writes = writes(declaration) else { return nil }
         return { name, span in
             writes.change { current in
-                switch block.edit(
-                    current, key: name, lo: span.lo, hi: span.hi, anchor: span.anchor)
-                {
+                switch block.edit(current, key: name, span: span) {
                 case .success(let next): next
                 case .failure: current
                 }

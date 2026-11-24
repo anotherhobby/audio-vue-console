@@ -132,3 +132,9 @@ Format:
   from 3 s through `ClipWriter`. Measured on an M4 Pro (2026-11-23): `track` 0.85 s, each picture about
   0.2 s, the 60-frame clip 2.2 s (going back from 5 s to 3 s restarts the analysis). Skipped without
   the variable.
+
+- 2026-11-24: the Xcode MCP `BuildProject` failed with "No active scheme is selected" while the open
+  workspace listed no schemes, so `XcodeSwitchScheme` could not fix it. `xcodebuild -project
+  AudioVueConsole.xcodeproj -scheme AudioVueConsole -configuration Debug build` built it with Xcode
+  open (no "database is locked" this time). `cd ConsoleCore && xcrun swift test --disable-xctest`:
+  948 tests in 123 suites after `meter-segment-size`.

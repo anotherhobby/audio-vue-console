@@ -2,8 +2,9 @@ import ConsoleCore
 import SwiftUI
 
 /// A keyed block as a collapsed group with one row per key the cards pick, the keys already set
-/// first. A row's three fields are drafts, checked before a change is made, so a refused span is
-/// never stored and says why beside its row (`meter-scales-editor`, design D4 and D5).
+/// first. A row's fields are drafts, checked before a change is made, so a refused span is never
+/// stored and says why beside its row (`meter-scales-editor`, design D4 and D5). Its segment size
+/// is picked and commits at once (`meter-segment-size`, design D5 to D7).
 struct KeyedBlockRows: View {
     let declaration: SettingDeclaration
     /// The keys the cards pick, in the order the block lists them (`card-settings`).
@@ -13,11 +14,12 @@ struct KeyedBlockRows: View {
     /// Writes one key's span on the selected cards; nil where the scene is read-only.
     let set: ((String, KeyedBlock.Span) -> Void)?
 
-    /// What a row's three fields hold as typed.
+    /// What a row's fields hold as typed, and its segment size as picked.
     private struct Draft: Equatable {
         var lo = ""
         var hi = ""
         var anchor = ""
+        var segment: Double?
     }
 
     @State private var drafts: [String: Draft] = [:]
@@ -56,7 +58,7 @@ struct KeyedBlockRows: View {
 
     private func isSet(_ name: String) -> Bool {
         let span = KeyedBlock.span(of: name, in: value.shown)
-        return span.lo != nil || span.hi != nil || span.anchor != nil
+        return span.lo != nil || span.hi != nil || span.anchor != nil || span.segment != nil
     }
 
     private func reseed() {
@@ -67,7 +69,7 @@ struct KeyedBlockRows: View {
                     key.name,
                     Draft(
                         lo: Self.text(span.lo), hi: Self.text(span.hi),
-                        anchor: Self.text(span.anchor))
+                        anchor: Self.text(span.anchor), segment: span.segment)
                 )
             })
         refusals = [:]
@@ -77,9 +79,10 @@ struct KeyedBlockRows: View {
         VStack(alignment: .leading, spacing: SceneMetrics.settingSpacing) {
             LabeledContent {
                 HStack(spacing: SceneMetrics.settingSpacing) {
-                    field("Low", key, \.lo, prompt: "Low")
-                    field("High", key, \.hi, prompt: "High")
+                    field("Low", key, \.lo, prompt: key.range.first.map(Self.number) ?? "Low")
+                    field("High", key, \.hi, prompt: key.range.last.map(Self.number) ?? "High")
                     field("Anchor", key, \.anchor, prompt: key.anchor.map(Self.number) ?? "Product")
+                    segmentPicker(key)
                 }
             } label: {
                 VStack(alignment: .leading) {
@@ -114,6 +117,40 @@ struct KeyedBlockRows: View {
         }
     }
 
+    /// The row's segment size: the block's sizes, or empty for the product's. A key segmented by
+    /// count takes none, so its picker is disabled and says so (design D6).
+    private func segmentPicker(_ key: KeyedBlock.Key) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text("Segment").font(.caption2).foregroundStyle(.secondary)
+            Picker("Segment", selection: segmentBinding(key)) {
+                Text(key.segment.map { "\(block.label(ofSize: $0)), the product's" } ?? "Count")
+                    .tag(Double?.none)
+                ForEach(block.sizes, id: \.self) { size in
+                    Text(block.label(ofSize: size)).tag(Double?.some(size))
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
+            .disabled(key.segment == nil)
+            .help(
+                key.segment == nil
+                    ? "\(key.label)'s segments are a count, set by Segments."
+                    : "The size of each segment, in \(key.unit). Empty keeps the product's.")
+        }
+    }
+
+    /// A pick is stored with the row's typed fields at once, checked as a submitted row is.
+    private func segmentBinding(_ key: KeyedBlock.Key) -> Binding<Double?> {
+        Binding(
+            get: { drafts[key.name, default: Draft()].segment },
+            set: {
+                var draft = drafts[key.name, default: Draft()]
+                draft.segment = $0
+                drafts[key.name] = draft
+                commit(key, draft)
+            })
+    }
+
     private func binding(_ name: String, _ part: WritableKeyPath<Draft, String>) -> Binding<String>
     {
         Binding(
@@ -123,8 +160,8 @@ struct KeyedBlockRows: View {
 
     /// Checks the row's typed span and, where it is valid, writes it. A refused span is shown beside
     /// the row and not written; a blank row clears the key.
-    private func commit(_ key: KeyedBlock.Key) {
-        let draft = drafts[key.name] ?? Draft()
+    private func commit(_ key: KeyedBlock.Key, _ picked: Draft? = nil) {
+        let draft = picked ?? drafts[key.name] ?? Draft()
         let typed = [draft.lo, draft.hi, draft.anchor]
         guard typed.allSatisfy({ $0.isBlank || Double($0.trimmed) != nil }) else {
             refusals[key.name] = "not a number"
@@ -132,8 +169,8 @@ struct KeyedBlockRows: View {
         }
         let span = KeyedBlock.Span(
             lo: Double(draft.lo.trimmed), hi: Double(draft.hi.trimmed),
-            anchor: Double(draft.anchor.trimmed))
-        switch block.edit(nil, key: key.name, lo: span.lo, hi: span.hi, anchor: span.anchor) {
+            anchor: Double(draft.anchor.trimmed), segment: draft.segment)
+        switch block.edit(nil, key: key.name, span: span) {
         case .failure(let refusal):
             refusals[key.name] = refusal.text
         case .success:
