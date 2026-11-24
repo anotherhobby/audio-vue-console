@@ -90,6 +90,51 @@ struct SceneColoursTests {
         #expect(followed.colour.hex == "#0A0B0C" && followed.role?.id == "value")
     }
 
+    /// audio-vue `logo`: the logo card's four colours are its own, each a role or a colour.
+    @Test func theLogosColoursAreItsOwn() throws {
+        let facts = try Self.facts()
+        let own = [
+            "wordmark_color": "#D4DCEA", "bar_foot_color": "#1AD9CC", "bar_top_color": "#F2528C",
+            "hold_color": "#FFF2C7",
+        ]
+        for (key, hex) in own {
+            let colour = try Self.setting("logo", key)
+            #expect(colour.shape == .roleColour(roles: Self.roles), "\(key)")
+            #expect(colour.role == nil && colour.ownDefault?.uppercased() == hex)
+            let drawn = try #require(colour.drawnColour(nil, in: [:], colours: facts.colours))
+            #expect(drawn.colour.hex == hex && drawn.role == nil && drawn.caption == nil)
+        }
+    }
+
+    /// audio-vue `screensaver`: a scene's display block sets the screensaver's four colours, each
+    /// a role resolved on the scene or a colour, unset the logo's own, and chooses its backdrop
+    /// and plate (`scene-settings`, "A colour in a scene block takes one of the scene's colours or
+    /// its own").
+    @Test func theScenesScreensaverColoursAreTheLogosOwnUntilSet() throws {
+        let facts = try Self.facts()
+        let display = try #require(facts.block("display")?.settings)
+        let foot = try #require(display["saver_bar_foot_color"])
+        #expect(foot.shape == .roleColour(roles: Self.roles) && foot.inherits == nil)
+        let unset = try #require(foot.drawnColour(nil, in: [:], colours: facts.colours))
+        #expect(unset.colour.hex == "#1AD9CC" && unset.role == nil)
+        let blocks = ["colors": JSONValue.object(["bar_body": .string("#FFFF00")])]
+        let role = try #require(
+            foot.drawnColour(.string("bar_body"), in: blocks, colours: facts.colours))
+        #expect(role.colour.hex == "#FFFF00" && role.caption == "Uses the scene's Bar body colour")
+        for key in ["saver_wordmark_color", "saver_bar_top_color", "saver_hold_color"] {
+            #expect(display[key]?.ownDefault != nil && display[key]?.role == nil, "\(key)")
+        }
+        for key in ["saver_scene_backdrop", "saver_scene_plate"] {
+            #expect(display[key]?.shape == .boolean && display[key]?.defaultValue == .bool(false))
+        }
+    }
+
+    /// The roles a card's colour may take, in the schema's order.
+    private static let roles = [
+        "card", "title", "value", "label", "unit", "scale", "caption", "notice", "grid_major",
+        "grid_minor", "outline", "tick", "track", "series", "bar_body", "bar_tip", "peak_hold",
+    ]
+
     @Test func aSettingThatIsNoCardColourDrawsNone() throws {
         let facts = try Self.facts()
         let floor = try Self.setting("rta_bars", "floor_db")

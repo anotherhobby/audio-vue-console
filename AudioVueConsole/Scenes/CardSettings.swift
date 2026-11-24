@@ -69,21 +69,15 @@ struct CardSettingsList: View {
     private func fromScene(_ declaration: SettingDeclaration, _ value: SettingValue) -> FromScene {
         guard case .same(let held, _) = value else { return FromScene() }
         let blocks = editor.content.blocks
-        guard case .roleColour(let roles) = declaration.shape else {
-            return FromScene(
-                value: held == nil
-                    ? scene.facts?.inheritedValue(
-                        of: declaration, scene: blocks, installed: scene.installed) : nil,
-                owner: declaration.inherits?.document == SettingDeclaration.Source.install
-                    ? "panel" : "scene")
+        if let colour = FromScene.colour(declaration, held: held, in: blocks, scene.colours) {
+            return colour
         }
         return FromScene(
-            drawn: declaration.drawnColour(held, in: blocks, colours: scene.colours),
-            roles: roles.compactMap { id in
-                scene.colours.role(id).map { role in
-                    RoleChoice(role: role, colour: scene.colours.colour(of: id, in: blocks))
-                }
-            })
+            value: held == nil
+                ? scene.facts?.inheritedValue(
+                    of: declaration, scene: blocks, installed: scene.installed) : nil,
+            owner: declaration.inherits?.document == SettingDeclaration.Source.install
+                ? "panel" : "scene")
     }
 
     /// The row's changes, or nil where the scene is read-only and the list is for its cards.
@@ -173,6 +167,24 @@ struct FromScene {
     var value: JSONValue?
     /// Whose value an unset setting takes: the scene's, or the panel's for a scene's own setting.
     var owner = "scene"
+
+    /// What a colour setting holding `held` takes from a scene with `blocks` and `colours`, as
+    /// edited: the colour it is drawn in and the roles it may take, each in the scene's colour for
+    /// it. Nil for a setting that is no role colour. A card's colour and a scene block's alike
+    /// (`card-settings`, `scene-settings`; `track-native-logo` design D1).
+    static func colour(
+        _ declaration: SettingDeclaration, held: JSONValue?, in blocks: [String: JSONValue],
+        _ colours: SceneColours
+    ) -> FromScene? {
+        guard case .roleColour(let roles) = declaration.shape else { return nil }
+        return FromScene(
+            drawn: declaration.drawnColour(held, in: blocks, colours: colours),
+            roles: roles.compactMap { id in
+                colours.role(id).map { role in
+                    RoleChoice(role: role, colour: colours.colour(of: id, in: blocks))
+                }
+            })
+    }
 }
 
 /// One setting, compact: its label, its control with Use Default beside it where the scene sets it,

@@ -26,7 +26,7 @@ struct HostClientInstallWritesTests {
             + #""calibration": "the panel's 96 kHz is uncalibrated"}"#
         let transport = FakeTransport([.writeInstall("input"): .status(200, answer)])
         let written = try await write(over: transport)
-        #expect(written.rev == 5)
+        #expect(written.rev == 5 && written.applies == .restarted)
         #expect(written.chainChanged == ["rate"])
         #expect(written.calibration == "the panel's 96 kHz is uncalibrated")
         let request = try #require(await transport.requests.first)
@@ -52,6 +52,16 @@ struct HostClientInstallWritesTests {
         let transport = FakeTransport([.writeInstall("input"): .status(200, answer)])
         let written = try await write(over: transport)
         #expect(written.chainChanged.isEmpty && written.calibration == nil)
+    }
+
+    /// `track-native-logo` design D3: a `display` write applies at the panel's next start.
+    @Test func aDisplayWriteAppliesAtTheNextStart() async throws {
+        let answer = #"{"block": "display", "rev": 3, "applies": "on_start"}"#
+        let transport = FakeTransport([.writeInstall("display"): .status(200, answer)])
+        let written = try await HostClient(transport: transport).writeInstall(
+            ["saver_after_min": .integer(10)], block: "display", base: 2, at: try address(),
+            token: token)
+        #expect(written.rev == 3 && written.applies == .onStart)
     }
 
     @Test func aStaleWriteSaysTheCurrentRevision() async throws {

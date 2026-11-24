@@ -77,17 +77,6 @@ struct HostClientScenesTests {
         #expect(revisions.isEmpty)
     }
 
-    @Test func theInstallBlocksAreReadByName() async throws {
-        let body =
-            #"{"blocks": [{"block": "viewing", "rev": 0, "doc": {"distance_in": 80.0}},"#
-            + #"{"block": "input", "rev": 2, "doc": {"rate": 96000}}]}"#
-        let transport = FakeTransport([.install: .status(200, body)])
-        let blocks = try await HostClient(transport: transport).install(
-            at: try address(), token: token)
-        #expect(blocks["viewing"]?["distance_in"] == .integer(80))
-        #expect(blocks["input"]?["rate"] == .integer(96000))
-    }
-
     /// Design D2: each block's revision is read beside its document, the one a write is made on.
     @Test func theInstallBlocksAreReadWithTheirRevisions() async throws {
         let body =

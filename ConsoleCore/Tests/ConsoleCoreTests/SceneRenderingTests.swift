@@ -180,6 +180,17 @@ struct SceneRenderingTests {
         #expect(fixture.rendering.plates.count == 3)
     }
 
+    /// `track-native-logo` design D7: the display block draws nothing, so changing it sends nothing.
+    @Test func aDisplayChangeDrawsNothing() async throws {
+        let fixture = try RenderingFixture()
+        await fixture.rendering.attach(fixture.queue)
+        var content = fixture.content(fixture.layout)
+        content.blocks["display"] = .object(["saver_after_min": .integer(2)])
+        await fixture.rendering.show(content)
+        #expect(fixture.launcher.requests.count == 1)
+        #expect(fixture.rendering.plates.count == 3)
+    }
+
     @Test func aColourChangeDrawsEverything() async throws {
         let fixture = try RenderingFixture()
         await fixture.rendering.attach(fixture.queue)

@@ -155,7 +155,7 @@ struct SchemaFactsTests {
         #expect(bars["grid_major_color"]?.role == "grid_major")
         #expect(bars["major_weight_px"]?.shape == .integer(.init(minimum: 1, maximum: 8, step: 1)))
         #expect(bars.settings.first?.key == "floor_db")
-        #expect(bars.settings.count == 23)
+        #expect(bars.settings.count == 24)
     }
 
     // MARK: Scene blocks (`scene-settings`, design D2)
@@ -204,7 +204,7 @@ struct SchemaFactsTests {
     }
 
     @Test func aCardWithNoSettingsReadsNone() throws {
-        #expect(try Self.facts().settings["logo"]?.settings.isEmpty == true)
+        #expect(try Self.facts().settings["calibration"]?.settings.isEmpty == true)
         #expect(SettingGroup(definition: .object(["type": .string("object")])).settings.isEmpty)
     }
 

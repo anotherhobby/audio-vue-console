@@ -24,16 +24,20 @@ public final class PanelScenes {
     /// The digest of the code the panel draws with, as the host's version read gave it.
     public let cards: CardCode
 
-    private let address: HostAddress
-    private let client: HostClient
-    private let pairing: Pairing
+    // Internal for the install writes in `PanelScenes+Install.swift`.
+    let address: HostAddress
+    let client: HostClient
+    let pairing: Pairing
     private let store: any TokenStore
     private let images: ImageStore
     private let onUnpaired: @MainActor () -> Void
-    private var viewing = JSONValue.object([:])
+    var viewing = JSONValue.object([:])
     /// Each install block's document as the host stores it, by the block's name: what a scene
-    /// takes where its block of the same name leaves a setting unset.
-    public private(set) var installed: [String: JSONValue] = [:]
+    /// takes where its block of the same name leaves a setting unset, and what the Display page
+    /// shows and writes. The app's one copy (`pitfalls.md`).
+    public internal(set) var installed: [String: JSONValue] = [:]
+    /// Each install block's revision, which its next write is made on.
+    var installRevisions: [String: Int] = [:]
     /// The default look's backdrop, which a scene with none of its own shows.
     public private(set) var defaultBackdrop: JSONValue?
 
@@ -73,13 +77,12 @@ public final class PanelScenes {
             for scene in listed {
                 documents.append(try await client.scene(scene.id, at: address, token: token))
             }
-            let install = try await client.install(at: address, token: token)
+            let install = try await client.installBlocks(at: address, token: token)
             guard
                 let facts = SchemaFacts(schema: try await client.schema(at: address, token: token))
             else { throw .unexpectedAnswer }
             let standard = try await client.style(Self.defaultStyle, at: address, token: token)
-            viewing = install["viewing"] ?? .object([:])
-            installed = install
+            hold(install)
             defaultBackdrop = standard["backdrop"]
             for id in Self.images(in: documents.map(\.doc)) {
                 _ = try await images.fetch(id, at: address, token: token)
@@ -266,7 +269,7 @@ public final class PanelScenes {
     }
 
     /// `failure` as it is thrown back, a refused token having unpaired the app first.
-    private func unpairing(_ failure: HostFailure) -> HostFailure {
+    func unpairing(_ failure: HostFailure) -> HostFailure {
         if failure == .tokenRefused { fail(failure) }
         return failure
     }

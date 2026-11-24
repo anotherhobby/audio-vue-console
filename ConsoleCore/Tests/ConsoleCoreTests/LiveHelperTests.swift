@@ -70,6 +70,50 @@ struct LiveHelperTests {
         #expect(plate.header["layers"]?.arrayValue?.count == 1)
     }
 
+    /// audio-vue `logo`: the bundled interpreter draws the logo natively, its wordmark through
+    /// pygame's font module, the bundle's first use of it (`track-native-logo`, task 1.3).
+    @Test func theHelperDrawsTheLogoCard() async throws {
+        let helper = Self.helper()
+        defer { Task { await helper.stop() } }
+        let manifest = try JSONDecoder().decode(
+            JSONValue.self,
+            from: Data(contentsOf: Self.local.appending(path: "render-bundle/manifest.json")))
+        #expect(try await helper.hello() == manifest["digest"]?.stringValue)
+        let logo = JSONValue.object(["card": .string("logo")])
+        let answer = try await helper.ask(
+            try Self.request([
+                "scene": .object(["name": .string("Logo"), "cards": .array([logo])]),
+                "plates": .array([.integer(0)]), "backdrop": .bool(false),
+            ]))
+        let layers = try RenderedLayer.layers(of: answer, cardIDs: [UUID()])
+        let plate = try #require(layers.first { $0.kind == .plate })
+        #expect(plate.unfit.isEmpty)
+        #expect(Self.colourCount(plate.image) > 16, "the plate holds a drawn logo, not a fill")
+    }
+
+    /// How many distinct RGBA values `image` holds, read as 8-bit RGBA.
+    static func colourCount(_ image: CGImage) -> Int {
+        let (width, height) = (image.width, image.height)
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard
+                let context = CGContext(
+                    data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return 0 }
+        var seen = Set<UInt32>()
+        for start in stride(from: 0, to: pixels.count, by: 4) {
+            seen.insert(
+                pixels[start..<(start + 4)].reduce(UInt32(0)) { $0 << 8 | UInt32($1) })
+        }
+        return seen.count
+    }
+
     /// audio-vue `scene-grid` as the bundle draws it: a card with no spans fills an 8:3 display
     /// and a 16:9 one, and a scene reaching column 96 is drawn on the first and refused on the
     /// second (`scene-rendering`, "A scene too wide is drawn as boxes").

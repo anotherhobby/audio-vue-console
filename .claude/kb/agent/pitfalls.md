@@ -311,7 +311,9 @@ listener hears both (`OutputControlLiveTests`, `AUDIO_VUE_LIVE_OUTPUT=D10s`).
 used that copy. After the Input section wrote a new rate, the sheet still offered the old one, and
 a run would have calibrated the rate the panel no longer captured at (seen by the maintainer: host
 at 48 kHz, sheet at 96). Readiness now takes `PanelInput.rate`, the model that writes the block.
-Do not keep a second copy of an install value in another model.
+Do not keep a second copy of an install value in another model. The `display` block's one model is
+`PanelScenes` (`installed`, written by `PanelScenes.writeInstall`), which the Display page and every
+scene's inherited values read (`track-native-logo`, 2026-11-24).
 
 ## `cal-play` sets the output's bit depth as well as its rate (2026-11-09)
 
@@ -378,3 +380,17 @@ passes than there are views in the window", on the `_NSPopoverWindow` (Measured 
 macOS 27.2). A grouped form is a table view, the same family as the `List` crash above. The popover
 became a plain `VStack` with `.fixedSize()` and the well at a fixed frame (`PaneGridPicker`).
 Use stacks, not `Form` or `List`, in popovers here.
+
+## A stretched colour well crashed the inspector's form (2026-11-24)
+
+`NSColorWell` gives width up to anything beside it: its natural size is 48 x 24, but SwiftUI
+stretched it to 95, 97 or 111.5 pt depending on the row. In a scene's Display section, a row
+holding a well, the role menu and a long label crashed the app as soon as the window went inactive
+(another app clicked, or the Image backdrop source's sheet): "Geometry action is cycling between
+duplicate values", then `GroupedFormRowLayout` placed the label at y = NaN (Measured, macOS 27.2,
+`track-native-logo`). Card rows with the same controls did not crash, and a standalone copy of
+the rows never reproduced it. Bisected in the app: no crash without the menu or without the well;
+a fixed menu frame, a plain button in place of the menu, and a short label all still crashed.
+`ColourWell.sizeThatFits` now reports `SceneMetrics.colourWellWidth` x `colourWellHeight` for
+every well. Give an AppKit control in a form row a fixed size, never its own flexible one.
+

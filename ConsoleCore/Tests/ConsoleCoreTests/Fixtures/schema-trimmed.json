@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "x-schema-version": 26,
+  "x-schema-version": 29,
   "x-categories": [
     {
       "cards": [
@@ -997,12 +997,202 @@
           "x-live": false,
           "x-step": 1.0,
           "x-inherits": "install.display"
+        },
+        "saver_wordmark_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "On the screensaver: the audio-vue wordmark.",
+          "x-label": "Screensaver text colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#d4dcea"
+          }
+        },
+        "saver_bar_foot_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "On the screensaver: the bars' colour at their foot.",
+          "x-label": "Screensaver bar body colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#1ad9cc"
+          }
+        },
+        "saver_bar_top_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "On the screensaver: the bars' colour at the tallest bar's top; shorter bars end partway to it.",
+          "x-label": "Screensaver bar tip colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#f2528c"
+          }
+        },
+        "saver_hold_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "On the screensaver: the marks held above the bars.",
+          "x-label": "Screensaver peak hold colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#fff2c7"
+          }
+        },
+        "saver_scene_backdrop": {
+          "type": "boolean",
+          "default": false,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Draw the screensaver over this scene's backdrop rather than the default.",
+          "x-label": "Use the scene's backdrop",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null
+        },
+        "saver_scene_plate": {
+          "type": "boolean",
+          "default": false,
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "Put the screensaver's card on this scene's plate rather than the default.",
+          "x-label": "Use the scene's plate",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null
         }
       },
       "x-settings": [
         "saver",
         "saver_after_min",
-        "sleep_after_min"
+        "sleep_after_min",
+        "saver_wordmark_color",
+        "saver_bar_foot_color",
+        "saver_bar_top_color",
+        "saver_hold_color",
+        "saver_scene_backdrop",
+        "saver_scene_plate"
       ]
     },
     "install.input": {
@@ -2948,8 +3138,174 @@
     "card.logo": {
       "type": "object",
       "additionalProperties": false,
-      "properties": {},
-      "x-settings": [],
+      "properties": {
+        "wordmark_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The audio-vue wordmark.",
+          "x-label": "Text colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#d4dcea"
+          }
+        },
+        "bar_foot_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The bars' colour at their foot.",
+          "x-label": "Bar body colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#1ad9cc"
+          }
+        },
+        "bar_top_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The bars' colour at the tallest bar's top; shorter bars end partway to it.",
+          "x-label": "Bar tip colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#f2528c"
+          }
+        },
+        "hold_color": {
+          "anyOf": [
+            {
+              "enum": [
+                "card",
+                "title",
+                "value",
+                "label",
+                "unit",
+                "scale",
+                "caption",
+                "notice",
+                "grid_major",
+                "grid_minor",
+                "outline",
+                "tick",
+                "track",
+                "series",
+                "bar_body",
+                "bar_tip",
+                "peak_hold"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          ],
+          "x-class": "appearance",
+          "x-standard": null,
+          "x-help": "The marks held above the bars.",
+          "x-label": "Peak hold colour",
+          "x-unit": "",
+          "x-live": false,
+          "x-step": null,
+          "x-inherits": null,
+          "x-own": {
+            "default": "#fff2c7"
+          }
+        }
+      },
+      "x-settings": [
+        "wordmark_color",
+        "bar_foot_color",
+        "bar_top_color",
+        "hold_color"
+      ],
       "x-min-cells": [
         6,
         4
@@ -9263,6 +9619,35 @@
             "1/12 octave"
           ]
         },
+        "channel": {
+          "enum": [
+            "left",
+            "right",
+            "mid",
+            "side",
+            "avg",
+            "sum",
+            "max"
+          ],
+          "default": "avg",
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "What the bars measure: Left, Right, Mid, Side, or both channels' power avg, sum or max.",
+          "x-label": "Channel",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "Left",
+            "Right",
+            "Mid",
+            "Side",
+            "L+R Avg",
+            "L+R Sum",
+            "L/R Max"
+          ]
+        },
         "reading": {
           "enum": [
             "F",
@@ -9823,6 +10208,7 @@
         "minor_weight_px",
         "show_labels",
         "bands",
+        "channel",
         "reading",
         "peak_hold",
         "hold_s",
@@ -9883,6 +10269,35 @@
             "1/3 octave",
             "1/6 octave",
             "1/12 octave"
+          ]
+        },
+        "channel": {
+          "enum": [
+            "left",
+            "right",
+            "mid",
+            "side",
+            "avg",
+            "sum",
+            "max"
+          ],
+          "default": "avg",
+          "x-class": "chain",
+          "x-standard": null,
+          "x-help": "What the columns measure: Left, Right, Mid, Side, or both channels' power avg, sum or max.",
+          "x-label": "Channel",
+          "x-unit": "",
+          "x-live": true,
+          "x-step": null,
+          "x-inherits": null,
+          "x-choice-labels": [
+            "Left",
+            "Right",
+            "Mid",
+            "Side",
+            "L+R Avg",
+            "L+R Sum",
+            "L/R Max"
           ]
         },
         "quantity": {
@@ -10233,6 +10648,7 @@
       },
       "x-settings": [
         "bands",
+        "channel",
         "quantity",
         "span_s",
         "newest",

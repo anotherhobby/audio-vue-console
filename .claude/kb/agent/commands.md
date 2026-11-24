@@ -120,6 +120,12 @@ Format:
   change; `scenes/rta.yaml` sets no RTA setting), then `xcrun swift test --disable-xctest`: 816 tests in
   105 suites passed. `RENDER_HELPER_LIVE=1 ... --filter LiveHelperTests` passed on the refreshed bundle.
 
+- 2026-11-24: after audio-vue's `native-logo`, the schema fixture refresh above, then
+  `xcrun swift test --disable-xctest`: 936 tests in 123 suites passed. `LiveHelperTests` gained
+  `theHelperDrawsTheLogoCard`: the bundled interpreter draws a one-card `logo` scene (pygame's font
+  module, first used by the bundle there), with its plate not unfit. Passed after
+  `tools/refresh-render-bundle.sh`.
+
 - 2026-11-23: `RENDER_HELPER_LIVE=1 xcrun swift test --disable-xctest --filter LiveTrackRenderTests` in
   `ConsoleCore/` - the real helper from `local/` draws `Fixtures/rta-scene.json` at 1920 x 720 from a
   generated 10 s 48 kHz stereo sine (`track`, pictures at 1 s and 5 s), then writes a 2 s clip at 30 fps

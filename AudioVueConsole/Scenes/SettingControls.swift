@@ -159,6 +159,15 @@ struct ColourWell: NSViewRepresentable {
         return well
     }
 
+    /// One size, never the room a row leaves: `NSColorWell` gives width up to anything beside it,
+    /// and a form row whose well and label kept trading width crashed the app as the window went
+    /// inactive (`pitfalls.md`, 2026-11-24). A frame set on the well still wins.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSColorWell, context: Context)
+        -> CGSize?
+    {
+        CGSize(width: SceneMetrics.colourWellWidth, height: SceneMetrics.colourWellHeight)
+    }
+
     func updateNSView(_ well: NSColorWell, context: Context) {
         let coordinator = context.coordinator
         coordinator.stored = hex.flatMap { HexColour($0) }?.hex

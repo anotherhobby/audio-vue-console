@@ -20,7 +20,8 @@ struct ColourGroups: View {
             }
         }
         ForEach(colours.ungrouped(of: settings)) {
-            BlockSettingRow(block: SceneColours.block, declaration: $0, editor: editor)
+            BlockSettingRow(
+                block: SceneColours.block, declaration: $0, editor: editor, colours: colours)
         }
     }
 

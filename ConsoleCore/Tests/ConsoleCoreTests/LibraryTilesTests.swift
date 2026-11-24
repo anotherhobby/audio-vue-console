@@ -14,15 +14,18 @@ struct LibraryTilesTests {
     ]
 
     /// A 64 × 36 scene named `name` in `colours`, holding one meter away from the corner.
-    private static func scene(_ name: String, colours: String = "a") throws -> LaidOutScene {
+    private static func scene(
+        _ name: String, colours: String = "a", display: JSONValue? = nil
+    ) throws -> LaidOutScene {
         let meter: JSONValue = .object([
             "card": .string("meter"), "col": .integer(20), "row": .integer(10),
             "colspan": .integer(8), "rowspan": .integer(8), "group": .string("g"),
         ])
-        let doc: JSONValue = .object([
-            "name": .string(name), "colors": .string(colours),
-            "cards": .array([meter]),
-        ])
+        var fields: [String: JSONValue] = [
+            "name": .string(name), "colors": .string(colours), "cards": .array([meter]),
+        ]
+        fields["display"] = display
+        let doc = JSONValue.object(fields)
         let document = SceneDocument(id: name, name: name, builtIn: false, fixed: false, doc: doc)
         return try LaidOutScene(document, panel: CellSize(cols: 64, rows: 36))
     }
@@ -139,6 +142,17 @@ struct LibraryTilesTests {
         #expect(request["plates"] == .array([.integer(0)]))
         #expect(request["backdrop"] == .bool(false))
         #expect(Set(tiles.tiles.keys) == ["meter", "tiny", "waveform"])
+    }
+
+    /// `track-native-logo` design D7: the display block draws nothing, so the tiles are kept.
+    @Test func aDisplayChangeKeepsTheTiles() async throws {
+        let fixture = try RenderingFixture()
+        let tiles = LibraryTiles()
+        await draw(tiles, try Self.scene("A"), in: fixture)
+        let timeout = JSONValue.object(["saver_after_min": .integer(2)])
+        await draw(tiles, try Self.scene("A", display: timeout), in: fixture)
+        #expect(Self.renders(fixture).count == Self.rendersPerDraw)
+        #expect(tiles.tiles.count == Self.cards.count)
     }
 
     @Test func aSceneWithTheSameSettingsSendsNothing() async throws {

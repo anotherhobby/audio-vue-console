@@ -21,7 +21,8 @@ struct BackdropEditor: View {
         .disabled(!editable)
         source
         ForEach(settings.settings.filter(shownBelow)) {
-            BlockSettingRow(block: Self.block, declaration: $0, editor: editor)
+            BlockSettingRow(
+                block: Self.block, declaration: $0, editor: editor, colours: colours)
         }
         .sheet(isPresented: $picking) {
             ImagePicker(scenes: scenes, chosen: chosenImage) { write(.image($0)) }

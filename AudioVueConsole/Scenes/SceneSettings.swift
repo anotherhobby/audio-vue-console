@@ -102,7 +102,8 @@ struct BlockSection: View {
             }
             ForEach(block.settings.settings) {
                 BlockSettingRow(
-                    block: block.name, declaration: $0, editor: editor, installed: installed($0))
+                    block: block.name, declaration: $0, editor: editor, colours: colours,
+                    installed: installed($0))
             }
         }
     }
@@ -128,19 +129,32 @@ struct BlockSettingRow: View {
     let block: String
     let declaration: SettingDeclaration
     let editor: SceneEditor
+    /// The scene's colours, which a colour setting takes a role from.
+    let colours: SceneColours
     /// What the panel holds for the setting, which the scene takes while it leaves it unset.
     var installed: JSONValue?
 
     var body: some View {
-        let own = declaration.value(in: editor.content.blocks[block])
+        let blocks = editor.content.blocks
+        let own = declaration.value(in: blocks[block])
         let taken = own.isSet ? nil : installed
         let value = taken.map { SettingValue.same($0, isSet: false) } ?? own
         SettingRow(
             declaration: declaration, value: value, note: note(value), edit: edit,
-            fromScene: FromScene(
-                value: taken,
-                owner: declaration.inherits?.document == SettingDeclaration.Source.scene
-                    ? "scene" : "panel"))
+            fromScene: fromScene(blocks, taken: taken))
+    }
+
+    /// What the scene gives the setting: a colour's drawn colour and roles, or the value an unset
+    /// setting takes from the block it inherits from, and whose that is.
+    private func fromScene(_ blocks: [String: JSONValue], taken: JSONValue?) -> FromScene {
+        let held = blocks[block]?[declaration.key]
+        if let colour = FromScene.colour(declaration, held: held, in: blocks, colours) {
+            return colour
+        }
+        return FromScene(
+            value: taken,
+            owner: declaration.inherits?.document == SettingDeclaration.Source.scene
+                ? "scene" : "panel")
     }
 
     private func note(_ value: SettingValue) -> SettingNote? {

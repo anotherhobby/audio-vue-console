@@ -56,6 +56,11 @@ public struct RenderRequest: Sendable, Equatable {
     /// and every scene shares the prepared run (maintainer, 2026-11-07).
     public static let previewRate = 48_000
 
+    /// The scene blocks no render reads, so a change to them draws nothing again: `display` holds
+    /// the idle stages and the screensaver's look, which audio-vue reads only when the display
+    /// idles (`scene_model`: `scene.display`, `scene.saver_look`; `track-native-logo` design D7).
+    public static let undrawnBlocks: Set<String> = ["display"]
+
     public let doc: JSONValue
     public let builtIn: Bool
     public let context: RenderContext

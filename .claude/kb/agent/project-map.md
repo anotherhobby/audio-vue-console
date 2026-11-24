@@ -46,14 +46,16 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `scene-save`, 2026-11-07),
   `PanelWindow.swift` (the window: the sidebar of pages, the picker in the Panel page's toolbar,
   the connect at launch, and the `LiveState` it watches while open; the sidebar is Panel, Scenes,
-  Capture, Display and History, and Display and History still read `SketchData`), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
+  Capture, Display and History; History is still `SketchLaterPage`), `DisplayPage.swift` (the
+  display's size and the installation's `display` block, written through `PanelScenes`;
+  `panel-display`, 2026-11-24), `PanelPicker.swift` ("Panel:" and a menu named for the panel held, marked
   discovered until paired: the panel held, the other panels found by address, or the denial line,
   then Add Panel…; `PanelPickerItems` is the menu), `PanelPage.swift` (the page once called
   Overview: a pairing prompt while unpaired, then Status, Capture and Calibration from `PanelRows`,
   then the Pairing section; `PanelForm` takes plain values for previews), `AddPanelSheet.swift`,
   `ConnectionStatus.swift`, `ClientsList.swift` (the inline clients list, `ClientRows` for previews),
-  `PanelMetrics.swift` (the window's sizes), `PairingSheet.swift`, assets, and `Sketches/`, the
-  sample page (Display) and its panels (`SketchData`, `sketch.json`).
+  `PanelMetrics.swift` (the window's sizes), `PairingSheet.swift`, assets, and `Sketches/`
+  (`SketchLaterPage`, the placeholder for a page not built yet).
   The App also makes the one `Renderer` (`scene-render`, 2026-11-07), which `PanelWindow` starts
   once paired and the Panel page's Status shows as its Renderer row.
 - `AudioVueConsole/Scenes/` (`scene-render`, 2026-11-07): `ScenesPage` (reads the paired panel's
@@ -177,7 +179,8 @@ Xcode 27's App template, moved to the root and set to macOS only, Swift 6 and th
   `KeyedBlock` (a keyed block from `x-keys`, its span check and `edit`, `meter-scales-editor` 2026-11-21),
   `SettingValues` (declarations in declared order, shared settings, effective values, off-standard
   notes, numbers written to range and step; `card-settings`), `HexColour`, `PanelScenes` (made by
-  `HostConnection.makeScenes()`), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,
+  `HostConnection.makeScenes()`; it holds the install blocks with their revisions, the app's one
+  copy of those a scene inherits from, and writes them in `PanelScenes+Install`, 2026-11-24), `ImageStore`, `SceneDrafts`. Scene writes (`scene-save`,
   2026-11-07): `Draft` (a scene's parse, its layout and its base revision; unsaved by layout, by a
   loaded version or as a copy), `HostClient+SceneWrites` (create, write, delete; `.stale`,
   `.invalid`, `.conflict`), the revisions read in `HostClient+Scenes`, `HostClient+Commands` (switch

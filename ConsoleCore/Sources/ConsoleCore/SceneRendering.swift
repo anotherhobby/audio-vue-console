@@ -142,6 +142,7 @@ public final class SceneRendering {
     /// A plate parked keeps its layer, and is drawn alone only when it must be (`card-parking`).
     public func show(_ content: SceneContent) async {
         let changedBlocks = Self.changedBlocks(from: self.content.blocks, to: content.blocks)
+            .subtracting(RenderRequest.undrawnBlocks)
         self.content = content
         guard let queue else { return }
         let restyled = !changedBlocks.isSubset(of: [Self.backdropBlock])

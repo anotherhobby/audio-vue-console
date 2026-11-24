@@ -28,15 +28,15 @@ public final class LibraryTiles {
         public var unfit: [String] { layer.unfit }
     }
 
-    /// The settings tiles are drawn in: the scene's doc as edited with its cards and name removed
-    /// (`scene-settings`, design D6). Every scene of a panel is on the panel's grid.
+    /// The settings tiles are drawn in: the scene's doc as edited with its cards, its name and the
+    /// blocks no render reads removed (`scene-settings`, design D6; `track-native-logo` design D7).
+    /// Every scene of a panel is on the panel's grid.
     struct Key: Hashable {
         let settings: JSONValue
 
         init(_ laidOut: LaidOutScene, _ content: SceneContent) {
             var fields = laidOut.doc(for: content).objectValue ?? [:]
-            fields["cards"] = nil
-            fields["name"] = nil
+            for unread in ["cards", "name"] + RenderRequest.undrawnBlocks { fields[unread] = nil }
             settings = .object(fields)
         }
     }

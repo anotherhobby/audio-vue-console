@@ -14,15 +14,30 @@ public struct InstallBlockState: Sendable, Equatable {
     }
 }
 
-/// What the host said of an install write: the revision stored, the chain settings it changed, and
-/// what a chain change does to calibration, in the host's words.
+/// What the host said of an install write: the revision stored, when it applies, the chain
+/// settings it changed, and what a chain change does to calibration, in the host's words.
 public struct InstallWritten: Sendable, Equatable {
+    /// When the panel takes a write (audio-vue `settings-store`, "An install write says when it
+    /// applies").
+    public enum Applies: String, Sendable, Equatable {
+        /// At the panel's next start: a `display` write, or any block with no chain change.
+        case onStart = "on_start"
+        case onRestart = "on_restart"
+        /// At the next reload: the `viewing` block.
+        case onReload = "on_reload"
+        /// The panel was restarted to take a chain change before the host answered.
+        case restarted
+    }
+
     public let rev: Int
+    /// When it applies, or nil for a value this build does not know.
+    public let applies: Applies?
     public let chainChanged: [String]
     public let calibration: String?
 
-    public init(rev: Int, chainChanged: [String], calibration: String?) {
+    public init(rev: Int, applies: Applies?, chainChanged: [String], calibration: String?) {
         self.rev = rev
+        self.applies = applies
         self.chainChanged = chainChanged
         self.calibration = calibration
     }
@@ -31,13 +46,6 @@ public struct InstallWritten: Sendable, Equatable {
 /// The host's install settings and capture devices, read and written with a token (audio-vue
 /// `settings-store`, `control-api`).
 extension HostClient {
-    /// `GET /v1/install`: each install block's document, by the block's name.
-    public func install(at address: HostAddress, token: HostToken) async throws(HostFailure)
-        -> [String: JSONValue]
-    {
-        try await installBlocks(at: address, token: token).mapValues { .object($0.doc) }
-    }
-
     /// `GET /v1/install`: each install block with its revision, by the block's name.
     public func installBlocks(at address: HostAddress, token: HostToken) async throws(HostFailure)
         -> [String: InstallBlockState]
@@ -71,7 +79,8 @@ extension HostClient {
         case .ok(let ok):
             let written = try Self.body { try ok.body.json }
             return InstallWritten(
-                rev: written.rev, chainChanged: written.chainChanged ?? [],
+                rev: written.rev, applies: .init(rawValue: written.applies.rawValue),
+                chainChanged: written.chainChanged ?? [],
                 calibration: written.calibration)
         case .conflict(let conflict):
             // A stale write carries the current revision; the refusal during a calibration
