@@ -196,7 +196,7 @@ struct ResizingTests {
         let waveform = card("waveform", rect(10, 0, 20, 12))
         let resized = try layout([waveform]).resizing(
             waveform.id, edges: .left, by: CellOffset(cols: 6, rows: 0),
-            minimum: CellSize(cols: 17, rows: 10))
+            floor: .declared(CellSize(cols: 17, rows: 10)))
         #expect(resized.card(waveform.id)?.cells == CellRect(col: 13, row: 0, cols: 17, rows: 12))
     }
 
@@ -204,10 +204,11 @@ struct ResizingTests {
         let waveform = card("waveform", rect(0, 0, 10, 12))
         let minimum = CellSize(cols: 17, rows: 10)
         let shrunk = try layout([waveform]).resizing(
-            waveform.id, edges: .right, by: CellOffset(cols: -2, rows: 0), minimum: minimum)
+            waveform.id, edges: .right, by: CellOffset(cols: -2, rows: 0), floor: .declared(minimum)
+        )
         #expect(shrunk.card(waveform.id)?.cells.cols == 10)
         let grown = try layout([waveform]).resizing(
-            waveform.id, edges: .right, by: CellOffset(cols: 3, rows: 0), minimum: minimum)
+            waveform.id, edges: .right, by: CellOffset(cols: 3, rows: 0), floor: .declared(minimum))
         #expect(grown.card(waveform.id)?.cells.cols == 13)
     }
 

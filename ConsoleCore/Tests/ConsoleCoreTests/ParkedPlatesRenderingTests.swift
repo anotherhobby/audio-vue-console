@@ -76,7 +76,7 @@ struct ParkedPlatesRenderingTests {
         let parked = try Self.parkingLast(fixture)
         await fixture.rendering.show(parked)
         let resized = try parked.resizing(
-            last.id, edges: .right, by: CellOffset(cols: 2, rows: 0), minimum: .oneCell,
+            last.id, edges: .right, by: CellOffset(cols: 2, rows: 0), floor: .oneCell,
             within: testPane)
         await fixture.rendering.show(resized)
         #expect(fixture.launcher.requests.count == 2)

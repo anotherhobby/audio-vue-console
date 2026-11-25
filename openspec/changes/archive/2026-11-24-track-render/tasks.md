@@ -126,7 +126,7 @@
 - [x] 6.2 Update the KB: `project-map.md` (the new types and the sheet) and `host-contract.md`
   (the helper's `track` and `picture` paragraph, now used by the app). Verify: the files name every
   type added in groups 1 to 5.
-- [ ] 6.3 The maintainer's run on the proving panel:
+- [x] 6.3 The maintainer's run on the proving panel (reviewed on screen, 2026-11-24):
   - open a scene and Render with Track…;
   - pick an album track at 44.1 kHz and one at 96 kHz;
   - scrub forward and back;

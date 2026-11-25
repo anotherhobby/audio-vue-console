@@ -47,9 +47,9 @@ struct LibraryTilesSetupTests {
     private static func fitting(from cols: Int) throws -> RenderingFixture {
         try RenderingFixture { request in
             let card = request["scene"]?["cards"]?.arrayValue?.first
-            guard request["op"] == .string("render"), card?["params"] != nil else {
-                return FakeRender.reply(to: request)
-            }
+            guard card?["params"] != nil else { return FakeRender.reply(to: request) }
+            if request["op"] == .string("minimum") { return minimum(from: cols) }
+            guard request["op"] == .string("render") else { return FakeRender.reply(to: request) }
             let wide = (card?["colspan"]?.intValue ?? 0) >= cols
             let unfit = wide ? "" : #""meter""#
             return .answer(
@@ -58,6 +58,17 @@ struct LibraryTilesSetupTests {
                 payload: Data([10, 20, 30, 255]))
         }
     }
+
+    /// A set-up meter's `minimum` answer: whole at its 8 × 6 minimum where it fits from 8 columns or
+    /// fewer, at `cols` × 10 where it fits from up to the grid's 64, and nowhere beyond.
+    private nonisolated static func minimum(from cols: Int) -> ScriptedReply {
+        let sizes =
+            cols <= minimumCols ? "[[8, 6]]" : cols <= gridCols ? "[[\(cols), 10]]" : "[]"
+        return .answer(#"{"ok": true, "whole": \#(sizes), "readable": \#(sizes)}"#)
+    }
+
+    private nonisolated static let minimumCols = 8
+    private nonisolated static let gridCols = 64
 
     /// "Setting the meter's style": a setup that fits at the minimum is drawn there, carrying it.
     @Test func aSetupThatFitsAtTheMinimumIsDrawnThere() async throws {
@@ -107,23 +118,18 @@ struct LibraryTilesSetupTests {
         #expect(tile.size == Self.meter.minimum && tile.unfit == ["meter"])
     }
 
-    /// A fixture that holds the first set-up tile's answer until released.
+    /// A fixture that holds the first set-up tile's render, not its `minimum`, until released.
     private static func holdingFirstSetup() throws -> RenderingFixture {
         let first = AtomicFlag()
         return try RenderingFixture { request in
             let isSetup = request["scene"]?["cards"]?.arrayValue?.first?["params"] != nil
-            guard isSetup, first.setOnce() else { return FakeRender.reply(to: request) }
+            guard isSetup, request["op"] == .string("render"), first.setOnce() else {
+                return FakeRender.reply(to: request)
+            }
             return .heldWith(
                 #"{"ok": true, "layers": [{"kind": "plate", "placements": [0], "#
                     + #""rect": [0, 0, 1, 1], "unfit": [], "bytes": 4}]}"#,
                 payload: Data([10, 20, 30, 255]))
-        }
-    }
-
-    /// Waits until `count` set-up renders have been sent.
-    private static func waitForSetups(_ count: Int, _ fixture: RenderingFixture) async throws {
-        for _ in 0..<200 where setupRenders(fixture).count < count {
-            try await Task.sleep(for: .milliseconds(5))
         }
     }
 
@@ -137,7 +143,7 @@ struct LibraryTilesSetupTests {
             await tiles.drawSetup(
                 Self.meter, settings: Self.bar, for: draft, from: Self.source(fixture))
         }
-        try await Self.waitForSetups(1, fixture)
+        try await fixture.launcher.untilHolding()
         let newer = Task {
             await tiles.drawSetup(
                 Self.meter, settings: needle, for: draft, from: Self.source(fixture))
@@ -161,7 +167,7 @@ struct LibraryTilesSetupTests {
             await tiles.drawSetup(
                 Self.meter, settings: Self.bar, for: draft, from: Self.source(fixture))
         }
-        try await Self.waitForSetups(1, fixture)
+        try await fixture.launcher.untilHolding()
         await tiles.drawSetup(Self.meter, settings: [:], for: draft, from: Self.source(fixture))
         fixture.launcher.releaseHeld()
         await older.value

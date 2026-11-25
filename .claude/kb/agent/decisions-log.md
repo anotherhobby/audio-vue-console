@@ -106,3 +106,14 @@ Format:
   pane with the grid as an obstacle, so it never reaches onto the panel; parked cards alone can be
   grouped, and a group across the panel's edge is refused (`.acrossPanelEdge`, which replaced
   `.parkedCannotGroup`). `ParkedPlates` redraws a parked plate whose size changed.
+- 2026-11-24: A card is shown and dropped at its whole size from the helper's `minimum` answer: the
+  whole size with the fewest cells, the narrower on a tie, else the smallest readable size, else the
+  declared minimum (maintainer; `card-minimum` design D1). A resize is kept to the readable floor at
+  the width it reaches (`CellRect.resized`, design D4): it narrows only to widths whose floor the card
+  can reach at the larger of the height it was dragged to and its own, may always widen, and lowers
+  only to the floor, so a corner dragged in stops at the floor and no edge grows past where it was.
+  The library tile ladder (`LibraryTiles.Ladder`) and `SchemaFacts.Card.aspect` were removed with it.
+  `CardMinimums` is held by `LibraryTiles` (`minimums`). An ask for a card already in flight waits on
+  that request and sends its own only when it comes back empty, because a plain tile and a selected
+  card with default settings share one key; returning nil instead left the tile at its declared
+  minimum (found at verification, `CardMinimumsTests.twoAsksAtOnceShareOneRequest`).

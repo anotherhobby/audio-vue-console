@@ -138,3 +138,8 @@ Format:
   AudioVueConsole.xcodeproj -scheme AudioVueConsole -configuration Debug build` built it with Xcode
   open (no "database is locked" this time). `cd ConsoleCore && xcrun swift test --disable-xctest`:
   948 tests in 123 suites after `meter-segment-size`.
+
+- 2026-11-24: `RENDER_HELPER_LIVE=1 xcrun swift test --disable-xctest --filter LiveHelperTests` in
+  `ConsoleCore/` now also asks the bundled helper for the RTA fixture's first card's `minimum` at
+  1920 x 720 (`card-minimum`): whole at 20 x 11, 1.7 s on a helper started cold (M4 Pro). The full
+  parallel suite: 965 tests; see `pitfalls.md` on held answers if a run stalls part-way.

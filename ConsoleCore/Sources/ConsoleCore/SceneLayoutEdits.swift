@@ -84,24 +84,20 @@ extension SceneLayout {
             rows: offset.rows.clamped(to: -block.row...(grid.rows - block.maxRow)))
     }
 
-    /// The card `id` with `edges` dragged by `offset`: the horizontal edge first, then the
-    /// vertical, each stopping at the grid, at any card in its path, and at `minimum`, the card's
-    /// declared minimum, or at its size where it is already smaller (`scene-layout`).
+    /// The card `id` with `edges` dragged by `offset`, each edge stopping at the grid and at any
+    /// card in its path, and kept to `floor`, the least rows at each width, as
+    /// `CellRect.resized` keeps it (`scene-layout`, `card-minimum`).
     public func resizing(
-        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize = .oneCell
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, floor: MinimumFloor = .oneCell
     ) throws(LayoutRefusal) -> SceneLayout {
         guard let index = cards.firstIndex(where: { $0.id == id }) else { return self }
         guard cards[index].group == nil else { throw .cardIsGrouped }
         let others = cards.filter { $0.id != id }.map(\.cells)
-        let across = cards[index].cells.resizedAcross(
-            edges: edges, by: offset.cols, within: 0...grid.cols, avoiding: others,
-            atLeast: minimum.cols)
-        // The vertical edge is the horizontal one with rows and columns swapped.
-        let down = across.transposed.resizedAcross(
-            edges: edges.transposed, by: offset.rows, within: 0...grid.rows,
-            avoiding: others.map(\.transposed), atLeast: minimum.rows)
         var resized = cards
-        resized[index].cells = down.transposed
+        resized[index].cells = cards[index].cells.resized(
+            edges: edges, by: offset,
+            within: CellRect(col: 0, row: 0, cols: grid.cols, rows: grid.rows),
+            avoiding: others, floor: floor)
         return SceneLayout(checked: grid, cards: resized)
     }
 
@@ -184,6 +180,40 @@ extension CellRect {
     /// The block with rows and columns swapped, so one routine serves both axes.
     var transposed: CellRect {
         CellRect(col: row, row: col, cols: rows, rows: cols)
+    }
+
+    /// The block with `edges` dragged by `offset`, each edge stopping at `bounds` and at any of
+    /// `others` in its path, kept to `floor` (`card-minimum`, design D4): it is narrowed only to
+    /// widths whose floor it can reach, its height dragged to or its own, widening back towards its own width
+    /// where the dragged one does not, and lowered only to the floor at the width it reaches. It
+    /// may widen freely. No edge grows that was not dragged, and one already below its floor is
+    /// not made smaller.
+    func resized(
+        edges: CardEdges, by offset: CellOffset, within bounds: CellRect,
+        avoiding others: [CellRect],
+        floor: MinimumFloor
+    ) -> CellRect {
+        let cols = bounds.col...bounds.maxCol
+        let rows = bounds.row...bounds.maxRow
+        var across = resizedAcross(
+            edges: edges, by: offset.cols, within: cols, avoiding: others, atLeast: 1)
+        // The vertical edge is the horizontal one with rows and columns swapped.
+        let lowered = { (block: CellRect, least: Int) in
+            block.transposed.resizedAcross(
+                edges: edges.transposed, by: offset.rows, within: rows,
+                avoiding: others.map(\.transposed), atLeast: least
+            ).transposed
+        }
+        // The tallest it may end: where it was dragged to, or its own height where that is more,
+        // so a corner dragged in may stop at the floor but no edge grows past where it was.
+        let ceiling = max(lowered(across, 1).rows, self.rows)
+        var width = across.cols
+        while width < self.cols, (floor.rows(at: width).map { $0 > ceiling }) ?? true {
+            width += 1
+        }
+        if edges.contains(.left) { across.col = across.maxCol - width }
+        across.cols = width
+        return lowered(across, floor.rows(at: width) ?? self.rows)
     }
 
     /// The block with its left or right edge, as `edges` says, moved by `delta` columns, stopping

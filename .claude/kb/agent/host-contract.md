@@ -308,6 +308,17 @@ earlier one restarts from the first sample. Measured on an M4 Pro: 36 to 45 ms a
 1920 x 720, 2.4 s to reach 60 s in at 48 kHz. The `hello` answer carries a protocol number the app
 does not check. `src/render_service.py`'s docstring is the authority.
 
+Since audio-vue's `card-minimum` (deployed 2026-11-24; the console's `card-minimum` uses it) the helper
+also takes `minimum`: `render`'s scene fields plus `placement`, an index into the scene's cards, and
+answers `whole` and `readable`, each `[[cols, rows], ...]` rising in columns, a width with no such
+height left out. Nothing is drawn. The answer comes from a stand-in placement, so a card's cells and
+neighbours do not change it; its settings, the scene's type, case, face and styles, and the display
+and viewing do. The console relies on `readable` being a floor at every width (each height above it
+reads). It does not rely on `whole` being monotone. Since audio-vue's `goniometer-steady-title`
+(archived 2026-11-24) the goniometer's `whole` is up-closed (whole at a size means whole at every
+larger size the region allows), but audio-vue promises that only for the goniometer. Up to 1.4 s for the VU meter at 1920 x 720,
+measured in audio-vue, so answers are held (`CardMinimums`) and nothing waits on one.
+
 ## Calibration (Built, audio-vue `calibration-from-the-app`, 2026-11-08)
 
 The console runs a calibration in `make calibrate`'s order: it renders the stimulus itself, sets the

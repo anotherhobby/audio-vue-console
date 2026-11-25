@@ -16,6 +16,9 @@ public final class SceneEditor {
     public let readOnly: ReadOnlyReason?
     /// Each card's declared minimum, by kind; a kind with none may go down to a cell.
     @ObservationIgnored public let minimums: [String: CellSize]
+    /// The helper's minimum held for a card's settings in the scene's, or nil where none is
+    /// held; the app reads it from its `CardMinimums`, and a resize never waits for one.
+    @ObservationIgnored public var heldMinimum: (LayoutCard) -> CardMinimum? = { _ in nil }
 
     @ObservationIgnored private let undoManager: UndoManager?
     @ObservationIgnored private let onCommit: (SceneContent) -> Void
@@ -113,7 +116,7 @@ public final class SceneEditor {
     ) -> Result<SceneContent, LayoutRefusal> {
         preview { () throws(LayoutRefusal) in
             try content.resizing(
-                id, edges: edges, by: offset, minimum: minimum(of: id), within: reach)
+                id, edges: edges, by: offset, floor: floor(of: id), within: reach)
         }
     }
 
@@ -167,13 +170,16 @@ public final class SceneEditor {
     ) {
         commitContent("Resize") { () throws(LayoutRefusal) in
             try content.resizing(
-                id, edges: edges, by: offset, minimum: minimum(of: id), within: reach)
+                id, edges: edges, by: offset, floor: floor(of: id), within: reach)
         }
     }
 
-    /// The minimum of the card `id`, on the grid or parked, by its kind.
-    private func minimum(of id: UUID) -> CellSize {
-        content.card(id).flatMap { minimums[$0.kind] } ?? .oneCell
+    /// The floor a resize of the card `id` stops at, on the grid or parked: the helper's answer
+    /// for its settings where one is held, else its kind's declared minimum (`card-minimum`, "The
+    /// declared minimum stands in until an answer is held").
+    private func floor(of id: UUID) -> MinimumFloor {
+        guard let card = content.card(id) else { return .oneCell }
+        return heldMinimum(card)?.floor ?? .declared(minimums[card.kind] ?? .oneCell)
     }
 
     /// A card of `kind` added centred on `cell`, on the grid or parked within `reach` as

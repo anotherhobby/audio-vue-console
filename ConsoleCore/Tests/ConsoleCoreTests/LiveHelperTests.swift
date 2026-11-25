@@ -91,6 +91,22 @@ struct LiveHelperTests {
         #expect(Self.colourCount(plate.image) > 16, "the plate holds a drawn logo, not a fill")
     }
 
+    /// audio-vue `scene-render`, "The helper answers where a card is drawn whole" and "... where a
+    /// card shows its reading": the RTA scene's first card's minimum decodes, and reads somewhere
+    /// (`card-minimum`, task 5.1).
+    @Test func theHelperAnswersTheRTAsMinimum() async throws {
+        let helper = Self.helper()
+        defer { Task { await helper.stop() } }
+        _ = try await helper.hello()
+        let answer = try await Self.timed("minimum, the RTA's first card") {
+            try await helper.ask(
+                try Self.request(["op": .string("minimum"), "placement": .integer(0)]))
+        }
+        let minimum = try #require(CardMinimum(answer: answer.header))
+        #expect(!minimum.readable.isEmpty)
+        print("minimum: whole \(minimum.wholeSize.map { "\($0.cols) x \($0.rows)" } ?? "none")")
+    }
+
     /// How many distinct RGBA values `image` holds, read as 8-bit RGBA.
     static func colourCount(_ image: CGImage) -> Int {
         let (width, height) = (image.width, image.height)

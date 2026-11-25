@@ -46,6 +46,22 @@ final class ScriptedLauncher: HelperLauncher {
     func releaseHeld() {
         current.withLock { $0 }?.releaseHeld()
     }
+
+    /// Whether the current helper holds an answer back.
+    var isHolding: Bool { current.withLock { $0 }?.isHolding ?? false }
+
+    /// Waits, up to about ten seconds, until the current helper holds an answer back, so a release
+    /// never comes before the hold it is for: under a full parallel run, a request can take longer
+    /// to reach the helper than a test's own polling allows, and a release that finds nothing held
+    /// leaves the later hold waiting for ever.
+    func untilHolding() async throws {
+        for _ in 0..<Self.holdPolls where !isHolding {
+            try await Task.sleep(for: .milliseconds(Self.holdPollMilliseconds))
+        }
+    }
+
+    private static let holdPolls = 2_000
+    private static let holdPollMilliseconds = 5
 }
 
 /// A helper that answers each request as its script says, through the same channel the real one
@@ -86,6 +102,8 @@ final class ScriptedHelper: RunningHelper {
     func releaseHeld() {
         if let answer = held.withLock({ $0.take() }) { output.send(answer) }
     }
+
+    var isHolding: Bool { held.withLock { $0 != nil } }
 
     func nextChunk() async -> Data? {
         await output.next()

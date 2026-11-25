@@ -30,11 +30,9 @@ struct LibraryTilesTests {
         return try LaidOutScene(document, panel: CellSize(cols: 64, rows: 36))
     }
 
-    /// The renders one draw of the three cards makes on the 64 × 36 grid: the meter and the waveform each
-    /// probe the ladder from its top, six renders on a binary search (`scene-rendering`, "A tile's size is
-    /// the first size on a ladder"), and the tiny card, which fits at no size, probes once and is
-    /// drawn again at its minimum.
-    private static let rendersPerDraw = 6 + 6 + 2
+    /// The renders one draw of the three cards makes: one each, at the size its `minimum` answer
+    /// gives (`scene-rendering`, "A library tile is drawn at its card's whole minimum").
+    private static let rendersPerDraw = cards.count
 
     private static func renders(_ fixture: RenderingFixture) -> [JSONValue] {
         fixture.launcher.requests.filter { $0["op"] == .string("render") }
@@ -209,6 +207,7 @@ struct LibraryTilesTests {
         for _ in 0..<200 where fixture.queue.waiting < Self.cards.count {
             try await Task.sleep(for: .milliseconds(5))
         }
+        try await fixture.launcher.untilHolding()
         fixture.launcher.releaseHeld()
         try await older.value
         try await newer.value

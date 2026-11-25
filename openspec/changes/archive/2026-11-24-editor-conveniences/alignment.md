@@ -114,6 +114,8 @@ Revision pass of 2026-11-24 (Cut added):
   - Code: the helper reports only `unfit`; ticks are shed silently before it (audio-vue's `scene_layers.py` and `cards/base.py`, read above).
   - Goes to: audio-vue, through `handoff-shed-detail.md`; nothing in this change.
   - Resolution: deferred until audio-vue reports shed steps. 5.1 sizes for the reading only.
+    Answered by audio-vue's `card-minimum` (2026-11-24), a `minimum` request in place of `shed`;
+    carried into the console's change `card-minimum`, which retires the ladder search.
 
 ## Questions for the maintainer
 

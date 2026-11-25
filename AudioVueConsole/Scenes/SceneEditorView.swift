@@ -50,12 +50,7 @@ struct SceneEditorView: View {
             .onAppear(perform: make)
             .onChange(of: session?.parses) { drawNewParse() }
             .onChange(of: editor?.content) { session?.note = nil }
-            // Tiles are drawn in the scene's settings as edited, so a block changing draws them
-            // again (`scene-settings`, design D6).
-            .onChange(of: editor?.content.blocks) { Task { await drawTiles() } }
-            .onChange(of: editor?.setups) { old, new in
-                Task { await tiles.drawChanged(from: old ?? [:], to: new ?? [:]) }
-            }
+            .modifier(FollowingEdits(editor: editor, tiles: tiles, drawTiles: drawTiles))
             .onDisappear { editor?.detach() }
             .task(id: Drawing(phase: renderer.phase, made: made)) { await follow(renderer.phase) }
             .onChange(of: verdict) { _, verdict in
@@ -140,6 +135,7 @@ struct SceneEditorView: View {
             content: draft.content, readOnly: document.builtIn ? .builtIn : nil,
             minimums: facts.minimums, undoManager: undoManager
         ) { [store, document] in store.drafts.keep($0, for: document.id) }
+        editor.heldMinimum = { [tiles] in tiles.heldMinimum(of: $0) }
         let session = SceneSession(id: document.id, writes: store.writes(to: scenes))
         session.attach(editor)
         session.note = store.takeNote(for: document.id)

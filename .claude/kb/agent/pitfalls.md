@@ -394,3 +394,34 @@ a fixed menu frame, a plain button in place of the menu, and a short label all s
 `ColourWell.sizeThatFits` now reports `SceneMetrics.colourWellWidth` x `colourWellHeight` for
 every well. Give an AppKit control in a form row a fixed size, never its own flexible one.
 
+
+## A held answer released before it is held hangs the whole test run (2026-11-24)
+
+`ScriptedReply.held`/`heldWith` keep an answer until `releaseHeld()`; a release that finds nothing
+held does nothing, and the later hold then waits for ever. Tests that polled for a request (a count
+of renders, `queue.waiting`) for a bounded time and then released passed alone and in filtered runs,
+but under the full parallel suite the request took longer than the polling allowed: about half the
+full runs stopped at ~905 of ~955 tests started, every thread idle (`sample`), and only the serial
+run (`--no-parallel`) passed. Call `try await launcher.untilHolding()` before `releaseHeld()`
+(`ScriptedHelper.swift`). Bisect such a stall with `--skip` over several parallel runs, and compare
+`Test … started` against `passed`/`failed` in the log.
+
+## `xcodebuild` beside an open Xcode can wedge Xcode's build (2026-11-24)
+
+Command-line `xcodebuild` builds without `-derivedDataPath` share Xcode's DerivedData. After a day of
+them while the project was open, Xcode's own build failed at once, in "Prepare build", with
+`invalid reuse after initialization failure` and nothing compiled; the same build from the command
+line still succeeded. Reopening the project (a new window identifier in `XcodeListWorkspaces`)
+cleared it. While Xcode has the project open, build with the Xcode MCP `BuildProject` and read
+`GetBuildLog`; use `xcodebuild` only with Xcode closed, or with a `-derivedDataPath` of its own.
+
+## A queue key does not order requests sent from separate tasks (2026-11-24)
+
+`RenderQueue` replaces a waiting request with a newer one under the same key, which assumes the
+newer one arrives last. `SceneRendering.show` sends each plate's redraw from a child task of its own,
+and child tasks of successive `show`s reach the (main-actor) queue in no set order. During a resize,
+an older step's request sometimes arrived after the final one and replaced it, so the final size was
+never drawn and the old plate stayed stretched over the card ("askew") until the next resize. Fix
+(`SceneRendering.redrawStale`, `ParkedPlates.isStale`): after an answer is kept, a plate it left out
+of date for the cells now shown is drawn again. Reproduced in `StaleAnswerTests` by replacing the
+newest request by hand.

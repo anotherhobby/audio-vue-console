@@ -99,13 +99,6 @@ struct SchemaFactsTests {
         #expect(facts.cards["calibration"]?.placeable == false)
     }
 
-    /// `scene-rendering`: an aspect-locked card keeps the aspect its schema declares; a free card has none.
-    @Test func anAspectLockedCardKeepsItsDeclaredAspect() throws {
-        let facts = try Self.facts()
-        #expect(facts.cards["vu_meter"]?.aspect == 1.5)
-        #expect(facts.cards["waveform"]?.aspect == nil)
-    }
-
     @Test func theMinimumsAreAsDeclared() throws {
         #expect(try Self.facts().minimums["waveform"] == CellSize(cols: 12, rows: 7))
     }

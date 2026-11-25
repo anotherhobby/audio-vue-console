@@ -32,12 +32,26 @@ struct EditorTiles {
         await drawSetups(changed, as: new, draft, source)
     }
 
-    /// The size a card of `kind` is dropped at: its set-up tile's where it is `setUp` and that tile
-    /// is drawn, else `minimum`, its declared one (`library-setup`, "A set-up card is dropped at its
-    /// tile's size").
+    /// The size a card of `kind` is dropped at: its tile's, set up where it is `setUp`, its whole
+    /// size once drawn, else `minimum`, its declared one (`library-setup`, "A set-up card is
+    /// dropped at its tile's size"; `card-minimum`).
     func dropSize(of kind: String, setUp: Bool, minimum: CellSize?) -> CellSize? {
-        guard setUp, let tile = store.tiles.setupTile(kind) else { return minimum }
-        return tile.size
+        let tile = setUp ? store.tiles.setupTile(kind) : store.tiles.tiles[kind]
+        return tile?.size ?? minimum
+    }
+
+    /// The helper's minimum held for `card` in the open scene's settings, which a resize stops
+    /// at; nil where none is held, and never waits (`card-minimum`, design D4).
+    func heldMinimum(of card: LayoutCard) -> CardMinimum? {
+        store.drafts.draft(id).flatMap { store.tiles.minimums.answer(for: card, in: $0) }
+    }
+
+    /// Asks for `card`'s minimum in the open scene's settings, in the canvas's lane, a newer
+    /// selection replacing one still waiting (`card-minimum`, design D5).
+    func askMinimum(of card: LayoutCard) async {
+        guard let (draft, source) = source() else { return }
+        await store.tiles.minimums.ask(
+            for: card, in: draft, from: source, lane: .canvas, key: "minimum:selected")
     }
 
     /// The tiles the library shows: each set-up card's tile in place of its plain one, once drawn.

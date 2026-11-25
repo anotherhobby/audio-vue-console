@@ -115,15 +115,20 @@ for the backdrop.
 
 ### Requirement: A card that cannot show its reading is named
 
-When the helper reports cards that cannot show their reading at the size drawn, the canvas SHALL name
-them while they are reported.
+When the helper reports cards that cannot show their reading at the size drawn, on the grid or
+parked, the canvas SHALL name them while they are reported.
 
 Source: audio-vue `scene-render`, "The answer says what does not fit". audio-vue `card-layout`: the
-too-small check.
+too-small check. Decision (maintainer, 2026-11-24): a parked card is as editable as one on the panel.
 
 #### Scenario: A card made too small
 
 - **WHEN** the user shrinks a waveform card below the size it can show its reading at
+- **THEN** the canvas names the waveform as too small to show its reading
+
+#### Scenario: A parked card made too small
+
+- **WHEN** the user shrinks a parked waveform below the size it can show its reading at
 - **THEN** the canvas names the waveform as too small to show its reading
 
 ### Requirement: A scene the helper cannot draw is drawn as boxes
@@ -192,22 +197,6 @@ request may name its plates.
 - **WHEN** the user opens a built-in scene
 - **THEN** the library tiles show the cards drawn in that scene's settings, and a drop is still
   refused
-
-### Requirement: A library tile is drawn at the smallest size that shows its reading
-
-Each library tile SHALL be drawn at the smallest size on the panel's grid at which its card shows
-its reading in the open scene's settings. Where the card's declared minimum is larger than that
-size, the tile SHALL be drawn at the declared minimum.
-
-Source: Decision (maintainer, 2026-11-07), amended (maintainer, 2026-11-21): a tile shows the
-smallest the card can be at the scene's type. audio-vue `card-layout`: a declared minimum is the
-same span on every scene.
-
-#### Scenario: A readout that first fits above its minimum
-
-- **WHEN** a readout's declared minimum is 8 by 4 cells and its reading first fits at 10 by 5 in
-  the scene's type
-- **THEN** its tile is drawn at 10 by 5
 
 ### Requirement: A library tile's plate lies over the backdrop under it
 
@@ -285,16 +274,17 @@ Source: `card-code`. Decision (maintainer, 2026-11-07): code that cannot be comp
 ### Requirement: A card that cannot show its reading at its minimum is named on its tile
 
 When the helper reports a card as unable to show its reading at the size its tile is drawn at, its library
-tile SHALL say so. Where no size on the grid shows the reading, the tile SHALL be drawn at the card's
-declared minimum and say so.
+tile SHALL say so. Where the helper answers no size on the grid at which the card shows its reading, the
+tile SHALL be drawn at the card's declared minimum and say so.
 
-Source: audio-vue `scene-render`, "The answer says what does not fit". audio-vue `card-layout`: the
-too-small check. Amended (maintainer, 2026-11-21) with the tile's size under the scene's settings.
+Source: audio-vue `scene-render`, "The answer says what does not fit" and "The helper answers where a
+card shows its reading". audio-vue `card-layout`: the too-small check. Amended (maintainer, 2026-11-21)
+with the tile's size under the scene's settings.
 
 #### Scenario: A card too small at its minimum
 
-- **WHEN** the helper reports the loudness table as too small to show its reading at its declared minimum
-  on the open scene's grid, and no larger size shows it
+- **WHEN** the helper answers no size on the open scene's grid at which the loudness table shows its
+  reading
 - **THEN** the loudness table's tile is drawn at its declared minimum and says it is too small to show its
   reading
 
@@ -403,33 +393,6 @@ The caption is the tile's drawn size, not the card's size on the open scene.
 - **WHEN** a card's tile is drawn at its declared minimum
 - **THEN** its caption names the declared minimum
 
-### Requirement: A tile's size is the first size on a ladder that shows its reading
-
-The console SHALL find each library tile's size by asking the helper about sizes on a ladder that grows from
-the card's declared minimum by equal whole-cell steps in width and height, and SHALL take the first size on
-that ladder whose reading fits.
-
-Source: Decision (maintainer, 2026-11-21): the smallest fitting size, found with few renders. The ladder is
-the console's choice, since the helper reports one size at a time.
-
-#### Scenario: The first size that fits
-
-- **WHEN** a readout's declared minimum shows the too-small notice and a larger size on the ladder shows its
-  reading
-- **THEN** the tile takes the first size on the ladder that shows the reading, and no size before it
-
-### Requirement: An aspect-locked card keeps its shape on the ladder
-
-A card whose sizing is aspect-locked SHALL step in its declared aspect on the ladder, so its tile keeps the
-card's shape at every size tried.
-
-Source: Decision (maintainer, 2026-11-21): an aspect-locked card's smallest real shape is the one its tile shows.
-
-#### Scenario: A round card
-
-- **WHEN** a card with a declared aspect of 1 is searched for a tile
-- **THEN** every size tried on the ladder is square
-
 ### Requirement: A tile's size is found once for a set of settings
 
 The console SHALL find a tile's size once for a set of scene settings. The size SHALL NOT be found again for
@@ -474,17 +437,24 @@ Source: `scene-rendering`, "A move slides the plates and draws them again on rel
 
 ### Requirement: A parked plate is drawn again on its own
 
-When a parked card has no layer, its settings change, or a scene setting other than the backdrop
-changes, its plate SHALL be drawn as the helper draws its cards alone in the scene's settings, as a
-library tile is. Where the helper cannot draw it, the card SHALL be a plain box with its name.
+When a parked card has no layer, its settings change, its size changes, or a scene setting other
+than the backdrop changes, its plate SHALL be drawn as the helper draws its cards alone in the
+scene's settings, as a library tile is. Where the helper cannot draw it, the card SHALL be a plain
+box with its name.
 
-Source: audio-vue `scene-render`, "A request carries a scene and its display" and "A request may
-name its plates"; `scene-rendering`, "A library tile is the card's plate as the helper draws it".
+Source: audio-vue `scene-render`, "A request may name its plates"; `scene-rendering`, "A library
+tile is the card's plate as the helper draws it". Decision (maintainer, 2026-11-24).
 
 #### Scenario: A parked card's setting
 
 - **WHEN** the user changes a setting of a parked card
 - **THEN** its plate is drawn again on its own, and no plate on the grid is drawn again
+
+#### Scenario: A parked card resized
+
+- **WHEN** the user resizes a parked card
+- **THEN** its plate is drawn again on its own at its new size, and no plate on the grid is drawn
+  again
 
 #### Scenario: The scene's typeface
 
@@ -495,3 +465,25 @@ name its plates"; `scene-rendering`, "A library tile is the card's plate as the 
 
 - **WHEN** the helper could not start and a card is parked
 - **THEN** the parked card is shown as a plain box with its name
+
+### Requirement: A library tile is drawn at its card's whole minimum
+
+Each library tile SHALL be drawn once, at its card's whole size in the open scene's settings
+(`card-minimum`, "A card's whole size is the smallest whole one"), with its library setup where it
+has one.
+
+Source: Decision (maintainer, 2026-11-24): a card is shown at its whole minimum, plain tiles and
+set-up tiles alike, replacing the 2026-11-21 ruling that a tile shows the smallest size that keeps
+the reading.
+
+#### Scenario: A meter with ticks
+
+- **WHEN** the meter's tile is set up with ticks on, and the helper answers the meter whole with
+  its ticks at 10 × 8 and no smaller
+- **THEN** the meter's tile is drawn at 10 × 8 with its ticks
+
+#### Scenario: A readout drawn whole above its minimum
+
+- **WHEN** a readout's declared minimum is 8 by 4 cells and the helper answers it whole first at
+  10 by 5
+- **THEN** its tile is drawn at 10 by 5

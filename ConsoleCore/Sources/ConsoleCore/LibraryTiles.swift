@@ -96,61 +96,6 @@ public final class LibraryTiles {
         }
     }
 
-    /// The sizes a tile is tried at: its declared minimum, grown by whole cells. An aspect-locked card
-    /// grows in its declared aspect, so its tile keeps the card's shape (`scene-rendering`).
-    @MainActor
-    enum Ladder {
-        /// The size `step` cells up the ladder from `card`'s minimum.
-        static func size(_ card: SchemaFacts.Card, step: Int) -> CellSize {
-            guard let aspect = card.aspect, aspect > 0 else {
-                return CellSize(
-                    cols: card.minimum.cols + step, rows: card.minimum.rows + step)
-            }
-            return CellSize(
-                cols: card.minimum.cols + step,
-                rows: card.minimum.rows + Int((Double(step) / aspect).rounded()))
-        }
-
-        /// The highest step on `grid` that the card still fits, or nil where its minimum does not.
-        static func top(_ card: SchemaFacts.Card, grid: CellSize) -> Int? {
-            func fits(_ size: CellSize) -> Bool { size.cols <= grid.cols && size.rows <= grid.rows }
-            guard fits(size(card, step: 0)) else { return nil }
-            var top = 0
-            while fits(size(card, step: top + 1)) { top += 1 }
-            return top
-        }
-
-        /// How a search for the smallest fitting size ended.
-        enum Search<Plate> {
-            /// The smallest step whose plate fits, and the plate that drew it.
-            case found(step: Int, plate: Plate)
-            /// No step fits, so the card is drawn at its minimum with its notice.
-            case none
-            /// A probe was refused or failed, so nothing more is asked.
-            case failed
-        }
-
-        /// The smallest step in `0...top` whose plate fits, found by a binary search, which takes fit to
-        /// hold at every larger size. `probe` draws the card at a step; `fits` reads its plate.
-        static func smallestFitting<Plate>(
-            top: Int, probe: (Int) async -> Plate?, fits: (Plate) -> Bool
-        ) async -> Search<Plate> {
-            guard let topPlate = await probe(top) else { return .failed }
-            guard fits(topPlate) else { return .none }
-            var (low, high, best) = (0, top, topPlate)
-            while low < high {
-                let middle = (low + high) / 2
-                guard let plate = await probe(middle) else { return .failed }
-                if fits(plate) {
-                    (high, best) = (middle, plate)
-                } else {
-                    low = middle + 1
-                }
-            }
-            return .found(step: high, plate: best)
-        }
-    }
-
     /// When a set's tiles are wanted: at once for the scene shown, in the library's lane, or
     /// ahead of any scene being opened, behind the thumbnails.
     enum Pace {
@@ -171,6 +116,10 @@ public final class LibraryTiles {
     var sets: [Key: TileSet] = [:]
     /// The settings tiles are held for, the least recently drawn first.
     private var recent: [Key] = []
+
+    /// The helper's `minimum` answers, which tiles are drawn at and the canvas resizes by, shared
+    /// so a card's answer is asked once (`card-minimum`, design D2).
+    public let minimums = CardMinimums()
 
     public init() {}
 
@@ -292,6 +241,7 @@ public final class LibraryTiles {
         sets = [:]
         recent = []
         key = nil
+        minimums.forget()
     }
 
     /// A tile's request: `draft`'s scene as edited, holding only `card`, naming its one plate and
@@ -311,35 +261,31 @@ public final class LibraryTiles {
             builtIn: laidOut.document.builtIn, context: context, plates: [0], backdrop: false)
     }
 
-    /// Draws `card`'s tile in the draft's settings: at the size found for them, or where none is
-    /// found yet, at the smallest size on the ladder whose plate shows the reading, found once and
-    /// kept. Where no size fits, the tile is drawn at the card's declared minimum, with its notice.
+    /// Draws `card`'s tile in the draft's settings, once, at its whole size as the helper answers
+    /// it for them (`card-minimum`, design D3), or at its declared minimum where there is no answer,
+    /// which then shows its notice where the reading does not fit. A card whose declared minimum
+    /// does not fit the grid has no tile.
     private func drawTile(
         _ card: SchemaFacts.Card, _ draft: Draft, _ pace: Pace, _ source: Source
     ) async {
         let key = Key(draft.laidOut, draft.content)
+        let grid = draft.laidOut.panel
+        guard card.minimum.cols <= grid.cols, card.minimum.rows <= grid.rows else { return }
         let tag = pace == .shown ? "" : "ahead:\(key.hashValue):"
-        let plate: (CellSize) async -> RenderedLayer? = { size in
-            guard
-                let request = Self.request(
-                    for: draft, card: .tile(card.name, at: size), context: source.context)
-            else { return nil }
-            let result = await source.queue.submit(
-                request.message, lane: pace.lane, key: "\(tag)tile:\(card.name)")
-            return Self.plate(of: result)
+        let answer = await minimums.ask(
+            for: .tile(card.name, at: card.minimum), in: draft, from: source, lane: pace.lane,
+            key: "\(tag)minimum:\(card.name)")
+        let size = answer?.wholeSize ?? card.minimum
+        guard
+            let request = Self.request(
+                for: draft, card: .tile(card.name, at: size), context: source.context)
+        else {
+            settle(nil, size: size, card: card.name, drawnIn: key)
+            return
         }
-        guard let top = Ladder.top(card, grid: draft.laidOut.panel) else { return }
-        let search = await Ladder.smallestFitting(
-            top: top, probe: { step in await plate(Ladder.size(card, step: step)) },
-            fits: { $0.unfit.isEmpty })
-        switch search {
-        case .found(let step, let found):
-            settle(found, size: Ladder.size(card, step: step), card: card.name, drawnIn: key)
-        case .none:
-            settle(await plate(card.minimum), size: card.minimum, card: card.name, drawnIn: key)
-        case .failed:
-            settle(nil, size: card.minimum, card: card.name, drawnIn: key)
-        }
+        let result = await source.queue.submit(
+            request.message, lane: pace.lane, key: "\(tag)tile:\(card.name)")
+        settle(Self.plate(of: result), size: size, card: card.name, drawnIn: key)
     }
 
     /// Keeps `plate` as `card`'s tile at `size` in `key`'s settings, while they are held and the

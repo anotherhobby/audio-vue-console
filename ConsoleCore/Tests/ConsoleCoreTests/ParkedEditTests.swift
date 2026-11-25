@@ -17,7 +17,7 @@ import Testing
         minimum: CellSize = .oneCell
     ) throws -> CellRect? {
         try content.resizing(
-            card.id, edges: edges, by: offset, minimum: minimum, within: testPane
+            card.id, edges: edges, by: offset, floor: .declared(minimum), within: testPane
         ).card(card.id)?.cells
     }
 

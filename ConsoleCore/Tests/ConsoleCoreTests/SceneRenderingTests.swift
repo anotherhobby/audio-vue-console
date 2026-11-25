@@ -7,7 +7,16 @@ import Testing
 /// A helper's render, faked: a 2 x 2 backdrop when asked for, and a 1 x 1 layer per plate asked
 /// for, every plate when none is named. A card named `tiny` is reported as not fitting.
 enum FakeRender {
+    /// A `minimum` answer naming the requested card's own size, whole and readable alike, so a
+    /// tile is drawn at the size it asked about.
+    static func minimum(of request: JSONValue) -> ScriptedReply {
+        let card = request["scene"]?["cards"]?.arrayValue?.first
+        let size = "[\(card?["colspan"]?.intValue ?? 1), \(card?["rowspan"]?.intValue ?? 1)]"
+        return .answer(#"{"ok": true, "whole": [\#(size)], "readable": [\#(size)]}"#)
+    }
+
     static func reply(to request: JSONValue, notice: String? = nil) -> ScriptedReply {
+        if request["op"] == .string("minimum") { return minimum(of: request) }
         guard request["op"] == .string("render") else {
             return .answer(#"{"ok": true, "cards": "d1", "runs": 1}"#)
         }

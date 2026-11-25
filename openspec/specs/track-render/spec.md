@@ -1,4 +1,4 @@
-# Spec Delta
+# track-render Specification
 
 ## Purpose
 
@@ -6,7 +6,7 @@ Lets the user render the open scene from a music track they pick, as a still at 
 over a span, so they can show what a scene does with real music rather than the editor's generated
 preview.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Render with Track opens from the scene editor
 
@@ -182,8 +182,8 @@ the panel.
 The samples decoded from a track SHALL be kept only while the sheet is open, and SHALL be removed when
 it closes or when another track is picked.
 
-Source: Inferred: a five-minute stereo track at 192 kHz is about 460 MB decoded (audio-vue
-`track-render` design D2).
+Source: Inferred: a five-minute stereo track at 192 kHz is about 460 MB decoded (audio-vue's
+archived `2026-11-23-track-render`, design D2).
 
 #### Scenario: Closing the sheet
 

@@ -32,6 +32,14 @@ public struct ParkedPlates: Sendable {
         }.map(\.key)
     }
 
+    /// Whether the parked plate `members`, still parked in `content`, is held for other settings or
+    /// another size than it has there, or not held at all. Changes nothing.
+    func isStale(_ members: Set<UUID>, in content: SceneContent) -> Bool {
+        guard let state = Self.plates(of: content)[members] else { return false }
+        guard let held = layers[members] else { return true }
+        return held.settings != state.settings || !held.cells.sameSize(as: state.cells)
+    }
+
     /// The parked plate `members` of `content` as a layout of its own: its cards moved together to
     /// the grid's top-left, as a library tile's card is drawn, or nil where none is parked.
     static func alone(_ members: Set<UUID>, of content: SceneContent) -> SceneLayout? {

@@ -71,18 +71,17 @@ extension SceneContent {
         return dropped
     }
 
-    /// The card `id` with `edges` dragged by `offset`, stopping at `minimum`: on the grid as
-    /// `SceneLayout.resizing` resizes it, parked within `reach`, the pane in cells (`card-parking`,
-    /// design D11).
+    /// The card `id` with `edges` dragged by `offset`, kept to `floor` (`card-minimum`): on the
+    /// grid as `SceneLayout.resizing` resizes it, parked within `reach`, the pane in cells
+    /// (`card-parking`, design D11).
     public func resizing(
-        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize,
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, floor: MinimumFloor,
         within reach: CellRect
     ) throws(LayoutRefusal) -> SceneContent {
         guard layout.card(id) == nil else {
-            return with(
-                layout: try layout.resizing(id, edges: edges, by: offset, minimum: minimum))
+            return with(layout: try layout.resizing(id, edges: edges, by: offset, floor: floor))
         }
-        return try resizingParked(id, edges: edges, by: offset, minimum: minimum, within: reach)
+        return try resizingParked(id, edges: edges, by: offset, floor: floor, within: reach)
     }
 
     /// The cards `ids` reach made one new group, on the grid as `SceneLayout.grouping` groups
@@ -113,12 +112,11 @@ extension SceneContent {
     }
 
     /// The parked card `id` with `edges` dragged by `offset`, as `SceneLayout.resizing` resizes a
-    /// card on the grid: the horizontal edge first, then the vertical, each stopping at `reach`, the
-    /// pane in cells, at any other parked card in its path, at the grid, so a resize never takes
-    /// it onto the panel, and at `minimum` (`card-parking`, "A parked card resizes within the
-    /// pane").
+    /// card on the grid, each edge stopping at `reach`, the pane in cells, at any other parked card
+    /// in its path, at the grid, so a resize never takes it onto the panel, and at `floor`
+    /// (`card-parking`, "A parked card resizes within the pane").
     private func resizingParked(
-        _ id: UUID, edges: CardEdges, by offset: CellOffset, minimum: CellSize,
+        _ id: UUID, edges: CardEdges, by offset: CellOffset, floor: MinimumFloor,
         within reach: CellRect
     ) throws(LayoutRefusal) -> SceneContent {
         guard let index = parked.firstIndex(where: { $0.id == id }) else { return self }
@@ -126,16 +124,10 @@ extension SceneContent {
         let cells = parked[index].cells
         let others = parked.filter { $0.id != id }.map(\.cells) + [layout.bounds]
         // The pane widened to the card, so a pane that shrank past it never empties a range.
-        let across = cells.resizedAcross(
-            edges: edges, by: offset.cols,
-            within: min(reach.col, cells.col)...max(reach.maxCol, cells.maxCol),
-            avoiding: others, atLeast: minimum.cols)
-        let down = across.transposed.resizedAcross(
-            edges: edges.transposed, by: offset.rows,
-            within: min(reach.row, cells.row)...max(reach.maxRow, cells.maxRow),
-            avoiding: others.map(\.transposed), atLeast: minimum.rows)
+        guard let pane = CellRect(enclosing: [reach, cells]) else { return self }
         var resized = self
-        resized.parked[index].cells = down.transposed
+        resized.parked[index].cells = cells.resized(
+            edges: edges, by: offset, within: pane, avoiding: others, floor: floor)
         return resized
     }
 

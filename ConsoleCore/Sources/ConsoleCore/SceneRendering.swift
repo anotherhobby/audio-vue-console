@@ -185,6 +185,11 @@ public final class SceneRendering {
         } catch {
             return
         }
+        // An older request can land after a newer one under the same key, as for a plate on the
+        // grid; where this one is already out of date, it is asked for again.
+        if parked.isStale(members, in: self.content) {
+            await drawParked(members, self.content, through: queue)
+        }
     }
 
     private static let backdropBlock = "backdrop"
@@ -238,24 +243,31 @@ public final class SceneRendering {
         guard self.queue != nil else { return }
         switch result {
         case nil: return
-        case .success(let answer)?: take(answer, drawnFor: layout, cardIDs: ids)
+        case .success(let answer)?:
+            let taken = take(answer, drawnFor: layout, cardIDs: ids)
+            await redrawStale(taken, through: queue)
         case .failure(.refused(let reason))?: clear(.refused(reason))
         case .failure(.unavailable(let reason))?: clear(.noRenderer(reason))
         case .failure?: clear(.failed)
         }
     }
 
-    private func take(_ answer: HelperAnswer, drawnFor drawn: SceneLayout, cardIDs: [UUID]) {
+    /// Keeps the layers of `answer`, drawn for `drawn`, and answers the plates it kept.
+    @discardableResult
+    private func take(_ answer: HelperAnswer, drawnFor drawn: SceneLayout, cardIDs: [UUID])
+        -> Set<Set<UUID>>
+    {
         let layers: [RenderedLayer]
         do {
             layers = try RenderedLayer.layers(of: answer, cardIDs: cardIDs)
         } catch {
             clear(.failed)
-            return
+            return []
         }
         notice = answer.header["notice"]?.stringValue
         let current = PlateChanges.cells(of: layout)
         let drawnStates = PlateChanges.drawn(of: drawn)
+        var kept: Set<Set<UUID>> = []
         for layer in layers {
             let members = Set(layer.cardIDs)
             if layer.kind == .backdrop {
@@ -263,6 +275,24 @@ public final class SceneRendering {
             } else if current[members] != nil, let state = drawnStates[members] {
                 plates[members] = PlacedLayer(
                     layer: layer, cells: state.cells, settings: state.settings)
+                kept.insert(members)
+            }
+        }
+        return kept
+    }
+
+    /// Draws again those of the plates just `taken` that the scene has already left: drawn for
+    /// cells or settings it no longer shows. A plate's redraws are sent from separate tasks, which
+    /// reach the queue in no set order, so an older request can replace a newer one under their
+    /// shared key and land last; this asks for the newer one again (`scene-rendering`, "A resize
+    /// draws the plate again at each cell step").
+    private func redrawStale(_ taken: Set<Set<UUID>>, through queue: RenderQueue) async {
+        let content = self.content
+        let stale = PlateChanges.needed(drawn: plates.mapValues(\.state), for: content.layout)
+            .redraw.intersection(taken)
+        await withDiscardingTaskGroup { group in
+            for members in stale {
+                group.addTask { await self.draw(content, .plate(members), through: queue) }
             }
         }
     }
